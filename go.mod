@@ -1,3 +1,3 @@
-module gitlab.com/deadblue/elevengo
+module github.com/deadblue/elevengo
 
 go 1.12
