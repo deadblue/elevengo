@@ -24,7 +24,7 @@ func (c *Client) ImportCredentials(cr *Credentials) (err error) {
 		{Name: "CID", Value: cr.Cid, Domain: ".115.com", Path: "/", HttpOnly: false},
 		{Name: "SEID", Value: cr.Seid, Domain: ".115.com", Path: "/", HttpOnly: false},
 	}
-	u, _ := url.Parse("https://115.com")
+	u, _ := url.Parse(apiHost)
 	c.jar.SetCookies(u, cks)
 
 	return c.check()
@@ -33,7 +33,7 @@ func (c *Client) ImportCredentials(cr *Credentials) (err error) {
 func (c *Client) check() (err error) {
 	// request home page
 	qs := newRequestParameters().With("mode", "wangpan")
-	data, err := c.requestRaw("https://115.com/", qs, nil)
+	data, err := c.request(apiHost, qs, nil)
 	if err != nil {
 		return
 	}
