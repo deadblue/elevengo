@@ -6,14 +6,6 @@ import (
 	"time"
 )
 
-type OrderMode string
-
-const (
-	FileTime OrderMode = "user_ptime"
-	FileName OrderMode = "file_name"
-	FileSize OrderMode = "file_size"
-)
-
 func (c *Client) FileList(dirId string, sort OrderMode) (result *FileListResult, err error) {
 	params := newRequestParameters().
 		With("aid", "1").
@@ -27,7 +19,7 @@ func (c *Client) FileList(dirId string, sort OrderMode) (result *FileListResult,
 		WithInt("offset", 0).
 		WithInt("limit", 100)
 	result = &FileListResult{}
-	err = c.requestJson(apiFilesList, params, nil, result)
+	err = c.requestJson(apiFileList, params, nil, result)
 	return
 }
 
@@ -36,17 +28,22 @@ func (c *Client) FileMkdir(parentId, name string) (err error) {
 		With("pid", parentId).
 		With("cname", name)
 	body := strings.NewReader(qs.QueryString())
-	err = c.requestJson(apiFilesAdd, nil, body, nil)
+	err = c.requestJson(apiFileAdd, nil, body, nil)
 	return
 }
 
 func (c *Client) FileMove(parentId string, fileIds ...string) (err error) {
-	qs := newRequestParameters().With("pid", parentId)
-	for index, fileId := range fileIds {
-		key := fmt.Sprintf("fid[%d]", index)
-		qs.With(key, fileId)
-	}
-	return nil
+	params := newRequestParameters().
+		With("pid", parentId).
+		WithStrings("fid", fileIds...)
+	return c.requestJson(apiFileMove, nil, params.FormData(), nil)
+}
+
+func (c *Client) FileRename(fileId, name string) (err error) {
+	params := newRequestParameters().
+		With("fid", fileId).
+		With("file_name", name)
+	return c.requestJson(apiFileEdit, nil, params.FormData(), nil)
 }
 
 func (c *Client) FileDelete(parentId string, fileIds ...string) {
@@ -65,7 +62,7 @@ func (c *Client) FileSearch(dirId, keyword string) (err error) {
 		With("format", "json").
 		WithInt("offset", 0).
 		WithInt("limit", 100)
-	err = c.requestJson(apiFilesSearch, qs, nil, nil)
+	err = c.requestJson(apiFileSearch, qs, nil, nil)
 	return
 }
 
@@ -74,6 +71,6 @@ func (c *Client) FileDownload(pickcode string) (result *FileDownloadResult, err 
 		With("pickcode", pickcode).
 		WithInt64("_", time.Now().UnixNano())
 	result = &FileDownloadResult{}
-	err = c.requestJson(apiFilesDownload, qs, nil, result)
+	err = c.requestJson(apiFileDownload, qs, nil, result)
 	return
 }

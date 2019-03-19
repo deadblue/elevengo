@@ -1,5 +1,13 @@
 package elevengo
 
+type OrderMode string
+
+const (
+	FileTime OrderMode = "user_ptime"
+	FileName OrderMode = "file_name"
+	FileSize OrderMode = "file_size"
+)
+
 type FileData struct {
 	FileId      *string `json:"fid"`
 	ContainerId *string `json:"cid"`
