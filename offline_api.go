@@ -8,7 +8,7 @@ func (c *Client) updateOfflineSpace() (err error) {
 		With("ac", "space").
 		WithInt64("_", time.Now().UnixNano())
 	result := &OfflineSpaceResult{}
-	if err = c.requestJson(apiOfflineSpace, qs, nil, result); err != nil {
+	if err = c.requestJson(apiHost, qs, nil, result); err != nil {
 		return
 	}
 	// store to client
