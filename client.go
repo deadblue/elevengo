@@ -23,7 +23,7 @@ type Client struct {
 	offline *_OfflineToken
 }
 
-func NewClient() (client *Client, err error) {
+func New() (client *Client, err error) {
 	client = &Client{}
 	err = client.setup()
 	return
