@@ -1,7 +1,5 @@
 package elevengo
 
-import "fmt"
-
 func (c *Client) updateOfflineSpace() (err error) {
 	qs := newQueryString().
 		WithString("ct", "offline").
@@ -72,7 +70,7 @@ func (c *Client) OfflineTaskDelete(hash ...string) (err error) {
 		return
 	}
 	if !result.State {
-		err = fmt.Errorf("api error: %d", result.ErrorCode)
+		err = apiError(result.ErrorCode)
 	}
 	return
 }
@@ -84,7 +82,7 @@ func (c *Client) OfflineTaskClear(flag ClearFlag) (err error) {
 		return err
 	}
 	if !result.State {
-		err = fmt.Errorf("api error: %d", result.ErrorCode)
+		err = apiError(result.ErrorCode)
 	}
 	return err
 }
