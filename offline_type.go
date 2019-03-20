@@ -65,5 +65,5 @@ type OfflineTaskAddUrlResult struct {
 
 type OfflineTaskAddUrlsResult struct {
 	OfflineBasicResult
-	Result []OfflineTaskAddUrlResult `json:"result"`
+	Result []*OfflineTaskAddUrlResult `json:"result"`
 }

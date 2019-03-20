@@ -1,5 +1,7 @@
 package elevengo
 
+import "fmt"
+
 func (c *Client) updateOfflineSpace() (err error) {
 	qs := newQueryString().
 		WithString("ct", "offline").
@@ -43,28 +45,46 @@ func (c *Client) OfflineTaskList(page int) (result *OfflineTaskListResult, err e
 	return
 }
 
+func (c *Client) OfflineTaskAddUrls(url ...string) (tasks []*OfflineTaskAddUrlResult, err error) {
+	form := newForm(false)
+	if len(url) == 1 {
+		form.WithString("url", url[0])
+		result := &OfflineTaskAddUrlResult{}
+		if err = c.callOfflineApi(apiOfflineAddUrl, form, result); err != nil {
+			return
+		}
+		tasks = []*OfflineTaskAddUrlResult{result}
+	} else {
+		form.WithStrings("url", url)
+		result := &OfflineTaskAddUrlsResult{}
+		if err = c.callOfflineApi(apiOfflineAddUrls, form, result); err != nil {
+			return
+		}
+		tasks = result.Result
+	}
+	return
+}
+
 func (c *Client) OfflineTaskDelete(hash ...string) (err error) {
 	form := newForm(false).WithStrings("hash", hash)
 	result := &OfflineBasicResult{}
-	return c.callOfflineApi(apiOfflineDelete, form, result)
+	if err = c.callOfflineApi(apiOfflineDelete, form, result); err != nil {
+		return
+	}
+	if !result.State {
+		err = fmt.Errorf("api error: %d", result.ErrorCode)
+	}
+	return
 }
 
 func (c *Client) OfflineTaskClear(flag ClearFlag) (err error) {
 	form := newForm(false).WithInt("flag", int(flag))
 	result := &OfflineBasicResult{}
-	return c.callOfflineApi(apiOfflineClear, form, result)
-}
-
-func (c *Client) OfflineTaskAddUrls(url ...string) (err error) {
-	form := newForm(false)
-	if len(url) == 1 {
-		form.WithString("url", url[0])
-		result := &OfflineTaskAddUrlResult{}
-		err = c.callOfflineApi(apiOfflineAddUrl, form, result)
-	} else {
-		form.WithStrings("url", url)
-		result := &OfflineTaskAddUrlsResult{}
-		err = c.callOfflineApi(apiOfflineAddUrls, form, result)
+	if err = c.callOfflineApi(apiOfflineClear, form, result); err != nil {
+		return err
 	}
-	return
+	if !result.State {
+		err = fmt.Errorf("api error: %d", result.ErrorCode)
+	}
+	return err
 }
