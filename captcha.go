@@ -10,30 +10,30 @@ const (
 )
 
 func (c *Client) requestCaptchaImage(t string, index int) ([]byte, error) {
-	qs := newRequestParameters().
-		With("ct", "index").
-		With("ac", "code")
+	qs := newQueryString().
+		WithString("ct", "index").
+		WithString("ac", "code").
+		WithTimestamp("_t")
 	if t == "all" || t == "single" {
-		qs.With("t", t)
+		qs.WithString("t", t)
 		if t == "single" {
 			qs.WithInt("id", index)
 		}
 	}
-	qs.WithInt64("_t", time.Now().Unix())
-	return c.requestRaw(urlCaptchaApi, qs, nil)
+	return c.request(urlCaptchaApi, qs, nil)
 }
 
 func (c *Client) CaptchaStart(client *string) (session *CaptchaSession, err error) {
 	cb := fmt.Sprintf("Close911_%d", time.Now().UnixNano())
 	// access captcha page
-	qs := newRequestParameters().
-		With("ac", "security_code").
-		With("type", "web").
-		With("cb", cb)
+	qs := newQueryString().
+		WithString("ac", "security_code").
+		WithString("type", "web").
+		WithString("cb", cb)
 	if client != nil {
-		qs.With("client", *client)
+		qs.WithString("client", *client)
 	}
-	_, err = c.requestRaw(urlCaptchaApi, qs, nil)
+	_, err = c.request(urlCaptchaApi, qs, nil)
 	if err != nil {
 		return
 	}

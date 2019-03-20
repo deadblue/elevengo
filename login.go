@@ -32,7 +32,7 @@ func (c *Client) ImportCredentials(cr *Credentials) (err error) {
 
 func (c *Client) check() (err error) {
 	// request home page
-	qs := newRequestParameters().With("mode", "wangpan")
+	qs := newQueryString().WithString("mode", "wangpan")
 	data, err := c.request(apiHost, qs, nil)
 	if err != nil {
 		return
