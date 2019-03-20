@@ -48,9 +48,9 @@ func (c *Client) request(url string, qs *_QueryString, form *_Form) (data []byte
 	// make request
 	method, body := "", io.Reader(nil)
 	if form == nil {
-		method, body = "GET", nil
+		method, body = http.MethodGet, nil
 	} else {
-		method, body = "POST", form.Finish()
+		method, body = http.MethodPost, form.Finish()
 	}
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
