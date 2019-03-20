@@ -13,51 +13,68 @@ import (
 )
 
 func (c *Client) setup() (err error) {
+	c.userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:65.0) Gecko/20100101 Firefox/65.0"
+	// cookie jar
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		return
 	}
 	c.jar = jar
+	// http client
 	c.client = &http.Client{
 		Jar: jar,
 	}
+
+	// Do not check server certificate
+	t, ok := c.client.Transport.(*http.Transport)
+	if ok {
+		t.TLSClientConfig.InsecureSkipVerify = true
+	}
+
 	c.info = &_UserInfo{}
-	c.offline = &_OfflineToken{}
 	return nil
 }
 
-func (c *Client) requestRaw(url string, qs *RequestParameters, body io.Reader) (data []byte, err error) {
+func (c *Client) request(url string, qs *_QueryString, form *_Form) (data []byte, err error) {
 	// append query string
 	if qs != nil {
 		index := strings.IndexRune(url, '?')
 		if index < 0 {
-			url = fmt.Sprintf("%s?%s", url, qs.QueryString())
+			url = fmt.Sprintf("%s?%s", url, qs.Encode())
 		} else {
-			url = fmt.Sprintf("%s&%s", url, qs.QueryString())
+			url = fmt.Sprintf("%s&%s", url, qs.Encode())
 		}
 	}
-	// prepare request
-	req, err := http.NewRequest("POST", url, body)
+	// make request
+	method, body := "", io.Reader(nil)
+	if form == nil {
+		method, body = "GET", nil
+	} else {
+		method, body = "POST", form.Finish()
+	}
+	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return
 	}
-	if body == nil {
-		req.Method = "GET"
+	// set request headers
+	if form != nil {
+		req.Header.Set("Content-Type", form.ContentType())
 	}
 	req.Header.Set("Accept", "*/*")
 	req.Header.Set("Accept-Encoding", "gzip, deflate")
-
+	req.Header.Set("Cache-Control", "no-cache")
+	req.Header.Set("Referer", apiHost)
+	req.Header.Set("User-Agent", c.userAgent)
 	// send request
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return
 	}
-
 	// check response
 	if resp.StatusCode != 200 {
 		return nil, fmt.Errorf("http error :%d", resp.StatusCode)
 	}
-
+	// read body
 	r := resp.Body
 	defer resp.Body.Close()
 	enc := resp.Header.Get("Content-Encoding")
@@ -71,8 +88,8 @@ func (c *Client) requestRaw(url string, qs *RequestParameters, body io.Reader) (
 	return
 }
 
-func (c *Client) requestJson(url string, qs *RequestParameters, body io.Reader, result interface{}) (err error) {
-	data, err := c.requestRaw(url, qs, body)
+func (c *Client) requestJson(url string, qs *_QueryString, form *_Form, result interface{}) (err error) {
+	data, err := c.request(url, qs, form)
 	if err != nil {
 		return
 	}
