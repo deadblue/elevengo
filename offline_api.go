@@ -6,7 +6,7 @@ func (c *Client) updateOfflineSpace() (err error) {
 		WithString("ac", "space").
 		WithTimestamp("_")
 	result := &OfflineSpaceResult{}
-	if err = c.requestJson(apiHost, qs, nil, result); err != nil {
+	if err = c.requestJson(apiBasic, qs, nil, result); err != nil {
 		return
 	}
 	// store to client
@@ -18,29 +18,26 @@ func (c *Client) updateOfflineSpace() (err error) {
 	return nil
 }
 
-func (c *Client) callOfflineApi(action string, form *_Form, result interface{}) (err error) {
+func (c *Client) callOfflineApi(url string, form *_Form, result interface{}) (err error) {
 	if c.offline == nil {
 		if err = c.updateOfflineSpace(); err != nil {
 			return
 		}
 	}
-	qs := newQueryString().
-		WithString("ct", "lixian").
-		WithString("ac", action)
 	if form == nil {
 		form = newForm(false)
 	}
 	form.WithString("uid", c.info.UserId).
 		WithString("sign", c.offline.Sign).
 		WithInt64("time", c.offline.Time)
-	err = c.requestJson(apiOffline, qs, form, result)
+	err = c.requestJson(url, nil, form, result)
 	return
 }
 
 func (c *Client) OfflineTaskList(page int) (result *OfflineTaskListResult, err error) {
 	result = &OfflineTaskListResult{}
 	form := newForm(false).WithInt("page", page)
-	if err = c.callOfflineApi(offlineActionTaskList, form, result); err != nil {
+	if err = c.callOfflineApi(apiOfflineList, form, result); err != nil {
 		return nil, err
 	}
 	return
@@ -49,26 +46,25 @@ func (c *Client) OfflineTaskList(page int) (result *OfflineTaskListResult, err e
 func (c *Client) OfflineTaskDelete(hash ...string) (err error) {
 	form := newForm(false).WithStrings("hash", hash)
 	result := &OfflineBasicResult{}
-	return c.callOfflineApi(offlineActionTaskDelete, form, result)
+	return c.callOfflineApi(apiOfflineDelete, form, result)
 }
 
 func (c *Client) OfflineTaskClear(flag ClearFlag) (err error) {
 	form := newForm(false).WithInt("flag", int(flag))
 	result := &OfflineBasicResult{}
-	return c.callOfflineApi(offlineActionTaskClear, form, result)
+	return c.callOfflineApi(apiOfflineClear, form, result)
 }
 
 func (c *Client) OfflineTaskAddUrls(url ...string) (err error) {
-	action, form := "", newForm(false)
-	var result interface{}
+	form := newForm(false)
 	if len(url) == 1 {
-		action = offlineActionTaskAddUrl
 		form.WithString("url", url[0])
-		result = &OfflineTaskAddUrlResult{}
+		result := &OfflineTaskAddUrlResult{}
+		err = c.callOfflineApi(apiOfflineAddUrl, form, result)
 	} else {
-		action = offlineActionTaskAddUrls
 		form.WithStrings("url", url)
-		result = &OfflineTaskAddUrlsResult{}
+		result := &OfflineTaskAddUrlsResult{}
+		err = c.callOfflineApi(apiOfflineAddUrls, form, result)
 	}
-	return c.callOfflineApi(action, form, result)
+	return
 }

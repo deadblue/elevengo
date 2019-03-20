@@ -3,12 +3,6 @@ package elevengo
 type ClearFlag int
 
 const (
-	offlineActionTaskList    = "task_lists"
-	offlineActionTaskDelete  = "task_del"
-	offlineActionTaskClear   = "task_clear"
-	offlineActionTaskAddUrl  = "add_task_url"
-	offlineActionTaskAddUrls = "add_task_urls"
-
 	ClearComplete ClearFlag = iota
 	ClearAll
 	ClearFailed

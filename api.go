@@ -1,8 +1,9 @@
 package elevengo
 
-// webapi
 const (
-	apiHost = "https://115.com/"
+	domain = ".115.com"
+
+	apiBasic = "https://115.com/"
 
 	apiFileList     = "https://webapi.115.com/files"
 	apiFileAdd      = "https://webapi.115.com/files/add"
@@ -12,7 +13,11 @@ const (
 	apiFileSearch   = "https://webapi.115.com/files/search"
 	apiFileDownload = "https://webapi.115.com/files/download"
 
-	apiOffline = "https://115.com/web/lixian/"
+	apiOfflineList    = "https://115.com/web/lixian/?ct=lixian&ac=task_lists"
+	apiOfflineAddUrl  = "https://115.com/web/lixian/?ct=lixian&ac=add_task_url"
+	apiOfflineAddUrls = "https://115.com/web/lixian/?ct=lixian&ac=add_task_urls"
+	apiOfflineDelete  = "https://115.com/web/lixian/?ct=lixian&ac=task_del"
+	apiOfflineClear   = "https://115.com/web/lixian/?ct=lixian&ac=task_clear"
 
 	apiCaptchaSubmit = "https://webapi.115.com/user/captcha"
 )

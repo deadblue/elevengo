@@ -63,7 +63,7 @@ func (c *Client) request(url string, qs *_QueryString, form *_Form) (data []byte
 	req.Header.Set("Accept", "*/*")
 	req.Header.Set("Accept-Encoding", "gzip, deflate")
 	req.Header.Set("Cache-Control", "no-cache")
-	req.Header.Set("Referer", apiHost)
+	req.Header.Set("Referer", apiBasic)
 	req.Header.Set("User-Agent", c.userAgent)
 	// send request
 	resp, err := c.client.Do(req)

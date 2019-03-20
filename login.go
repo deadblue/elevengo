@@ -19,12 +19,12 @@ type Credentials struct {
 
 func (c *Client) ImportCredentials(cr *Credentials) (err error) {
 	cks := []*http.Cookie{
-		{Name: "115_lang", Value: "zh", Domain: ".115.com", Path: "/", HttpOnly: false},
-		{Name: "UID", Value: cr.Uid, Domain: ".115.com", Path: "/", HttpOnly: false},
-		{Name: "CID", Value: cr.Cid, Domain: ".115.com", Path: "/", HttpOnly: false},
-		{Name: "SEID", Value: cr.Seid, Domain: ".115.com", Path: "/", HttpOnly: false},
+		{Name: "115_lang", Value: "zh", Domain: domain, Path: "/", HttpOnly: false},
+		{Name: "UID", Value: cr.Uid, Domain: domain, Path: "/", HttpOnly: false},
+		{Name: "CID", Value: cr.Cid, Domain: domain, Path: "/", HttpOnly: false},
+		{Name: "SEID", Value: cr.Seid, Domain: domain, Path: "/", HttpOnly: false},
 	}
-	u, _ := url.Parse(apiHost)
+	u, _ := url.Parse(apiBasic)
 	c.jar.SetCookies(u, cks)
 
 	return c.check()
@@ -33,7 +33,7 @@ func (c *Client) ImportCredentials(cr *Credentials) (err error) {
 func (c *Client) check() (err error) {
 	// request home page
 	qs := newQueryString().WithString("mode", "wangpan")
-	data, err := c.request(apiHost, qs, nil)
+	data, err := c.request(apiBasic, qs, nil)
 	if err != nil {
 		return
 	}
