@@ -12,25 +12,25 @@ var (
 )
 
 type Credentials struct {
-	Uid  string
-	Cid  string
-	Seid string
+	UID  string
+	CID  string
+	SEID string
 }
 
 func (c *Client) ImportCredentials(cr *Credentials) (err error) {
 	cks := []*http.Cookie{
 		{Name: "115_lang", Value: "zh", Domain: domain, Path: "/", HttpOnly: false},
-		{Name: "UID", Value: cr.Uid, Domain: domain, Path: "/", HttpOnly: false},
-		{Name: "CID", Value: cr.Cid, Domain: domain, Path: "/", HttpOnly: false},
-		{Name: "SEID", Value: cr.Seid, Domain: domain, Path: "/", HttpOnly: false},
+		{Name: "UID", Value: cr.UID, Domain: domain, Path: "/", HttpOnly: false},
+		{Name: "CID", Value: cr.CID, Domain: domain, Path: "/", HttpOnly: false},
+		{Name: "SEID", Value: cr.SEID, Domain: domain, Path: "/", HttpOnly: false},
 	}
 	u, _ := url.Parse(apiBasic)
 	c.jar.SetCookies(u, cks)
 
-	return c.check()
+	return c.getUserData()
 }
 
-func (c *Client) check() (err error) {
+func (c *Client) getUserData() (err error) {
 	// request home page
 	qs := newQueryString().WithString("mode", "wangpan")
 	data, err := c.request(apiBasic, qs, nil)
