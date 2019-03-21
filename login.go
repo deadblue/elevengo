@@ -42,8 +42,11 @@ func (c *Client) getUserData() (err error) {
 	matches := _RegexpUserId.FindAllStringSubmatch(body, -1)
 	if len(matches) == 0 {
 		return errors.New("not login")
-	} else {
-		c.info.UserId = matches[0][1]
 	}
+	// store UserId
+	if c.info == nil {
+		c.info = &_UserInfo{}
+	}
+	c.info.UserId = matches[0][1]
 	return nil
 }
