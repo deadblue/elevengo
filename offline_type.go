@@ -9,9 +9,6 @@ const (
 	ClearRunning
 	ClearCompleteAndDelete
 	ClearAllAndDelete
-
-	ErrorAccountNeedVerify  = 911
-	ErrorOfflineIllegalTask = 10003
 )
 
 type OfflineSpaceResult struct {
@@ -37,6 +34,7 @@ type OfflineTask struct {
 	InfoHash   string  `json:"info_hash"`
 	Status     int     `json:"status"`
 	FileId     string  `json:"file_id"`
+	RealFileId string  `json:"delete_file_id"`
 	Name       string  `json:"name"`
 	Size       int64   `json:"size"`
 	Percent    float64 `json:"percentDone"`

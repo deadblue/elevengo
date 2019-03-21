@@ -26,3 +26,10 @@ const (
 
 	apiCaptchaSubmit = "https://webapi.115.com/user/captcha"
 )
+
+const (
+	ErrorAccountNeedVerify  = 911
+	ErrorOfflineIllegalTask = 10003
+	ErrorFileNotExists      = 70004
+	ErrorFileIncomplete     = 70005
+)
