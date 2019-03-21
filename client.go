@@ -16,15 +16,22 @@ type _OfflineToken struct {
 type Client struct {
 	// basic properties for communication
 	userAgent string
-	jar       http.CookieJar
-	client    *http.Client
+
+	jar    http.CookieJar
+	client *http.Client
 
 	info    *_UserInfo
 	offline *_OfflineToken
 }
 
 func New() (client *Client, err error) {
-	client = &Client{}
-	err = client.setup()
+	return Custom(defaultUserAgent)
+}
+
+func Custom(ua string) (client *Client, err error) {
+	client = &Client{userAgent: ua}
+	if err = client.setup(); err != nil {
+		client = nil
+	}
 	return
 }
