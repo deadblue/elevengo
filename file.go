@@ -1,6 +1,11 @@
 package elevengo
 
-func (c *Client) FileList(categoryId string, sort OrderMode) (result *FileListResult, err error) {
+func (c *Client) FileList(categoryId string, sort OrderFlag, offset, limit int) (result *FileListResult, err error) {
+	if limit < FileListMinLimit {
+		limit = FileListMinLimit
+	} else if limit > FileListMaxLimit {
+		limit = FileListMaxLimit
+	}
 	qs := newQueryString().
 		WithString("aid", "1").
 		WithString("cid", categoryId).
@@ -10,10 +15,34 @@ func (c *Client) FileList(categoryId string, sort OrderMode) (result *FileListRe
 		WithString("snap", "0").
 		WithString("natsort", "1").
 		WithString("format", "json").
-		WithInt("offset", 0).
-		WithInt("limit", 100)
+		WithInt("offset", offset).
+		WithInt("limit", limit)
 	result = &FileListResult{}
 	err = c.requestJson(apiFileList, qs, nil, result)
+	if err == nil && !result.State {
+		err = apiError(result.MessageCode)
+	}
+	return
+}
+
+func (c *Client) FileSearch(categoryId, keyword string, offset, limit int) (result *FileSearchResult, err error) {
+	if limit < FileListMinLimit {
+		limit = FileListMinLimit
+	} else if limit > FileListMaxLimit {
+		limit = FileListMaxLimit
+	}
+	qs := newQueryString().
+		WithString("aid", "1").
+		WithString("cid", categoryId).
+		WithString("search_value", keyword).
+		WithString("format", "json").
+		WithInt("offset", offset).
+		WithInt("limit", limit)
+	result = &FileSearchResult{}
+	err = c.requestJson(apiFileSearch, qs, nil, result)
+	if err == nil && !result.State {
+		err = apiError(result.MessageCode)
+	}
 	return
 }
 
@@ -56,18 +85,6 @@ func (c *Client) FileDelete(parentId string, fileIds ...string) (err error) {
 		WithString("pid", parentId).
 		WithStrings("fid", fileIds)
 	return c.requestJson(apiFileDelete, nil, form, nil)
-}
-
-func (c *Client) FileSearch(categoryId, keyword string) (err error) {
-	qs := newQueryString().
-		WithString("aid", "1").
-		WithString("cid", categoryId).
-		WithString("search_value", keyword).
-		WithString("format", "json").
-		WithInt("offset", 0).
-		WithInt("limit", 100)
-	err = c.requestJson(apiFileSearch, qs, nil, nil)
-	return
 }
 
 func (c *Client) FileAddCategory(parentId, name string) (err error) {
