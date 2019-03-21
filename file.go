@@ -1,9 +1,9 @@
 package elevengo
 
-func (c *Client) FileList(dirId string, sort OrderMode) (result *FileListResult, err error) {
+func (c *Client) FileList(categoryId string, sort OrderMode) (result *FileListResult, err error) {
 	qs := newQueryString().
 		WithString("aid", "1").
-		WithString("cid", dirId).
+		WithString("cid", categoryId).
 		WithString("o", string(sort)).
 		WithString("asc", "1").
 		WithString("show_dir", "1").
@@ -17,12 +17,24 @@ func (c *Client) FileList(dirId string, sort OrderMode) (result *FileListResult,
 	return
 }
 
-func (c *Client) FileMkdir(parentId, name string) (err error) {
+func (c *Client) FileInfo(fileId string) (data *FileInfoData, err error) {
+	form := newForm(false).WithString("file_id", fileId)
+	result := &FileInfoResult{}
+	if err = c.requestJson(apiFileInfo, nil, form, result); err == nil {
+		if !result.State {
+			err = apiError(result.ErrorNo)
+		} else if len(result.Data) > 0 {
+			data = result.Data[0]
+		}
+	}
+	return
+}
+
+func (c *Client) FileCopy(parentId string, fileIds ...string) (err error) {
 	form := newForm(false).
 		WithString("pid", parentId).
-		WithString("cname", name)
-	err = c.requestJson(apiFileAdd, nil, form, nil)
-	return
+		WithStrings("fid", fileIds)
+	return c.requestJson(apiFileCopy, nil, form, nil)
 }
 
 func (c *Client) FileMove(parentId string, fileIds ...string) (err error) {
@@ -46,10 +58,10 @@ func (c *Client) FileDelete(parentId string, fileIds ...string) (err error) {
 	return c.requestJson(apiFileDelete, nil, form, nil)
 }
 
-func (c *Client) FileSearch(dirId, keyword string) (err error) {
+func (c *Client) FileSearch(categoryId, keyword string) (err error) {
 	qs := newQueryString().
 		WithString("aid", "1").
-		WithString("cid", dirId).
+		WithString("cid", categoryId).
 		WithString("search_value", keyword).
 		WithString("format", "json").
 		WithInt("offset", 0).
@@ -58,11 +70,23 @@ func (c *Client) FileSearch(dirId, keyword string) (err error) {
 	return
 }
 
-func (c *Client) FileDownload(pickcode string) (result *FileDownloadResult, err error) {
-	qs := newQueryString().
-		WithString("pickcode", pickcode).
-		WithTimestamp("_")
-	result = &FileDownloadResult{}
-	err = c.requestJson(apiFileDownload, qs, nil, result)
+func (c *Client) FileAddCategory(parentId, name string) (err error) {
+	form := newForm(false).
+		WithString("pid", parentId).
+		WithString("cname", name)
+	result := &FileAddResult{}
+	if err = c.requestJson(apiFileAdd, nil, form, result); err == nil {
+		if !result.State {
+			err = apiError(result.ErrorNo)
+		}
+	}
 	return
+}
+
+func (c *Client) FileGetCategory(categoryId string) (err error) {
+	qs := newQueryString().
+		WithString("aid", "1").
+		WithString("cid", categoryId)
+	result := &CategoryGetResult{}
+	return c.requestJson(apiCategoryGet, qs, nil, result)
 }
