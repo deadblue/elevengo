@@ -8,31 +8,8 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/http/cookiejar"
 	"strings"
 )
-
-func (c *Client) setup() (err error) {
-	// cookie jar
-	jar, err := cookiejar.New(nil)
-	if err != nil {
-		return
-	}
-	c.jar = jar
-	// http client
-	c.client = &http.Client{
-		Jar: jar,
-	}
-
-	// Do not check server certificate
-	t, ok := c.client.Transport.(*http.Transport)
-	if ok {
-		t.TLSClientConfig.InsecureSkipVerify = true
-	}
-
-	c.info = &_UserInfo{}
-	return nil
-}
 
 func (c *Client) request(url string, qs *_QueryString, form *_Form) (data []byte, err error) {
 	// append query string
@@ -70,7 +47,7 @@ func (c *Client) request(url string, qs *_QueryString, form *_Form) (data []byte
 		return
 	}
 	// check response
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("http error :%d", resp.StatusCode)
 	}
 	// read body
