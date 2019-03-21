@@ -66,10 +66,8 @@ func (c *Client) OfflineTaskAddUrls(url ...string) (tasks []*OfflineTaskAddUrlRe
 func (c *Client) OfflineTaskDelete(hash ...string) (err error) {
 	form := newForm(false).WithStrings("hash", hash)
 	result := &OfflineBasicResult{}
-	if err = c.callOfflineApi(apiOfflineDelete, form, result); err != nil {
-		return
-	}
-	if !result.State {
+	err = c.callOfflineApi(apiOfflineDelete, form, result)
+	if err == nil && !result.State {
 		err = apiError(result.ErrorCode)
 	}
 	return
@@ -78,11 +76,9 @@ func (c *Client) OfflineTaskDelete(hash ...string) (err error) {
 func (c *Client) OfflineTaskClear(flag ClearFlag) (err error) {
 	form := newForm(false).WithInt("flag", int(flag))
 	result := &OfflineBasicResult{}
-	if err = c.callOfflineApi(apiOfflineClear, form, result); err != nil {
-		return err
-	}
-	if !result.State {
+	err = c.callOfflineApi(apiOfflineClear, form, result)
+	if err == nil && !result.State {
 		err = apiError(result.ErrorCode)
 	}
-	return err
+	return
 }
