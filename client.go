@@ -17,20 +17,29 @@ type _OfflineToken struct {
 	Time int64
 }
 
-type Options struct {
-	UserAgent    string
-	DisableProxy bool
-	MaxIdleConns int
-	Debug        bool
+type Client struct {
+	jar http.CookieJar
+	hc  *http.Client
+	ua  string
+
+	info    *_UserInfo
+	offline *_OfflineToken
 }
 
-type Client struct {
-	jar    http.CookieJar
-	client *http.Client
+type Options struct {
+	// The UserAgent
+	UserAgent string
 
-	userAgent string
-	info      *_UserInfo
-	offline   *_OfflineToken
+	// Do not use proxy in environment
+	DisableProxy bool
+
+	// Max idle connections number per host
+	MaxIdleConns int
+
+	// Enable debug mode
+	// When enabled, the client:
+	//  * Does not verify server certificate
+	Debug bool
 }
 
 func New(opts *Options) *Client {
@@ -40,12 +49,12 @@ func New(opts *Options) *Client {
 	}
 	transport := &http.Transport{
 		Proxy:                 http.ProxyFromEnvironment,
+		DialContext:           dialer.DialContext,
 		MaxIdleConns:          200,
 		MaxIdleConnsPerHost:   100,
-		DialContext:           dialer.DialContext,
 		IdleConnTimeout:       300 * time.Second,
 		TLSHandshakeTimeout:   30 * time.Second,
-		ResponseHeaderTimeout: 30 * time.Second,
+		ResponseHeaderTimeout: 60 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 	}
 	jar, _ := cookiejar.New(nil)
@@ -55,14 +64,14 @@ func New(opts *Options) *Client {
 	}
 	// assemble the client
 	client := &Client{
-		jar:       jar,
-		client:    hc,
-		userAgent: defaultUserAgent,
+		jar: jar,
+		hc:  hc,
+		ua:  defaultUserAgent,
 	}
 	// apply options
 	if opts != nil {
 		if opts.UserAgent != "" {
-			client.userAgent = opts.UserAgent
+			client.ua = opts.UserAgent
 		}
 		if opts.DisableProxy {
 			transport.Proxy = func(request *http.Request) (url *url.URL, e error) {

@@ -26,10 +26,8 @@ func (c *Client) request(url string, qs *_QueryString, form *_Form) (data []byte
 	} else {
 		method, body = http.MethodPost, form.Finish()
 	}
-	req, err := http.NewRequest(method, url, body)
-	if err != nil {
-		return
-	}
+	// ignore errer when creating request
+	req, _ := http.NewRequest(method, url, body)
 	// set request headers
 	if form != nil {
 		req.Header.Set("Content-Type", form.ContentType())
@@ -37,9 +35,9 @@ func (c *Client) request(url string, qs *_QueryString, form *_Form) (data []byte
 	req.Header.Set("Accept", "*/*")
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Referer", apiBasic)
-	req.Header.Set("User-Agent", c.userAgent)
+	req.Header.Set("User-Agent", c.ua)
 	// send request
-	resp, err := c.client.Do(req)
+	resp, err := c.hc.Do(req)
 	if err != nil {
 		return
 	}
