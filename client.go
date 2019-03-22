@@ -24,6 +24,7 @@ type Client struct {
 
 	info    *_UserInfo
 	offline *_OfflineToken
+	captcha *_CaptchaSession
 }
 
 type Options struct {
@@ -45,16 +46,16 @@ type Options struct {
 func New(opts *Options) *Client {
 	// core component
 	dialer := &net.Dialer{
-		Timeout: 30 * time.Second,
+		Timeout: defaultConnTimeout,
 	}
 	transport := &http.Transport{
 		Proxy:                 http.ProxyFromEnvironment,
 		DialContext:           dialer.DialContext,
+		TLSHandshakeTimeout:   defaultConnTimeout,
+		ResponseHeaderTimeout: defaultServerTimeout,
+		IdleConnTimeout:       defaultIdleTimeout,
+		MaxIdleConnsPerHost:   defaultIdleConnsPreHost,
 		MaxIdleConns:          200,
-		MaxIdleConnsPerHost:   100,
-		IdleConnTimeout:       300 * time.Second,
-		TLSHandshakeTimeout:   30 * time.Second,
-		ResponseHeaderTimeout: 60 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 	}
 	jar, _ := cookiejar.New(nil)

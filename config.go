@@ -1,8 +1,21 @@
 package elevengo
 
-const (
-	defaultUserAgent = "Mozilla/5.0 (Project NTR115) elevengo/0.1"
+import (
+	"fmt"
+	"time"
+)
 
+const Version = "0.1"
+
+var (
+	defaultIdleConnsPreHost = 100
+	defaultIdleTimeout      = 300 * time.Second
+	defaultConnTimeout      = 30 * time.Second
+	defaultServerTimeout    = 60 * time.Second
+	defaultUserAgent        = fmt.Sprintf("Mozilla/5.0 (Project NTR115; elevengo/%s)", Version)
+)
+
+const (
 	domain = ".115.com"
 
 	apiBasic = "https://115.com/"
@@ -24,6 +37,7 @@ const (
 	apiOfflineDelete  = "https://115.com/web/lixian/?ct=lixian&ac=task_del"
 	apiOfflineClear   = "https://115.com/web/lixian/?ct=lixian&ac=task_clear"
 
+	apiCaptcha       = "https://captchaapi.115.com/"
 	apiCaptchaSubmit = "https://webapi.115.com/user/captcha"
 )
 
