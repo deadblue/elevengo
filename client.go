@@ -24,7 +24,6 @@ type Client struct {
 
 	info    *_UserInfo
 	offline *_OfflineToken
-	captcha *_CaptchaSession
 }
 
 type Options struct {

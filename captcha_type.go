@@ -5,3 +5,8 @@ type CaptchaSession struct {
 	CodeValue []byte
 	CodeKeys  []byte
 }
+
+type _CaptchaSignResult struct {
+	State bool   `json:"state"`
+	Sign  string `json:"sign"`
+}

@@ -2,59 +2,82 @@ package elevengo
 
 import (
 	"fmt"
+	"math/rand"
 	"time"
 )
 
-const (
-	urlCaptchaApi = "https://captchaapi.115.com/"
-)
-
-func (c *Client) requestCaptchaImage(t string, index int) ([]byte, error) {
+func (c *Client) captchaValueImage() ([]byte, error) {
 	qs := newQueryString().
 		WithString("ct", "index").
 		WithString("ac", "code").
 		WithTimestamp("_t")
-	if t == "all" || t == "single" {
-		qs.WithString("t", t)
-		if t == "single" {
-			qs.WithInt("id", index)
-		}
-	}
-	return c.request(urlCaptchaApi, qs, nil)
+	return c.request(apiCaptcha, qs, nil)
 }
 
-func (c *Client) CaptchaStart(client *string) (session *CaptchaSession, err error) {
+func (c *Client) captchaKeyImage(index int) ([]byte, error) {
+	qs := newQueryString().
+		WithString("ct", "index").
+		WithString("ac", "code").
+		WithTimestamp("_t")
+	if index < 0 || index > 9 {
+		qs.WithString("t", "all")
+	} else {
+		qs.WithString("t", "single").WithInt("id", index)
+	}
+	return c.request(apiCaptcha, qs, nil)
+}
+
+func (c *Client) CaptchaStart() (session *CaptchaSession, err error) {
 	cb := fmt.Sprintf("Close911_%d", time.Now().UnixNano())
-	// access captcha page
+	// request captcha page to start session
 	qs := newQueryString().
 		WithString("ac", "security_code").
 		WithString("type", "web").
 		WithString("cb", cb)
-	if client != nil {
-		qs.WithString("client", *client)
-	}
-	_, err = c.request(urlCaptchaApi, qs, nil)
+	_, err = c.request(apiCaptcha, qs, nil)
 	if err != nil {
 		return
 	}
-	// request code value image
-	codeValue, err := c.requestCaptchaImage("", 0)
+	// request captcha images
+	codeValue, err := c.captchaValueImage()
 	if err != nil {
 		return
 	}
-	codeKeys, err := c.requestCaptchaImage("all", 0)
+	codeKeys, err := c.captchaKeyImage(-1)
 	if err != nil {
 		return
 	}
-	session = &CaptchaSession{
+	// build session
+	return &CaptchaSession{
 		Callback:  cb,
 		CodeValue: codeValue,
 		CodeKeys:  codeKeys,
-	}
-	return
+	}, nil
 }
 
 func (c *Client) CaptchaSubmit(code string, session *CaptchaSession) (err error) {
-
-	return nil
+	// get captcha sign
+	cb := fmt.Sprintf("jQuery%d_%d", rand.Uint64(), time.Now().UnixNano())
+	qs := newQueryString().
+		WithString("ac", "code").
+		WithString("t", "sign").
+		WithString("callback", cb).
+		WithTimestamp("_")
+	signResult := &_CaptchaSignResult{}
+	if err = c.requestJsonp(apiCaptcha, qs, signResult); err != nil {
+		return
+	}
+	// post captcha code
+	form := newForm(false).
+		WithString("ac", "security_code").
+		WithString("type", "web").
+		WithString("code", code).
+		WithString("sign", signResult.Sign).
+		WithString("cb", session.Callback)
+	submitResult := &_BasicResult{}
+	err = c.requestJson(apiCaptchaSubmit, nil, form, submitResult)
+	if err == nil && !submitResult.State {
+		err = ErrCaptchaFailed
+	}
+	return
 }

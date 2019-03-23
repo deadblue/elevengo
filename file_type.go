@@ -13,7 +13,7 @@ const (
 	FileListMaxLimit = 1000
 )
 
-type FileBasicResult struct {
+type _BasicResult struct {
 	State       bool    `json:"state"`
 	ErrorNo     int     `json:"errNo"`
 	ErrorType   *string `json:"errtype"`
@@ -40,7 +40,7 @@ type FileData struct {
 }
 
 type FileListResult struct {
-	FileBasicResult
+	_BasicResult
 	TotalCount int           `json:"count"`
 	SysCount   int           `json:"sys_count"`
 	Offset     int           `json:"offset"`
@@ -51,7 +51,7 @@ type FileListResult struct {
 }
 
 type FileSearchResult struct {
-	FileBasicResult
+	_BasicResult
 	TotalCount int         `json:"count"`
 	Offset     int         `json:"offset"`
 	PageSize   int         `json:"page_size"`
@@ -67,12 +67,12 @@ type FileInfoData struct {
 }
 
 type FileInfoResult struct {
-	FileBasicResult
+	_BasicResult
 	Data []*FileInfoData `json:"data"`
 }
 
 type FileAddResult struct {
-	FileBasicResult
+	_BasicResult
 	AreaId       NumberString `json:"aid"`
 	CategoryId   NumberString `json:"cid"`
 	CategoryName string       `json:"cname"`
@@ -88,7 +88,7 @@ type CategoryGetResult struct {
 }
 
 type FileDownloadResult struct {
-	FileBasicResult
+	_BasicResult
 	FileId   string `json:"file_id"`
 	FileName string `json:"file_name"`
 	FileSize string `json:"file_size"`

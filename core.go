@@ -1,6 +1,7 @@
 package elevengo
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -60,5 +61,19 @@ func (c *Client) requestJson(url string, qs *_QueryString, form *_Form, result i
 		return nil
 	} else {
 		return json.Unmarshal(data, result)
+	}
+}
+
+func (c *Client) requestJsonp(url string, qs *_QueryString, result interface{}) (err error) {
+	data, err := c.request(url, qs, nil)
+	if err != nil {
+		return
+	}
+	// find json data from jsonp string
+	left, right := bytes.IndexByte(data, '('), bytes.LastIndexByte(data, ')')
+	if left < 0 || right < 0 {
+		return ErrInvalidResult
+	} else {
+		return json.Unmarshal(data[left+1:right], result)
 	}
 }
