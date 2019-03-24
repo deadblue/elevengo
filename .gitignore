@@ -92,3 +92,4 @@ fabric.properties
 
 ### Custom
 *_test.go
+go.sum
