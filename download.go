@@ -7,7 +7,7 @@ func (c *Client) GetDownloadInfo(pickcode string) (info *DownloadInfo, err error
 	qs := newQueryString().
 		WithString("pickcode", pickcode).
 		WithTimestamp("_")
-	result := &FileDownloadResult{}
+	result := &_FileDownloadResult{}
 	err = c.requestJson(apiFileDownload, qs, nil, result)
 	if err == nil && !result.State {
 		err = apiError(result.ErrorNo)
