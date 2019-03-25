@@ -8,15 +8,6 @@ import (
 	"time"
 )
 
-type _UserInfo struct {
-	UserId string
-}
-
-type _OfflineToken struct {
-	Sign string
-	Time int64
-}
-
 type Client struct {
 	jar http.CookieJar
 	hc  *http.Client
@@ -24,22 +15,6 @@ type Client struct {
 
 	info    *_UserInfo
 	offline *_OfflineToken
-}
-
-type Options struct {
-	// The UserAgent
-	UserAgent string
-
-	// Do not use proxy in environment
-	DisableProxy bool
-
-	// Max idle connections number per host
-	MaxIdleConns int
-
-	// Enable debug mode
-	// When enabled, the client:
-	//  * Does not verify server certificate
-	Debug bool
 }
 
 func New(opts *Options) *Client {

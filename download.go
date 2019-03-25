@@ -2,17 +2,6 @@ package elevengo
 
 import "net/url"
 
-type DownloadCookie struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-}
-
-type DownloadInfo struct {
-	Url       string
-	UserAgent string
-	Cookies   []*DownloadCookie
-}
-
 func (c *Client) GetDownloadInfo(pickcode string) (info *DownloadInfo, err error) {
 	// call API to get download url
 	qs := newQueryString().

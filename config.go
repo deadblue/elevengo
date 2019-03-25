@@ -16,6 +16,11 @@ var (
 )
 
 const (
+	FileListMinLimit = 10
+	FileListMaxLimit = 1000
+)
+
+const (
 	domain = ".115.com"
 
 	apiBasic = "https://115.com/"

@@ -7,32 +7,6 @@ import (
 	"os"
 )
 
-type _UploadInitResult struct {
-	AccessKeyId string `json:"accessid"`
-	Callback    string `json:"callback"`
-	Expire      int    `json:"expire"`
-	UploadUrl   string `json:"host"`
-	ObjectKey   string `json:"object"`
-	Policy      string `json:"policy"`
-	Signature   string `json:"signature"`
-}
-
-type _UploadResult struct {
-	State   bool
-	Code    int
-	Message string
-	Data    *UploadedFile
-}
-
-type UploadedFile struct {
-	CategoryId string `json:"cid"`
-	FileId     string `json:"file_id"`
-	FileName   string `json:"file_name"`
-	FizeSize   string `json:"file_size"`
-	PickCode   string `json:"pick_code"`
-	Sha1       string `json:"sha1"`
-}
-
 func (c *Client) UploadFile(categoryId, localFile, storeName string) (file *UploadedFile, err error) {
 	// open local file
 	fp, err := os.OpenFile(localFile, os.O_RDONLY, 0644)

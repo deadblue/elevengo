@@ -5,7 +5,7 @@ func (c *Client) updateOfflineSpace() (err error) {
 		WithString("ct", "offline").
 		WithString("ac", "space").
 		WithTimestamp("_")
-	result := &OfflineSpaceResult{}
+	result := &_OfflineSpaceResult{}
 	if err = c.requestJson(apiBasic, qs, nil, result); err != nil {
 		return
 	}
