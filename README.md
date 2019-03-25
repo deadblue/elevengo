@@ -21,27 +21,38 @@ if err := client.ImportCredentials(cr); err != nil {
 }
 
 // Call APIs
-// TODO
+result, err := client.ListFile("0", 0, 100)
+if err != nil {
+    panic(err)
+}
 ```
 
 # Features
 
 * Login
- * [x] Import credentials from cookies
- * [ ] Login via QRCode
- * [ ] Login via Account/Password (No idea now)
+  * [x] Import credentials from cookies
+  * [ ] Login via QRCode
+  * [ ] Login via Account/Password (No idea now)
 * File API
- * [x] List/Search
- * [x] Create folder
- * [x] Rename/Move/Copy
- * [x] Delete
- * [x] Download
+  * [x] List
+  * [x] Search
+  * [x] Rename
+  * [x] Move
+  * [x] Copy
+  * [x] Delete
+  * [x] Download
+  * [x] Upload
+  * [x] Create folder
 * Offline API
- * [x] List tasks
- * [x] Create task
- * [x] Delete/Clear tasks
+  * [x] List tasks
+  * [x] Create url task
+  * [ ] Create task
+    * [x] Create URL task
+    * [ ] Create torrent task
+  * [x] Delete tasks
+  * [x] Clear tasks
 * Other
- * [X] Captcha
+  * [X] Captcha
 
 # License
 
