@@ -60,45 +60,53 @@ func newForm(isMultipart bool) *_Form {
 	return &body
 }
 
-func (rb *_Form) WithString(name, value string) *_Form {
-	if rb.isMultiplart {
-		rb.partsWriter.WriteField(name, value)
+func (f *_Form) WithString(name, value string) *_Form {
+	if f.isMultiplart {
+		f.partsWriter.WriteField(name, value)
 	} else {
-		rb.form.Set(name, value)
+		f.form.Set(name, value)
 	}
-	return rb
+	return f
 }
 
-func (rb *_Form) WithInt(name string, value int) *_Form {
-	return rb.WithString(name, strconv.Itoa(value))
+func (f *_Form) WithInt(name string, value int) *_Form {
+	return f.WithString(name, strconv.Itoa(value))
 }
 
-func (rb *_Form) WithInt64(name string, value int64) *_Form {
-	return rb.WithString(name, strconv.FormatInt(value, 10))
+func (f *_Form) WithInt64(name string, value int64) *_Form {
+	return f.WithString(name, strconv.FormatInt(value, 10))
 }
 
-func (rb *_Form) WithStrings(name string, value []string) *_Form {
+func (f *_Form) WithStrings(name string, value []string) *_Form {
 	for index, subValue := range value {
 		subName := fmt.Sprintf("%s[%d]", name, index)
-		rb.WithString(subName, subValue)
+		f.WithString(subName, subValue)
 	}
-	return rb
+	return f
 }
 
-func (rb *_Form) ContentType() string {
-	if rb.isMultiplart {
-		return rb.partsWriter.FormDataContentType()
+func (f *_Form) WithFile(name, filename string, data io.Reader) *_Form {
+	if f.isMultiplart {
+		w, _ := f.partsWriter.CreateFormFile(name, filename)
+		io.Copy(w, data)
+	}
+	return f
+}
+
+func (f *_Form) ContentType() string {
+	if f.isMultiplart {
+		return f.partsWriter.FormDataContentType()
 	} else {
 		return "application/x-www-form-urlencoded"
 	}
 }
 
-func (rb *_Form) Finish() io.Reader {
-	if rb.isMultiplart {
-		rb.partsWriter.Close()
-		return rb.partsBuffer
+func (f *_Form) Finish() io.Reader {
+	if f.isMultiplart {
+		f.partsWriter.Close()
+		return f.partsBuffer
 	} else {
-		return strings.NewReader(rb.form.Encode())
+		return strings.NewReader(f.form.Encode())
 	}
 }
 

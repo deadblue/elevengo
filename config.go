@@ -30,6 +30,7 @@ const (
 	apiFileSearch   = "https://webapi.115.com/files/search"
 	apiFileDownload = "https://webapi.115.com/files/download"
 	apiCategoryGet  = "https://webapi.115.com/category/get"
+	apiUploadInit   = "https://uplb.115.com/3.0/sampleinitupload.php"
 
 	apiOfflineList    = "https://115.com/web/lixian/?ct=lixian&ac=task_lists"
 	apiOfflineAddUrl  = "https://115.com/web/lixian/?ct=lixian&ac=add_task_url"
