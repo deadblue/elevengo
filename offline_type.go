@@ -43,7 +43,7 @@ type OfflineTask struct {
 	Url        string  `json:"url"`
 }
 
-type OfflineTaskListResult struct {
+type OfflineListResult struct {
 	OfflineBasicResult
 	Page       int            `json:"page"`
 	PageCount  int            `json:"page_count"`
@@ -54,14 +54,14 @@ type OfflineTaskListResult struct {
 	Tasks      []*OfflineTask `json:"tasks"`
 }
 
-type OfflineTaskAddUrlResult struct {
+type OfflineAddUrlResult struct {
 	OfflineBasicResult
 	InfoHash string `json:"info_hash"`
 	Name     string `json:"name"`
 	Url      string `json:"url"`
 }
 
-type OfflineTaskAddUrlsResult struct {
+type OfflineAddUrlsResult struct {
 	OfflineBasicResult
-	Result []*OfflineTaskAddUrlResult `json:"result"`
+	Result []*OfflineAddUrlResult `json:"result"`
 }

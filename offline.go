@@ -34,8 +34,8 @@ func (c *Client) callOfflineApi(url string, form *_Form, result interface{}) (er
 	return
 }
 
-func (c *Client) OfflineTaskList(page int) (result *OfflineTaskListResult, err error) {
-	result = &OfflineTaskListResult{}
+func (c *Client) OfflineList(page int) (result *OfflineListResult, err error) {
+	result = &OfflineListResult{}
 	form := newForm(false).WithInt("page", page)
 	if err = c.callOfflineApi(apiOfflineList, form, result); err != nil {
 		return nil, err
@@ -43,18 +43,18 @@ func (c *Client) OfflineTaskList(page int) (result *OfflineTaskListResult, err e
 	return
 }
 
-func (c *Client) OfflineTaskAddUrls(url ...string) (tasks []*OfflineTaskAddUrlResult, err error) {
+func (c *Client) OfflineAddUrls(url ...string) (tasks []*OfflineAddUrlResult, err error) {
 	form := newForm(false)
 	if len(url) == 1 {
 		form.WithString("url", url[0])
-		result := &OfflineTaskAddUrlResult{}
+		result := &OfflineAddUrlResult{}
 		if err = c.callOfflineApi(apiOfflineAddUrl, form, result); err != nil {
 			return
 		}
-		tasks = []*OfflineTaskAddUrlResult{result}
+		tasks = []*OfflineAddUrlResult{result}
 	} else {
 		form.WithStrings("url", url)
-		result := &OfflineTaskAddUrlsResult{}
+		result := &OfflineAddUrlsResult{}
 		if err = c.callOfflineApi(apiOfflineAddUrls, form, result); err != nil {
 			return
 		}
@@ -63,7 +63,7 @@ func (c *Client) OfflineTaskAddUrls(url ...string) (tasks []*OfflineTaskAddUrlRe
 	return
 }
 
-func (c *Client) OfflineTaskDelete(hash ...string) (err error) {
+func (c *Client) OfflineDelete(hash ...string) (err error) {
 	form := newForm(false).WithStrings("hash", hash)
 	result := &OfflineBasicResult{}
 	err = c.callOfflineApi(apiOfflineDelete, form, result)
@@ -73,7 +73,7 @@ func (c *Client) OfflineTaskDelete(hash ...string) (err error) {
 	return
 }
 
-func (c *Client) OfflineTaskClear(flag ClearFlag) (err error) {
+func (c *Client) OfflineClear(flag ClearFlag) (err error) {
 	form := newForm(false).WithInt("flag", int(flag))
 	result := &OfflineBasicResult{}
 	err = c.callOfflineApi(apiOfflineClear, form, result)
