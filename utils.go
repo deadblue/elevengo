@@ -12,6 +12,7 @@ import (
 	"time"
 )
 
+// Request QueryString builder
 type _QueryString struct {
 	values url.Values
 }
@@ -21,25 +22,22 @@ func newQueryString() *_QueryString {
 		values: url.Values{},
 	}
 }
-
 func (qs *_QueryString) WithString(name, value string) *_QueryString {
 	qs.values.Set(name, value)
 	return qs
 }
-
 func (qs *_QueryString) WithInt(name string, value int) *_QueryString {
 	return qs.WithString(name, strconv.Itoa(value))
 }
-
 func (qs *_QueryString) WithTimestamp(name string) *_QueryString {
 	value := strconv.FormatInt(time.Now().UnixNano(), 10)
 	return qs.WithString(name, value)
 }
-
 func (qs *_QueryString) Encode() string {
 	return qs.values.Encode()
 }
 
+// Request Form holder
 type _Form struct {
 	isMultiplart bool
 	form         url.Values
@@ -59,7 +57,6 @@ func newForm(isMultipart bool) *_Form {
 	}
 	return &body
 }
-
 func (f *_Form) WithString(name, value string) *_Form {
 	if f.isMultiplart {
 		f.partsWriter.WriteField(name, value)
@@ -68,15 +65,12 @@ func (f *_Form) WithString(name, value string) *_Form {
 	}
 	return f
 }
-
 func (f *_Form) WithInt(name string, value int) *_Form {
 	return f.WithString(name, strconv.Itoa(value))
 }
-
 func (f *_Form) WithInt64(name string, value int64) *_Form {
 	return f.WithString(name, strconv.FormatInt(value, 10))
 }
-
 func (f *_Form) WithStrings(name string, value []string) *_Form {
 	for index, subValue := range value {
 		subName := fmt.Sprintf("%s[%d]", name, index)
@@ -84,7 +78,6 @@ func (f *_Form) WithStrings(name string, value []string) *_Form {
 	}
 	return f
 }
-
 func (f *_Form) WithFile(name, filename string, data io.Reader) *_Form {
 	if f.isMultiplart {
 		w, _ := f.partsWriter.CreateFormFile(name, filename)
@@ -92,7 +85,6 @@ func (f *_Form) WithFile(name, filename string, data io.Reader) *_Form {
 	}
 	return f
 }
-
 func (f *_Form) ContentType() string {
 	if f.isMultiplart {
 		return f.partsWriter.FormDataContentType()
@@ -100,7 +92,6 @@ func (f *_Form) ContentType() string {
 		return "application/x-www-form-urlencoded"
 	}
 }
-
 func (f *_Form) Finish() io.Reader {
 	if f.isMultiplart {
 		f.partsWriter.Close()
@@ -131,4 +122,30 @@ func (ns *NumberString) UnmarshalJSON(b []byte) error {
 		}
 	}
 	return nil
+}
+
+type SortOption struct {
+	flag string
+	asc  bool
+}
+
+func (so *SortOption) OrderByTime() *SortOption {
+	so.flag = orderFlagTime
+	return so
+}
+func (so *SortOption) OrderByName() *SortOption {
+	so.flag = orderFlagName
+	return so
+}
+func (so *SortOption) OrderBySize() *SortOption {
+	so.flag = orderFlagTime
+	return so
+}
+func (so *SortOption) Asc() *SortOption {
+	so.asc = true
+	return so
+}
+func (so *SortOption) Desc() *SortOption {
+	so.asc = false
+	return so
 }

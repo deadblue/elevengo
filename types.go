@@ -19,11 +19,6 @@ type Options struct {
 
 // structs for File API
 
-type SortOptions struct {
-	Flag *OrderFlag
-	Asc  bool
-}
-
 type FolderData struct {
 	AreaId     NumberString `json:"aid"`
 	CategoryId NumberString `json:"cid"`
@@ -91,14 +86,6 @@ type CategoryGetResult struct {
 
 // structs for Offline API
 
-type OfflineBasicResult struct {
-	State        bool    `json:"state"`
-	ErrorNo      int     `json:"errno"`
-	ErrorCode    int     `json:"errcode"`
-	ErrorType    *string `json:"errtype"`
-	ErrorMessage *string `json:"error_msg"`
-}
-
 type OfflineTask struct {
 	InfoHash   string  `json:"info_hash"`
 	Status     int     `json:"status"`
@@ -113,7 +100,7 @@ type OfflineTask struct {
 }
 
 type OfflineListResult struct {
-	OfflineBasicResult
+	_OfflineBasicResult
 	Page       int            `json:"page"`
 	PageCount  int            `json:"page_count"`
 	PageRow    int            `json:"page_row"`
@@ -124,14 +111,14 @@ type OfflineListResult struct {
 }
 
 type OfflineAddUrlResult struct {
-	OfflineBasicResult
+	_OfflineBasicResult
 	InfoHash string `json:"info_hash"`
 	Name     string `json:"name"`
 	Url      string `json:"url"`
 }
 
 type OfflineAddUrlsResult struct {
-	OfflineBasicResult
+	_OfflineBasicResult
 	Result []*OfflineAddUrlResult `json:"result"`
 }
 

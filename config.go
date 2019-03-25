@@ -42,9 +42,15 @@ const (
 	apiOfflineAddUrls = "https://115.com/web/lixian/?ct=lixian&ac=add_task_urls"
 	apiOfflineDelete  = "https://115.com/web/lixian/?ct=lixian&ac=task_del"
 	apiOfflineClear   = "https://115.com/web/lixian/?ct=lixian&ac=task_clear"
+	apiOfflineTorrent = "https://115.com/web/lixian/?ct=lixian&ac=torrent"
+	apiOfflineAddBt   = "https://115.com/web/lixian/?ct=lixian&ac=add_task_bt"
 
 	apiCaptcha       = "https://captchaapi.115.com/"
 	apiCaptchaSubmit = "https://webapi.115.com/user/captcha"
+
+	orderFlagTime = "user_ptime"
+	orderFlagName = "file_name"
+	orderFlagSize = "file_size"
 )
 
 const (

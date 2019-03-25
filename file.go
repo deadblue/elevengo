@@ -12,7 +12,7 @@ package elevengo
 //
 // `sort` is optional, pass `nil` will use the default sort option:
 // sorting by modify time in desc.
-func (c *Client) FileList(categoryId string, offset, limit int, sort *SortOptions) (result *FileListResult, err error) {
+func (c *Client) FileList(categoryId string, offset, limit int, sort *SortOption) (result *FileListResult, err error) {
 	if limit < FileListMinLimit {
 		limit = FileListMinLimit
 	} else if limit > FileListMaxLimit {
@@ -21,7 +21,7 @@ func (c *Client) FileList(categoryId string, offset, limit int, sort *SortOption
 	qs := newQueryString().
 		WithString("aid", "1").
 		WithString("cid", categoryId).
-		WithString("o", string(OrderByTime)).
+		WithString("o", orderFlagTime).
 		WithString("asc", "0").
 		WithString("show_dir", "1").
 		WithString("snap", "0").
@@ -31,11 +31,11 @@ func (c *Client) FileList(categoryId string, offset, limit int, sort *SortOption
 		WithInt("limit", limit)
 	// override default sort parameters
 	if sort != nil {
-		if sort.Asc {
+		if sort.asc {
 			qs.WithString("asc", "1")
 		}
-		if sort.Flag != nil {
-			qs.WithString("o", string(*sort.Flag))
+		if sort.flag != "" {
+			qs.WithString("o", sort.flag)
 		}
 	}
 	result = &FileListResult{}
