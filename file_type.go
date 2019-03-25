@@ -22,6 +22,11 @@ type _BasicResult struct {
 	Message     *string `json:"msg"`
 }
 
+type SortOptions struct {
+	Flag *OrderFlag
+	Asc  bool
+}
+
 type FolderData struct {
 	AreaId     NumberString `json:"aid"`
 	CategoryId NumberString `json:"cid"`

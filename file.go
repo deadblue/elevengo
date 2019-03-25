@@ -1,6 +1,18 @@
 package elevengo
 
-func (c *Client) FileList(categoryId string, sort OrderFlag, offset, limit int) (result *FileListResult, err error) {
+// Get file list under the specific category.
+//
+// "0" is a special categoryId which means the root,
+// everything starts from here.
+//
+// `offset` is base on zero.
+//
+// `limit` can not be lower than `FileListMinLimit`,
+//  and can not be higher than `FileListMaxLimit`
+//
+// `sort` is optional, pass `nil` will use the default sort option:
+// sorting by modify time in desc.
+func (c *Client) FileList(categoryId string, offset, limit int, sort *SortOptions) (result *FileListResult, err error) {
 	if limit < FileListMinLimit {
 		limit = FileListMinLimit
 	} else if limit > FileListMaxLimit {
@@ -9,14 +21,23 @@ func (c *Client) FileList(categoryId string, sort OrderFlag, offset, limit int) 
 	qs := newQueryString().
 		WithString("aid", "1").
 		WithString("cid", categoryId).
-		WithString("o", string(sort)).
-		WithString("asc", "1").
+		WithString("o", string(OrderByTime)).
+		WithString("asc", "0").
 		WithString("show_dir", "1").
 		WithString("snap", "0").
 		WithString("natsort", "1").
 		WithString("format", "json").
 		WithInt("offset", offset).
 		WithInt("limit", limit)
+	// override default sort parameters
+	if sort != nil {
+		if sort.Asc {
+			qs.WithString("asc", "1")
+		}
+		if sort.Flag != nil {
+			qs.WithString("o", string(*sort.Flag))
+		}
+	}
 	result = &FileListResult{}
 	err = c.requestJson(apiFileList, qs, nil, result)
 	if err == nil && !result.State {
@@ -25,7 +46,19 @@ func (c *Client) FileList(categoryId string, sort OrderFlag, offset, limit int) 
 	return
 }
 
+// Search files which's name contains the specific keyword,
+// the searching is recursive, starts from the specific category.
+//
+// `keyword` can not be empty
+//
+// `offset` is base on zero.
+//
+// `limit` can not be lower than `FileListMinLimit`,
+//  and can not be higher than `FileListMaxLimit`
 func (c *Client) FileSearch(categoryId, keyword string, offset, limit int) (result *FileSearchResult, err error) {
+	if len(keyword) == 0 {
+		return nil, ErrEmptyKeyword
+	}
 	if limit < FileListMinLimit {
 		limit = FileListMinLimit
 	} else if limit > FileListMaxLimit {

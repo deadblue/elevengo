@@ -18,5 +18,6 @@ func (e *ElevenFiveError) Error() string {
 
 var (
 	ErrInvalidResult = &ElevenFiveError{"invalid API result"}
+	ErrEmptyKeyword  = &ElevenFiveError{"empty key word"}
 	ErrCaptchaFailed = &ElevenFiveError{"captcha code incorrect"}
 )
