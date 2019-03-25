@@ -110,16 +110,15 @@ type OfflineListResult struct {
 	Tasks      []*OfflineTask `json:"tasks"`
 }
 
-type OfflineAddUrlResult struct {
+type OfflineAddResult struct {
 	_OfflineBasicResult
 	InfoHash string `json:"info_hash"`
 	Name     string `json:"name"`
-	Url      string `json:"url"`
 }
 
-type OfflineAddUrlsResult struct {
+type _OfflineBatchAddResult struct {
 	_OfflineBasicResult
-	Result []*OfflineAddUrlResult `json:"result"`
+	Result []*OfflineAddResult `json:"result"`
 }
 
 // structs for Captcha API

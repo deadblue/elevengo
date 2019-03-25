@@ -38,10 +38,18 @@ type _UploadInitResult struct {
 }
 
 type _UploadResult struct {
-	State   bool   `json:"state"`
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-	Data    *UploadedFile
+	State   bool          `json:"state"`
+	Code    int           `json:"code"`
+	Message string        `json:"message"`
+	Data    *UploadedFile `json:"data"`
+}
+
+type _OfflineBasicResult struct {
+	State        bool    `json:"state"`
+	ErrorNo      int     `json:"errno"`
+	ErrorCode    int     `json:"errcode"`
+	ErrorType    string  `json:"errtype"`
+	ErrorMessage *string `json:"error_msg"`
 }
 
 type _OfflineSpaceResult struct {
@@ -53,6 +61,24 @@ type _OfflineSpaceResult struct {
 	Limit int64   `json:"limit"`
 	Sign  string  `json:"sign"`
 	Time  int64   `json:"time"`
+}
+
+type _OfflineGetDirResult struct {
+	CategoryId string `json:"cid"`
+}
+
+type _TorrentFile struct {
+	Path string `json:"path"`
+	Size int64  `json:"size"`
+}
+
+type _OfflineTorrentResult struct {
+	_OfflineBasicResult
+	TorrentName string          `json:"torrent_name"`
+	InfoHash    string          `json:"info_hash"`
+	FileSize    int64           `json:"file_size"`
+	FileCount   int             `json:"file_count"`
+	FileList    []*_TorrentFile `json:"torrent_filelist_web"`
 }
 
 type _CaptchaSignResult struct {
