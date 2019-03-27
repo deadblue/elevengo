@@ -75,7 +75,7 @@ func (c *Client) OfflineClear(flag ClearFlag) (err error) {
 	return
 }
 
-func (c *Client) OfflineAddUrl(url string) (infoHash string, err error) {
+func (c *Client) OfflineAddUrl(url string) (hash string, err error) {
 	form := newForm(false).
 		WithString("url", url)
 	result := &_OfflineAddResult{}
@@ -84,7 +84,7 @@ func (c *Client) OfflineAddUrl(url string) (infoHash string, err error) {
 		if !result.State {
 			err = apiError(result.ErrorNo)
 		} else {
-			infoHash = result.InfoHash
+			hash = result.InfoHash
 		}
 	}
 	return
@@ -92,7 +92,7 @@ func (c *Client) OfflineAddUrl(url string) (infoHash string, err error) {
 
 type TorrentFileFilter func(path string, size int64) bool
 
-func (c *Client) OfflineAddTorrent(torrentFile string, filter TorrentFileFilter) (infoHash string, err error) {
+func (c *Client) OfflineAddTorrent(torrentFile string, filter TorrentFileFilter) (hash string, err error) {
 	// get torrent dir
 	qs := newQueryString().
 		WithString("ct", "lixian").
@@ -137,7 +137,7 @@ func (c *Client) OfflineAddTorrent(torrentFile string, filter TorrentFileFilter)
 		if !result.State {
 			err = apiError(result.ErrorNo)
 		} else {
-			infoHash = result.InfoHash
+			hash = result.InfoHash
 		}
 	}
 	return
