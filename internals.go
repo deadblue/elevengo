@@ -5,14 +5,15 @@ type _UserInfo struct {
 }
 
 type _OfflineToken struct {
-	Sign string
-	Time int64
+	Sign        string
+	Time        int64
+	QuotaTotal  int
+	QuotaRemain int
 }
 
 type _BasicResult struct {
 	State       bool    `json:"state"`
 	Error       *string `json:"error"`
-	ErrorCode   int     `json:"errCode"`
 	ErrorType   *string `json:"errtype"`
 	MessageCode int     `json:"msg_code"`
 	Message     *string `json:"msg"`
@@ -132,9 +133,10 @@ type _OfflineListResult struct {
 	Tasks      []*OfflineTask `json:"tasks"`
 }
 
-type _OfflineBatchAddResult struct {
+type _OfflineAddResult struct {
 	_OfflineBasicResult
-	Result []*OfflineAddResult `json:"result"`
+	InfoHash string `json:"info_hash"`
+	Name     string `json:"name"`
 }
 
 type _OfflineGetDirResult struct {

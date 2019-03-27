@@ -11,12 +11,6 @@ var (
 	_RegexpUserId = regexp.MustCompile(`(?m)USER_ID = '([0-9]+)';`)
 )
 
-type Credentials struct {
-	UID  string
-	CID  string
-	SEID string
-}
-
 func (c *Client) ImportCredentials(cr *Credentials) (err error) {
 	cks := []*http.Cookie{
 		{Name: "115_lang", Value: "zh", Domain: domain, Path: "/", HttpOnly: false},

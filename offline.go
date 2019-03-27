@@ -39,11 +39,18 @@ func (c *Client) callOfflineApi(url string, form *_Form, result interface{}) (er
 	return
 }
 
-func (c *Client) OfflineList(page int) (result *_OfflineListResult, err error) {
-	result = &_OfflineListResult{}
+func (c *Client) OfflineList(page int) (tasks []*OfflineTask, remain int, err error) {
 	form := newForm(false).WithInt("page", page)
-	if err = c.callOfflineApi(apiOfflineList, form, result); err != nil {
-		return nil, err
+	result := &_OfflineListResult{}
+	err = c.callOfflineApi(apiOfflineList, form, result)
+	if err == nil {
+		if !result.State {
+			err = apiError(result.ErrorNo)
+		} else {
+			c.offline.QuotaTotal = result.QuotaTotal
+			c.offline.QuotaRemain = result.Quota
+			tasks, remain = result.Tasks, result.PageCount-1
+		}
 	}
 	return
 }
@@ -53,7 +60,7 @@ func (c *Client) OfflineDelete(hash ...string) (err error) {
 	result := &_OfflineBasicResult{}
 	err = c.callOfflineApi(apiOfflineDelete, form, result)
 	if err == nil && !result.State {
-		err = apiError(result.ErrorCode)
+		err = apiError(result.ErrorNo)
 	}
 	return
 }
@@ -63,34 +70,29 @@ func (c *Client) OfflineClear(flag ClearFlag) (err error) {
 	result := &_OfflineBasicResult{}
 	err = c.callOfflineApi(apiOfflineClear, form, result)
 	if err == nil && !result.State {
-		err = apiError(result.ErrorCode)
+		err = apiError(result.ErrorNo)
 	}
 	return
 }
 
-func (c *Client) OfflineAddUrls(url ...string) (tasks []*OfflineAddResult, err error) {
-	form := newForm(false)
-	if len(url) == 1 {
-		form.WithString("url", url[0])
-		result := &OfflineAddResult{}
-		if err = c.callOfflineApi(apiOfflineAddUrl, form, result); err != nil {
-			return
+func (c *Client) OfflineAddUrl(url string) (infoHash string, err error) {
+	form := newForm(false).
+		WithString("url", url)
+	result := &_OfflineAddResult{}
+	err = c.callOfflineApi(apiOfflineAddUrl, form, result)
+	if err == nil {
+		if !result.State {
+			err = apiError(result.ErrorNo)
+		} else {
+			infoHash = result.InfoHash
 		}
-		tasks = []*OfflineAddResult{result}
-	} else {
-		form.WithStrings("url", url)
-		result := &_OfflineBatchAddResult{}
-		if err = c.callOfflineApi(apiOfflineAddUrls, form, result); err != nil {
-			return
-		}
-		tasks = result.Result
 	}
 	return
 }
 
 type TorrentFileFilter func(path string, size int64) bool
 
-func (c *Client) OfflineAddBT(torrentFile string, filter TorrentFileFilter) (result *OfflineAddResult, err error) {
+func (c *Client) OfflineAddTorrent(torrentFile string, filter TorrentFileFilter) (infoHash string, err error) {
 	// get torrent dir
 	qs := newQueryString().
 		WithString("ct", "lixian").
@@ -102,14 +104,14 @@ func (c *Client) OfflineAddBT(torrentFile string, filter TorrentFileFilter) (res
 		return
 	}
 	// upload torrent
-	uf, err := c.UploadFile(gdr.CategoryId, torrentFile, "")
+	cf, err := c.UploadFile(gdr.CategoryId, torrentFile, "")
 	if err != nil {
 		return
 	}
 	// get torrent info
 	form := newForm(false).
-		WithString("pickcode", uf.PickCode).
-		WithString("sha1", uf.Sha1)
+		WithString("pickcode", cf.PickCode).
+		WithString("sha1", cf.Sha1)
 	tr := &_OfflineTorrentResult{}
 	if err = c.callOfflineApi(apiOfflineTorrent, form, tr); err != nil {
 		return
@@ -123,16 +125,20 @@ func (c *Client) OfflineAddBT(torrentFile string, filter TorrentFileFilter) (res
 		}
 	}
 	if selectCount == 0 {
-		return nil, ErrOfflineNothindToAdd
+		return "", ErrOfflineNothindToAdd
 	}
 	form = newForm(false).
 		WithString("savepath", tr.TorrentName).
 		WithString("info_hash", tr.InfoHash).
 		WithString("wanted", strings.Join(wanted[:selectCount], ","))
-	result = &OfflineAddResult{}
+	result := &_OfflineAddResult{}
 	err = c.callOfflineApi(apiOfflineAddBt, form, result)
-	if err != nil {
-		return
+	if err == nil {
+		if !result.State {
+			err = apiError(result.ErrorNo)
+		} else {
+			infoHash = result.InfoHash
+		}
 	}
 	return
 }

@@ -17,7 +17,11 @@ type Options struct {
 	Debug bool
 }
 
-// structs for File API
+type Credentials struct {
+	UID  string
+	CID  string
+	SEID string
+}
 
 // File info struct
 type CloudFile struct {
@@ -43,8 +47,6 @@ type CategoryInfoResult struct {
 	UpdateTime   int64  `json:"utime"`
 }
 
-// structs for Offline API
-
 type OfflineTask struct {
 	InfoHash   string  `json:"info_hash"`
 	Status     int     `json:"status"`
@@ -58,21 +60,11 @@ type OfflineTask struct {
 	Url        string  `json:"url"`
 }
 
-type OfflineAddResult struct {
-	_OfflineBasicResult
-	InfoHash string `json:"info_hash"`
-	Name     string `json:"name"`
-}
-
-// structs for Captcha API
-
 type CaptchaSession struct {
 	Callback  string
 	CodeValue []byte
 	CodeKeys  []byte
 }
-
-// structs for download API
 
 type DownloadCookie struct {
 	Name  string
