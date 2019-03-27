@@ -148,7 +148,7 @@ type _TorrentFile struct {
 	Size int64  `json:"size"`
 }
 
-type _OfflineTorrentResult struct {
+type _OfflineTorrentInfoResult struct {
 	_OfflineBasicResult
 	TorrentName string          `json:"torrent_name"`
 	InfoHash    string          `json:"info_hash"`

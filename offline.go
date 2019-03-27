@@ -112,13 +112,13 @@ func (c *Client) OfflineAddTorrent(torrentFile string, filter TorrentFileFilter)
 	form := newForm(false).
 		WithString("pickcode", cf.PickCode).
 		WithString("sha1", cf.Sha1)
-	tr := &_OfflineTorrentResult{}
-	if err = c.callOfflineApi(apiOfflineTorrent, form, tr); err != nil {
+	tir := &_OfflineTorrentInfoResult{}
+	if err = c.callOfflineApi(apiOfflineTorrentInfo, form, tir); err != nil {
 		return
 	}
 	// add bt task
-	wanted, selectCount := make([]string, tr.FileCount), 0
-	for index, tf := range tr.FileList {
+	wanted, selectCount := make([]string, tir.FileCount), 0
+	for index, tf := range tir.FileList {
 		if filter == nil || filter(tf.Path, tf.Size) {
 			wanted[selectCount] = strconv.Itoa(index)
 			selectCount += 1
@@ -128,11 +128,11 @@ func (c *Client) OfflineAddTorrent(torrentFile string, filter TorrentFileFilter)
 		return "", ErrOfflineNothindToAdd
 	}
 	form = newForm(false).
-		WithString("savepath", tr.TorrentName).
-		WithString("info_hash", tr.InfoHash).
+		WithString("savepath", tir.TorrentName).
+		WithString("info_hash", tir.InfoHash).
 		WithString("wanted", strings.Join(wanted[:selectCount], ","))
 	result := &_OfflineAddResult{}
-	err = c.callOfflineApi(apiOfflineAddBt, form, result)
+	err = c.callOfflineApi(apiOfflineAddTorrent, form, result)
 	if err == nil {
 		if !result.State {
 			err = apiError(result.ErrorNo)
