@@ -19,69 +19,28 @@ type Options struct {
 
 // structs for File API
 
-type FolderData struct {
-	AreaId     NumberString `json:"aid"`
-	CategoryId NumberString `json:"cid"`
-	ParentId   NumberString `json:"pid"`
-	Name       string       `json:"name"`
+// File info struct
+type CloudFile struct {
+	ParentId   string
+	CategoryId string
+	FileId     string
+	IsCategory bool
+	IsSystem   bool
+	Name       string
+	Size       int64
+	PickCode   string
+	Sha1       string
+	CreateTime int64
+	UpdateTime int64
 }
 
-type FileData struct {
-	FileId     *string `json:"fid"`
-	CategoryId *string `json:"cid"`
-	ParentId   *string `json:"pid"`
-	Name       string  `json:"n"`
-	Size       int     `json:"s"`
-	PickCode   string  `json:"pc"`
-	Sha1       string  `json:"sha"`
-}
-
-type FileListResult struct {
-	_BasicResult
-	TotalCount int           `json:"count"`
-	SysCount   int           `json:"sys_count"`
-	Offset     int           `json:"offset"`
-	Limit      int           `json:"limit"`
-	PageSize   int           `json:"page_size"`
-	Path       []*FolderData `json:"path"`
-	Data       []*FileData   `json:"data"`
-}
-
-type FileSearchResult struct {
-	_BasicResult
-	TotalCount int         `json:"count"`
-	Offset     int         `json:"offset"`
-	PageSize   int         `json:"page_size"`
-	Folder     *FolderData `json:"folder"`
-	Data       []*FileData `json:"data"`
-}
-
-type FileInfoData struct {
-	FileId   string `json:"file_id"`
-	FileName string `json:"file_name"`
-	PickCode string `json:"pick_code"`
-	Sha1     string `json:"sha1"`
-}
-
-type FileInfoResult struct {
-	_BasicResult
-	Data []*FileInfoData `json:"data"`
-}
-
-type FileAddResult struct {
-	_BasicResult
-	AreaId       NumberString `json:"aid"`
-	CategoryId   NumberString `json:"cid"`
-	CategoryName string       `json:"cname"`
-	FileId       string       `json:"file_id"`
-	FileName     string       `json:"file_name"`
-}
-
-type CategoryGetResult struct {
+type CategoryInfoResult struct {
 	CategoryName string `json:"file_name"`
+	Size         string `json:"size"`
 	FileCount    string `json:"count"`
 	FolderCount  string `json:"folder_count"`
-	Size         string `json:"size"`
+	CreateTime   int64  `json:"ptime"`
+	UpdateTime   int64  `json:"utime"`
 }
 
 // structs for Offline API
@@ -99,26 +58,10 @@ type OfflineTask struct {
 	Url        string  `json:"url"`
 }
 
-type OfflineListResult struct {
-	_OfflineBasicResult
-	Page       int            `json:"page"`
-	PageCount  int            `json:"page_count"`
-	PageRow    int            `json:"page_row"`
-	Count      int            `json:"count"`
-	Quota      int            `json:"quota"`
-	QuotaTotal int            `json:"total"`
-	Tasks      []*OfflineTask `json:"tasks"`
-}
-
 type OfflineAddResult struct {
 	_OfflineBasicResult
 	InfoHash string `json:"info_hash"`
 	Name     string `json:"name"`
-}
-
-type _OfflineBatchAddResult struct {
-	_OfflineBasicResult
-	Result []*OfflineAddResult `json:"result"`
 }
 
 // structs for Captcha API
@@ -140,15 +83,4 @@ type DownloadInfo struct {
 	Url       string
 	UserAgent string
 	Cookies   []*DownloadCookie
-}
-
-// structs for upload API
-
-type UploadedFile struct {
-	CategoryId string `json:"cid"`
-	FileId     string `json:"file_id"`
-	FileName   string `json:"file_name"`
-	FizeSize   string `json:"file_size"`
-	PickCode   string `json:"pick_code"`
-	Sha1       string `json:"sha1"`
 }

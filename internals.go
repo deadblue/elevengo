@@ -11,15 +11,64 @@ type _OfflineToken struct {
 
 type _BasicResult struct {
 	State       bool    `json:"state"`
-	ErrorNo     int     `json:"errNo"`
-	ErrorType   *string `json:"errtype"`
 	Error       *string `json:"error"`
+	ErrorCode   int     `json:"errCode"`
+	ErrorType   *string `json:"errtype"`
 	MessageCode int     `json:"msg_code"`
 	Message     *string `json:"msg"`
 }
 
-type _FileDownloadResult struct {
+type _FileRetrieveResult struct {
 	_BasicResult
+	ErrorNo int `json:"errNo"`
+}
+
+type _FileOperateResult struct {
+	_BasicResult
+	ErrorNo string `json:"errno"`
+}
+
+type _InnerFileListData struct {
+	ParentId   *string `json:"pid"`
+	CategoryId string  `json:"cid"`
+	FileId     *string `json:"fid"`
+	Name       string  `json:"n"`
+	Size       int64   `json:"s"`
+	PickCode   string  `json:"pc"`
+	Sha1       *string `json:"sha"`
+	CreateTime string  `json:"tp"`
+	UpdateTime string  `json:"te"`
+}
+
+type _FileListResult struct {
+	_FileRetrieveResult
+	TotalCount int                   `json:"count"`
+	SysCount   int                   `json:"sys_count"`
+	Offset     int                   `json:"offset"`
+	Limit      int                   `json:"limit"`
+	PageSize   int                   `json:"page_size"`
+	Data       []*_InnerFileListData `json:"data"`
+}
+
+type _FileSearchResult struct {
+	_FileRetrieveResult
+	TotalCount int                   `json:"count"`
+	Offset     int                   `json:"offset"`
+	PageSize   int                   `json:"page_size"`
+	Data       []*_InnerFileListData `json:"data"`
+}
+
+type _FileAddResult struct {
+	_FileOperateResult
+	AreaId       NumberString `json:"aid"`
+	CategoryId   NumberString `json:"cid"`
+	CategoryName string       `json:"cname"`
+	FileId       string       `json:"file_id"`
+	FileName     string       `json:"file_name"`
+}
+
+type _FileDownloadResult struct {
+	_FileRetrieveResult
 	FileId   string `json:"file_id"`
 	FileName string `json:"file_name"`
 	FileSize string `json:"file_size"`
@@ -27,7 +76,7 @@ type _FileDownloadResult struct {
 	FileUrl  string `json:"file_url"`
 }
 
-type _UploadInitResult struct {
+type _FileUploadInitResult struct {
 	AccessKeyId string `json:"accessid"`
 	Callback    string `json:"callback"`
 	Expire      int    `json:"expire"`
@@ -37,19 +86,20 @@ type _UploadInitResult struct {
 	Signature   string `json:"signature"`
 }
 
-type _UploadResult struct {
-	State   bool          `json:"state"`
-	Code    int           `json:"code"`
-	Message string        `json:"message"`
-	Data    *UploadedFile `json:"data"`
+type _InnerFileUploadData struct {
+	CategoryId string `json:"cid"`
+	FileId     string `json:"file_id"`
+	FileName   string `json:"file_name"`
+	FizeSize   string `json:"file_size"`
+	PickCode   string `json:"pick_code"`
+	Sha1       string `json:"sha1"`
 }
 
-type _OfflineBasicResult struct {
-	State        bool    `json:"state"`
-	ErrorNo      int     `json:"errno"`
-	ErrorCode    int     `json:"errcode"`
-	ErrorType    string  `json:"errtype"`
-	ErrorMessage *string `json:"error_msg"`
+type _FileUploadResult struct {
+	State   bool                  `json:"state"`
+	Code    int                   `json:"code"`
+	Message string                `json:"message"`
+	Data    *_InnerFileUploadData `json:"data"`
 }
 
 type _OfflineSpaceResult struct {
@@ -61,6 +111,30 @@ type _OfflineSpaceResult struct {
 	Limit int64   `json:"limit"`
 	Sign  string  `json:"sign"`
 	Time  int64   `json:"time"`
+}
+
+type _OfflineBasicResult struct {
+	State        bool    `json:"state"`
+	ErrorNo      int     `json:"errno"`
+	ErrorCode    int     `json:"errcode"`
+	ErrorType    string  `json:"errtype"`
+	ErrorMessage *string `json:"error_msg"`
+}
+
+type _OfflineListResult struct {
+	_OfflineBasicResult
+	Page       int            `json:"page"`
+	PageCount  int            `json:"page_count"`
+	PageRow    int            `json:"page_row"`
+	Count      int            `json:"count"`
+	Quota      int            `json:"quota"`
+	QuotaTotal int            `json:"total"`
+	Tasks      []*OfflineTask `json:"tasks"`
+}
+
+type _OfflineBatchAddResult struct {
+	_OfflineBasicResult
+	Result []*OfflineAddResult `json:"result"`
 }
 
 type _OfflineGetDirResult struct {

@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 )
 
-func (c *Client) UploadFile(categoryId, localFile, storeName string) (file *UploadedFile, err error) {
+func (c *Client) UploadFile(categoryId, localFile, storeName string) (file *CloudFile, err error) {
 	// open local file
 	fp, err := os.OpenFile(localFile, os.O_RDONLY, 0644)
 	if err != nil {
@@ -29,36 +30,50 @@ func (c *Client) UploadFile(categoryId, localFile, storeName string) (file *Uplo
 	return c.upload(categoryId, storeName, fi.Size(), fp)
 }
 
-func (c *Client) UploadData(categoryId, storeName string, data []byte) (file *UploadedFile, err error) {
+func (c *Client) UploadData(categoryId, storeName string, data []byte) (file *CloudFile, err error) {
 	size, reader := int64(len(data)), bytes.NewReader(data)
 	return c.upload(categoryId, storeName, size, reader)
 }
 
-func (c *Client) upload(categoryId string, storeName string, size int64, data io.Reader) (file *UploadedFile, err error) {
+func (c *Client) upload(categoryId string, storeName string, size int64, data io.Reader) (file *CloudFile, err error) {
 	// get upload parameters
 	form := newForm(false).
 		WithString("userid", c.info.UserId).
 		WithString("target", fmt.Sprintf("U_1_%s", categoryId)).
 		WithString("filename", storeName).
 		WithInt64("filesize", size)
-	ir := &_UploadInitResult{}
-	err = c.requestJson(apiUploadInit, nil, form, ir)
+	uir := &_FileUploadInitResult{}
+	err = c.requestJson(apiFileUploadInit, nil, form, uir)
 	if err != nil {
 		return
 	}
 	// fill upload form
 	form = newForm(true).
-		WithString("OSSAccessKeyId", ir.AccessKeyId).
-		WithString("key", ir.ObjectKey).
-		WithString("policy", ir.Policy).
-		WithString("callback", ir.Callback).
-		WithString("signature", ir.Signature).
+		WithString("OSSAccessKeyId", uir.AccessKeyId).
+		WithString("key", uir.ObjectKey).
+		WithString("policy", uir.Policy).
+		WithString("callback", uir.Callback).
+		WithString("signature", uir.Signature).
 		WithString("name", storeName).
 		WithFile("file", storeName, data)
-	ur := &_UploadResult{}
-	err = c.requestJson(ir.UploadUrl, nil, form, ur)
+	ur := &_FileUploadResult{}
+	err = c.requestJson(uir.UploadUrl, nil, form, ur)
 	if err == nil && !ur.State {
 		err = apiError(ur.Code)
 	}
-	return ur.Data, err
+	if ur.Data == nil {
+		err = ErrUnexpected
+	} else {
+		file = &CloudFile{
+			IsSystem:   false,
+			IsCategory: false,
+			CategoryId: ur.Data.CategoryId,
+			FileId:     ur.Data.FileId,
+			Name:       ur.Data.FileName,
+			PickCode:   ur.Data.PickCode,
+			Sha1:       ur.Data.Sha1,
+		}
+		file.Size, _ = strconv.ParseInt(ur.Data.FizeSize, 10, 64)
+	}
+	return
 }

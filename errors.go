@@ -17,6 +17,7 @@ func (e *ElevenFiveError) Error() string {
 }
 
 var (
+	ErrUnexpected          = &ElevenFiveError{"unexpected"}
 	ErrInvalidResult       = &ElevenFiveError{"invalid API result"}
 	ErrEmptyKeyword        = &ElevenFiveError{"empty key word"}
 	ErrUploadDirectory     = &ElevenFiveError{"can not upload directory"}

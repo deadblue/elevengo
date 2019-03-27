@@ -39,8 +39,8 @@ func (c *Client) callOfflineApi(url string, form *_Form, result interface{}) (er
 	return
 }
 
-func (c *Client) OfflineList(page int) (result *OfflineListResult, err error) {
-	result = &OfflineListResult{}
+func (c *Client) OfflineList(page int) (result *_OfflineListResult, err error) {
+	result = &_OfflineListResult{}
 	form := newForm(false).WithInt("page", page)
 	if err = c.callOfflineApi(apiOfflineList, form, result); err != nil {
 		return nil, err

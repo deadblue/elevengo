@@ -21,7 +21,7 @@ if err := client.ImportCredentials(cr); err != nil {
 }
 
 // Call APIs
-result, err := client.ListFile("0", 0, 100)
+files, err := client.FileList("0", 0, 100)
 if err != nil {
     panic(err)
 }
@@ -46,9 +46,9 @@ if err != nil {
 * Offline API
   * [x] List tasks
   * [x] Create url task
-  * [ ] Create task
+  * [x] Create task
     * [x] Create URL task
-    * [ ] Create torrent task
+    * [x] Create torrent task
   * [x] Delete tasks
   * [x] Clear tasks
 * Other
