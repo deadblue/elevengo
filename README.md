@@ -2,7 +2,7 @@
 
 An API wrapper for 115 NetDisk Service in Golang.
 
-# Usage
+# Exmaple
 
 ```
 import "github.com/deadblue/elevengo"
@@ -20,8 +20,14 @@ if err := client.ImportCredentials(cr); err != nil {
 	panic(err)
 }
 
-// Call APIs
-files, err := client.FileList("0", 0, 100)
+// Get files
+files, remain, err := client.FileList("0", 0, 100)
+if err != nil {
+    panic(err)
+}
+
+// Get offline tasks
+tasks, remain, err := client.OfflineList(1)
 if err != nil {
     panic(err)
 }
