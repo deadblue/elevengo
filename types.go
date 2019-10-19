@@ -1,22 +1,5 @@
 package elevengo
 
-// Options for create `Client`
-type Options struct {
-	// The UserAgent
-	UserAgent string
-
-	// Do not use proxy in environment
-	DisableProxy bool
-
-	// Max idle connections number per host
-	MaxIdleConns int
-
-	// Enable debug mode
-	// When enabled, the client:
-	//  * Does not verify server certificate
-	Debug bool
-}
-
 type Credentials struct {
 	UID  string
 	CID  string
@@ -75,4 +58,7 @@ type DownloadInfo struct {
 	Url       string
 	UserAgent string
 	Cookies   []*DownloadCookie
+}
+
+type VideoInfo struct {
 }

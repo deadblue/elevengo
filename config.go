@@ -1,23 +1,15 @@
 package elevengo
 
-import (
-	"fmt"
-	"time"
-)
-
-const Version = "0.1"
-
-var (
-	defaultIdleConnsPreHost = 100
-	defaultIdleTimeout      = 300 * time.Second
-	defaultConnTimeout      = 30 * time.Second
-	defaultServerTimeout    = 60 * time.Second
-	defaultUserAgent        = fmt.Sprintf("Mozilla/5.0 (Project NTR115; elevengo/%s)", Version)
-)
+const Version = "0.0.1"
 
 const (
 	FileListMinLimit = 10
 	FileListMaxLimit = 1000
+
+	ErrorAccountNeedVerify  = 911
+	ErrorOfflineIllegalTask = 10003
+	ErrorFileNotExists      = 70004
+	ErrorFileIncomplete     = 70005
 )
 
 const (
@@ -33,6 +25,7 @@ const (
 	apiFileDelete     = "https://webapi.115.com/rb/delete"
 	apiFileSearch     = "https://webapi.115.com/files/search"
 	apiFileDownload   = "https://webapi.115.com/files/download"
+	apiFileVideo      = "https://webapi.115.com/files/video"
 	apiCategoryGet    = "https://webapi.115.com/category/get"
 	apiFileUploadInit = "https://uplb.115.com/3.0/sampleinitupload.php"
 
@@ -46,14 +39,15 @@ const (
 	apiCaptcha       = "https://captchaapi.115.com/"
 	apiCaptchaSubmit = "https://webapi.115.com/user/captcha"
 
+	apiQrcodeToken  = "https://qrcodeapi.115.com/api/1.0/web/1.0/token"
+	apiQrcodeStatus = "https://qrcodeapi.115.com/get/status/"
+	apiQrcodeLogin  = "https://passportapi.115.com/app/1.0/web/1.0/login/qrcode"
+
 	orderFlagTime = "user_ptime"
 	orderFlagName = "file_name"
 	orderFlagSize = "file_size"
-)
 
-const (
-	ErrorAccountNeedVerify  = 911
-	ErrorOfflineIllegalTask = 10003
-	ErrorFileNotExists      = 70004
-	ErrorFileIncomplete     = 70005
+	qrcodeStatusWaiting int = iota
+	qrcodeStatusScanned
+	qrcodeStatusConfirmed
 )

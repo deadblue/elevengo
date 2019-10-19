@@ -4,8 +4,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/cookiejar"
-	"net/url"
-	"time"
 )
 
 type Client struct {
@@ -18,50 +16,31 @@ type Client struct {
 }
 
 func New(opts *Options) *Client {
-	// core component
-	dialer := &net.Dialer{
-		Timeout: defaultConnTimeout,
+	if opts == nil {
+		opts = NewOptions()
 	}
-	transport := &http.Transport{
-		Proxy:                 http.ProxyFromEnvironment,
-		DialContext:           dialer.DialContext,
-		TLSHandshakeTimeout:   defaultConnTimeout,
-		ResponseHeaderTimeout: defaultServerTimeout,
-		IdleConnTimeout:       defaultIdleTimeout,
-		MaxIdleConnsPerHost:   defaultIdleConnsPreHost,
-		MaxIdleConns:          200,
-		ExpectContinueTimeout: 1 * time.Second,
+	// core component
+	d := &net.Dialer{
+		Timeout: opts.DialTimeout,
+	}
+	tp := &http.Transport{
+		Proxy:               http.ProxyFromEnvironment,
+		DialContext:         d.DialContext,
+		IdleConnTimeout:     opts.IdleTimeout,
+		MaxIdleConnsPerHost: opts.MaxIdleConnsPreHost,
+		MaxIdleConns:        opts.MaxIdleConns,
 	}
 	jar, _ := cookiejar.New(nil)
 	hc := &http.Client{
-		Transport: transport,
+		Transport: tp,
 		Jar:       jar,
 	}
 	// assemble the client
-	client := &Client{
+	return &Client{
 		jar: jar,
 		hc:  hc,
-		ua:  defaultUserAgent,
+		ua:  opts.UserAgent,
 	}
-	// apply options
-	if opts != nil {
-		if opts.UserAgent != "" {
-			client.ua = opts.UserAgent
-		}
-		if opts.DisableProxy {
-			transport.Proxy = func(request *http.Request) (url *url.URL, e error) {
-				return nil, nil
-			}
-		}
-		if opts.MaxIdleConns > 0 {
-			transport.MaxConnsPerHost = opts.MaxIdleConns
-			transport.MaxIdleConns = 2 * opts.MaxIdleConns
-		}
-		if opts.Debug {
-			transport.TLSClientConfig.InsecureSkipVerify = true
-		}
-	}
-	return client
 }
 
 func Default() *Client {
