@@ -1,6 +1,9 @@
 package elevengo
 
-import "strconv"
+import (
+	"github.com/deadblue/elevengo/util"
+	"strconv"
+)
 
 // Get file list under the specific category.
 //
@@ -20,7 +23,7 @@ func (c *Client) FileList(categoryId string, offset, limit int, sort *SortOption
 	} else if limit > FileListMaxLimit {
 		limit = FileListMaxLimit
 	}
-	qs := newQueryString().
+	qs := util.NewQueryString().
 		WithString("aid", "1").
 		WithString("cid", categoryId).
 		WithString("o", orderFlagTime).
@@ -97,7 +100,7 @@ func (c *Client) FileSearch(categoryId, keyword string, offset, limit int) (file
 	} else if limit > FileListMaxLimit {
 		limit = FileListMaxLimit
 	}
-	qs := newQueryString().
+	qs := util.NewQueryString().
 		WithString("aid", "1").
 		WithString("cid", categoryId).
 		WithString("search_value", keyword).
@@ -144,7 +147,7 @@ func (c *Client) FileSearch(categoryId, keyword string, offset, limit int) (file
 }
 
 func (c *Client) FileRename(fileId, name string) (err error) {
-	form := newForm(false).
+	form := util.NewForm(false).
 		WithString("fid", fileId).
 		WithString("file_name", name)
 	result := new(_FileOperateResult)
@@ -156,7 +159,7 @@ func (c *Client) FileRename(fileId, name string) (err error) {
 }
 
 func (c *Client) FileCopy(parentId string, fileIds ...string) (err error) {
-	form := newForm(false).
+	form := util.NewForm(false).
 		WithString("pid", parentId).
 		WithStrings("fid", fileIds)
 	result := new(_FileOperateResult)
@@ -168,7 +171,7 @@ func (c *Client) FileCopy(parentId string, fileIds ...string) (err error) {
 }
 
 func (c *Client) FileMove(parentId string, fileIds ...string) (err error) {
-	form := newForm(false).
+	form := util.NewForm(false).
 		WithString("pid", parentId).
 		WithStrings("fid", fileIds)
 	result := new(_FileOperateResult)
@@ -180,7 +183,7 @@ func (c *Client) FileMove(parentId string, fileIds ...string) (err error) {
 }
 
 func (c *Client) FileDelete(parentId string, fileIds ...string) (err error) {
-	form := newForm(false).
+	form := util.NewForm(false).
 		WithString("pid", parentId).
 		WithStrings("fid", fileIds)
 	result := new(_FileOperateResult)
@@ -192,7 +195,7 @@ func (c *Client) FileDelete(parentId string, fileIds ...string) (err error) {
 }
 
 func (c *Client) CategoryAdd(parentId, name string) (err error) {
-	form := newForm(false).
+	form := util.NewForm(false).
 		WithString("pid", parentId).
 		WithString("cname", name)
 	result := &_FileAddResult{}
@@ -204,7 +207,7 @@ func (c *Client) CategoryAdd(parentId, name string) (err error) {
 }
 
 func (c *Client) CategoryInfo(categoryId string) (err error) {
-	qs := newQueryString().
+	qs := util.NewQueryString().
 		WithString("aid", "1").
 		WithString("cid", categoryId)
 	result := &CategoryInfoResult{}

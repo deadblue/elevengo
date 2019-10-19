@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/deadblue/elevengo/util"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
 )
 
-func (c *Client) request(url string, qs *_QueryString, form *_Form) (data []byte, err error) {
+func (c *Client) request(url string, qs *util.QueryString, form *util.Form) (data []byte, err error) {
 	// append query string
 	if qs != nil {
 		index := strings.IndexRune(url, '?')
@@ -52,19 +53,19 @@ func (c *Client) request(url string, qs *_QueryString, form *_Form) (data []byte
 	return
 }
 
-func (c *Client) requestJson(url string, qs *_QueryString, form *_Form, result interface{}) (err error) {
-	data, err := c.request(url, qs, form)
-	if err != nil {
-		return
-	}
-	if result == nil {
-		return nil
+func (c *Client) requestJson(url string, qs *util.QueryString, form *util.Form, result interface{}) (err error) {
+	if data, err := c.request(url, qs, form); err != nil {
+		return err
 	} else {
-		return json.Unmarshal(data, result)
+		if result != nil {
+			return json.Unmarshal(data, result)
+		} else {
+			return nil
+		}
 	}
 }
 
-func (c *Client) requestJsonp(url string, qs *_QueryString, result interface{}) (err error) {
+func (c *Client) requestJsonp(url string, qs *util.QueryString, result interface{}) (err error) {
 	data, err := c.request(url, qs, nil)
 	if err != nil {
 		return
