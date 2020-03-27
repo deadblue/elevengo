@@ -2,13 +2,13 @@ package elevengo
 
 import (
 	"fmt"
-	"github.com/deadblue/elevengo/util"
+	"github.com/deadblue/elevengo/core"
 	"math/rand"
 	"time"
 )
 
 func (c *Client) captchaValueImage() ([]byte, error) {
-	qs := util.NewQueryString().
+	qs := core.NewQueryString().
 		WithString("ct", "index").
 		WithString("ac", "code").
 		WithTimestamp("_t")
@@ -16,7 +16,7 @@ func (c *Client) captchaValueImage() ([]byte, error) {
 }
 
 func (c *Client) captchaKeyImage(index int) ([]byte, error) {
-	qs := util.NewQueryString().
+	qs := core.NewQueryString().
 		WithString("ct", "index").
 		WithString("ac", "code").
 		WithTimestamp("_t")
@@ -31,7 +31,7 @@ func (c *Client) captchaKeyImage(index int) ([]byte, error) {
 func (c *Client) CaptchaStart() (session *CaptchaSession, err error) {
 	cb := fmt.Sprintf("Close911_%d", time.Now().UnixNano())
 	// request captcha page to start session
-	qs := util.NewQueryString().
+	qs := core.NewQueryString().
 		WithString("ac", "security_code").
 		WithString("type", "web").
 		WithString("cb", cb)
@@ -59,7 +59,7 @@ func (c *Client) CaptchaStart() (session *CaptchaSession, err error) {
 func (c *Client) CaptchaSubmit(code string, session *CaptchaSession) (err error) {
 	// get captcha sign
 	cb := fmt.Sprintf("jQuery%d_%d", rand.Uint64(), time.Now().UnixNano())
-	qs := util.NewQueryString().
+	qs := core.NewQueryString().
 		WithString("ac", "code").
 		WithString("t", "sign").
 		WithString("callback", cb).
@@ -69,7 +69,7 @@ func (c *Client) CaptchaSubmit(code string, session *CaptchaSession) (err error)
 		return
 	}
 	// post captcha code
-	form := util.NewForm(false).
+	form := core.NewForm(false).
 		WithString("ac", "security_code").
 		WithString("type", "web").
 		WithString("code", code).

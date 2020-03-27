@@ -1,4 +1,4 @@
-package util
+package core
 
 import (
 	"net/url"
@@ -22,9 +22,11 @@ func (qs *QueryString) WithString(name, value string) *QueryString {
 func (qs *QueryString) WithInt(name string, value int) *QueryString {
 	return qs.WithString(name, strconv.Itoa(value))
 }
+func (qs *QueryString) WithInt64(name string, value int64) *QueryString {
+	return qs.WithString(name, strconv.FormatInt(value, 10))
+}
 func (qs *QueryString) WithTimestamp(name string) *QueryString {
-	value := strconv.FormatInt(time.Now().UnixNano(), 10)
-	return qs.WithString(name, value)
+	return qs.WithInt64(name, time.Now().UnixNano())
 }
 func (qs *QueryString) Encode() string {
 	return qs.values.Encode()

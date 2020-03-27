@@ -2,6 +2,7 @@ package elevengo
 
 import (
 	"errors"
+	"github.com/deadblue/elevengo/core"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -26,7 +27,7 @@ func (c *Client) ImportCredentials(cr *Credentials) (err error) {
 
 func (c *Client) getUserData() (err error) {
 	// request home page
-	qs := newQueryString().WithString("mode", "wangpan")
+	qs := core.NewQueryString().WithString("mode", "wangpan")
 	data, err := c.request(apiBasic, qs, nil)
 	if err != nil {
 		return

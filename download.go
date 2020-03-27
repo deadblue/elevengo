@@ -1,13 +1,13 @@
 package elevengo
 
 import (
-	"github.com/deadblue/elevengo/util"
+	"github.com/deadblue/elevengo/core"
 	"net/url"
 )
 
 func (c *Client) GetDownloadInfo(pickcode string) (info *DownloadInfo, err error) {
 	// call API to get download url
-	qs := util.NewQueryString().
+	qs := core.NewQueryString().
 		WithString("pickcode", pickcode).
 		WithTimestamp("_")
 	result := &_FileDownloadResult{}

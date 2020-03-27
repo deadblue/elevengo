@@ -3,7 +3,7 @@ package elevengo
 import (
 	"bytes"
 	"fmt"
-	"github.com/deadblue/elevengo/util"
+	"github.com/deadblue/elevengo/core"
 	"io"
 	"os"
 	"strconv"
@@ -38,7 +38,7 @@ func (c *Client) UploadData(categoryId, storeName string, data []byte) (file *Cl
 
 func (c *Client) upload(categoryId string, storeName string, size int64, data io.Reader) (file *CloudFile, err error) {
 	// get upload parameters
-	form := util.NewForm(false).
+	form := core.NewForm(false).
 		WithString("userid", c.info.UserId).
 		WithString("target", fmt.Sprintf("U_1_%s", categoryId)).
 		WithString("filename", storeName).
@@ -49,7 +49,7 @@ func (c *Client) upload(categoryId string, storeName string, size int64, data io
 		return
 	}
 	// fill upload form
-	form = util.NewForm(true).
+	form = core.NewForm(true).
 		WithString("OSSAccessKeyId", uir.AccessKeyId).
 		WithString("key", uir.ObjectKey).
 		WithString("policy", uir.Policy).
