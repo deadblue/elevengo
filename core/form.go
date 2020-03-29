@@ -10,66 +10,89 @@ import (
 	"strings"
 )
 
-// Request Form holder
-type Form struct {
-	isMultiplart bool
-	form         url.Values
-	partsWriter  *multipart.Writer
-	partsBuffer  *bytes.Buffer
+type Form interface {
+	// Add a string value
+	WithString(name, value string) Form
+	// Add an int value
+	WithInt(name string, value int) Form
+	// Add an int64 value
+	WithInt64(name string, value int64) Form
+	// Add a string array value
+	WithStrings(name string, value []string) Form
+	// Add a file
+	WithFile(name, filename string, stream io.Reader) Form
+	// Return content-type of the form
+	ContentType() string
+	// Archive the form and return the data stream
+	// You can not add values after call this method.
+	Archive() io.Reader
 }
 
-func NewForm(isMultipart bool) *Form {
-	body := Form{
-		isMultiplart: isMultipart,
-	}
-	if isMultipart {
-		body.partsBuffer = &bytes.Buffer{}
-		body.partsWriter = multipart.NewWriter(body.partsBuffer)
-	} else {
-		body.form = url.Values{}
-	}
-	return &body
+type implForm struct {
+	isMP bool
+	// for url-encoded form
+	v url.Values
+	// for multipart form
+	w *multipart.Writer
+	b *bytes.Buffer
 }
-func (f *Form) WithString(name, value string) *Form {
-	if f.isMultiplart {
-		f.partsWriter.WriteField(name, value)
+
+func (f *implForm) WithString(name, value string) Form {
+	if f.isMP {
+		f.w.WriteField(name, value)
 	} else {
-		f.form.Set(name, value)
+		f.v.Set(name, value)
 	}
 	return f
 }
-func (f *Form) WithInt(name string, value int) *Form {
+func (f *implForm) WithInt(name string, value int) Form {
 	return f.WithString(name, strconv.Itoa(value))
 }
-func (f *Form) WithInt64(name string, value int64) *Form {
+func (f *implForm) WithInt64(name string, value int64) Form {
 	return f.WithString(name, strconv.FormatInt(value, 10))
 }
-func (f *Form) WithStrings(name string, value []string) *Form {
+func (f *implForm) WithStrings(name string, value []string) Form {
 	for index, subValue := range value {
 		subName := fmt.Sprintf("%s[%d]", name, index)
 		f.WithString(subName, subValue)
 	}
 	return f
 }
-func (f *Form) WithFile(name, filename string, data io.Reader) *Form {
-	if f.isMultiplart {
-		w, _ := f.partsWriter.CreateFormFile(name, filename)
-		io.Copy(w, data)
+func (f *implForm) WithFile(name, filename string, stream io.Reader) Form {
+	if f.isMP {
+		w, _ := f.w.CreateFormFile(name, filename)
+		io.Copy(w, stream)
 	}
 	return f
 }
-func (f *Form) ContentType() string {
-	if f.isMultiplart {
-		return f.partsWriter.FormDataContentType()
+func (f *implForm) ContentType() string {
+	if f.isMP {
+		return f.w.FormDataContentType()
 	} else {
 		return "application/x-www-form-urlencoded"
 	}
 }
-func (f *Form) Finish() io.Reader {
-	if f.isMultiplart {
-		f.partsWriter.Close()
-		return f.partsBuffer
+func (f *implForm) Archive() io.Reader {
+	if f.isMP {
+		f.w.Close()
+		return f.b
 	} else {
-		return strings.NewReader(f.form.Encode())
+		return strings.NewReader(f.v.Encode())
+	}
+}
+
+func NewForm() Form {
+	return &implForm{
+		isMP: false,
+		v:    url.Values{},
+	}
+}
+
+func NewMultipartForm() Form {
+	buf := &bytes.Buffer{}
+	return &implForm{
+		isMP: true,
+		b:    buf,
+		w:    multipart.NewWriter(buf),
 	}
 }
