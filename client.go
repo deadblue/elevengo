@@ -1,48 +1,44 @@
 package elevengo
 
 import (
-	"net"
+	"github.com/deadblue/elevengo/core"
+	"github.com/deadblue/elevengo/internal"
 	"net/http"
 	"net/http/cookiejar"
 )
 
-type Client struct {
-	jar http.CookieJar
-	hc  *http.Client
-	ua  string
+const (
+	defaultUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36"
+)
 
-	info    *_UserInfo
-	offline *_OfflineToken
+type Client struct {
+	cj http.CookieJar
+	hc core.HttpClient
+	ua string
+
+	ui *internal.UserInfo
+	ot *internal.OfflineToken
 }
 
-func New(opts *Options) *Client {
-	if opts == nil {
-		opts = NewOptions()
+func New(userAgent string) *Client {
+	if userAgent == "" {
+		userAgent = defaultUserAgent
 	}
-	// core component
-	d := &net.Dialer{
-		Timeout: opts.DialTimeout,
+	opts := core.NewHttpOpts()
+	opts.Jar, _ = cookiejar.New(nil)
+	opts.BeforeSend = func(req *http.Request) {
+		// Set headers
+		req.Header.Set("Accept", "*/*")
+		req.Header.Set("Cache-Control", "no-cache")
+		req.Header.Set("User-Agent", userAgent)
 	}
-	tp := &http.Transport{
-		Proxy:               http.ProxyFromEnvironment,
-		DialContext:         d.DialContext,
-		IdleConnTimeout:     opts.IdleTimeout,
-		MaxIdleConnsPerHost: opts.MaxIdleConnsPreHost,
-		MaxIdleConns:        opts.MaxIdleConns,
-	}
-	jar, _ := cookiejar.New(nil)
-	hc := &http.Client{
-		Transport: tp,
-		Jar:       jar,
-	}
-	// assemble the client
 	return &Client{
-		jar: jar,
-		hc:  hc,
-		ua:  opts.UserAgent,
+		ua: userAgent,
+		cj: opts.Jar,
+		hc: core.NewHttpClient(opts),
 	}
 }
 
 func Default() *Client {
-	return New(nil)
+	return New("")
 }

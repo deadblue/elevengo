@@ -6,19 +6,22 @@ type Credentials struct {
 	SEID string
 }
 
-// File info struct
 type CloudFile struct {
-	ParentId   string
-	CategoryId string
 	FileId     string
-	IsCategory bool
-	IsSystem   bool
+	ParentId   string
+	IsDir      bool
 	Name       string
 	Size       int64
 	PickCode   string
 	Sha1       string
 	CreateTime int64
 	UpdateTime int64
+}
+
+type CaptchaSession struct {
+	Callback  string
+	CodeValue []byte
+	CodeKeys  []byte
 }
 
 type CategoryInfoResult struct {
@@ -41,12 +44,6 @@ type OfflineTask struct {
 	AddTime    int64   `json:"add_time"`
 	UpdateTime int64   `json:"last_update"`
 	Url        string  `json:"url"`
-}
-
-type CaptchaSession struct {
-	Callback  string
-	CodeValue []byte
-	CodeKeys  []byte
 }
 
 type DownloadCookie struct {

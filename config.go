@@ -43,10 +43,6 @@ const (
 	apiQrcodeStatus = "https://qrcodeapi.115.com/get/status/"
 	apiQrcodeLogin  = "https://passportapi.115.com/app/1.0/web/1.0/login/qrcode"
 
-	orderFlagTime = "user_ptime"
-	orderFlagName = "file_name"
-	orderFlagSize = "file_size"
-
 	qrcodeStatusWaiting int = iota
 	qrcodeStatusScanned
 	qrcodeStatusConfirmed
