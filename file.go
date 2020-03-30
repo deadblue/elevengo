@@ -5,43 +5,60 @@ import (
 	"strconv"
 )
 
+type FileListOpts struct {
+	offset, limit uint
+	sortFlag      string
+	sortAsc       bool
+}
+
+func (o *FileListOpts) SortByTime(asc bool) *FileListOpts {
+	o.sortFlag, o.sortAsc = "user_ptime", asc
+	return o
+}
+func (o *FileListOpts) SortByName(asc bool) *FileListOpts {
+	o.sortFlag, o.sortAsc = "file_name", asc
+	return o
+}
+func (o *FileListOpts) SortBySize(asc bool) *FileListOpts {
+	o.sortFlag, o.sortAsc = "file_size", asc
+	return o
+}
+func (o *FileListOpts) Next() *FileListOpts {
+	o.offset += o.limit
+	return o
+}
+func NewFileListOpts(pageSize uint) *FileListOpts {
+	return &FileListOpts{
+		offset: 0,
+		limit:  pageSize,
+	}
+}
+
 // Get file list under the specific category.
 //
 // "0" is a special categoryId which means the root,
 // everything starts from here.
 //
-// `offset` is base on zero.
-//
-// `limit` can not be lower than `FileListMinLimit`,
-//  and can not be higher than `FileListMaxLimit`
-//
 // `sort` is optional, pass `nil` will use the default sort option:
 // sorting by modify time in desc.
-func (c *Client) FileList(categoryId string, offset, limit int, sort *SortOption) (files []*CloudFile, remain int, err error) {
-	if limit < FileListMinLimit {
-		limit = FileListMinLimit
-	} else if limit > FileListMaxLimit {
-		limit = FileListMaxLimit
+func (c *Client) FileList(categoryId string, opts *FileListOpts) (files []*CloudFile, remain int, err error) {
+	if opts == nil {
+		opts = NewFileListOpts(100).SortByTime(false)
 	}
 	qs := core.NewQueryString().
 		WithString("aid", "1").
 		WithString("cid", categoryId).
-		WithString("o", orderFlagTime).
-		WithString("asc", "0").
 		WithString("show_dir", "1").
 		WithString("snap", "0").
 		WithString("natsort", "1").
 		WithString("format", "json").
-		WithInt("offset", offset).
-		WithInt("limit", limit)
-	// override default sort parameters
-	if sort != nil {
-		if sort.asc {
-			qs.WithString("asc", "1")
-		}
-		if sort.flag != "" {
-			qs.WithString("o", sort.flag)
-		}
+		WithInt("offset", int(opts.offset)).
+		WithInt("limit", int(opts.offset)).
+		WithString("o", opts.sortFlag)
+	if opts.sortAsc {
+		qs.WithString("asc", "1")
+	} else {
+		qs.WithString("asc", "0")
 	}
 	// call API
 	result := &_FileListResult{}
@@ -147,7 +164,7 @@ func (c *Client) FileSearch(categoryId, keyword string, offset, limit int) (file
 }
 
 func (c *Client) FileRename(fileId, name string) (err error) {
-	form := core.NewForm(false).
+	form := core.NewForm().
 		WithString("fid", fileId).
 		WithString("file_name", name)
 	result := new(_FileOperateResult)
@@ -159,7 +176,7 @@ func (c *Client) FileRename(fileId, name string) (err error) {
 }
 
 func (c *Client) FileCopy(parentId string, fileIds ...string) (err error) {
-	form := core.NewForm(false).
+	form := core.NewForm().
 		WithString("pid", parentId).
 		WithStrings("fid", fileIds)
 	result := new(_FileOperateResult)
@@ -171,7 +188,7 @@ func (c *Client) FileCopy(parentId string, fileIds ...string) (err error) {
 }
 
 func (c *Client) FileMove(parentId string, fileIds ...string) (err error) {
-	form := core.NewForm(false).
+	form := core.NewForm().
 		WithString("pid", parentId).
 		WithStrings("fid", fileIds)
 	result := new(_FileOperateResult)
@@ -183,7 +200,7 @@ func (c *Client) FileMove(parentId string, fileIds ...string) (err error) {
 }
 
 func (c *Client) FileDelete(parentId string, fileIds ...string) (err error) {
-	form := core.NewForm(false).
+	form := core.NewForm().
 		WithString("pid", parentId).
 		WithStrings("fid", fileIds)
 	result := new(_FileOperateResult)
@@ -195,7 +212,7 @@ func (c *Client) FileDelete(parentId string, fileIds ...string) (err error) {
 }
 
 func (c *Client) CategoryAdd(parentId, name string) (err error) {
-	form := core.NewForm(false).
+	form := core.NewForm().
 		WithString("pid", parentId).
 		WithString("cname", name)
 	result := &_FileAddResult{}

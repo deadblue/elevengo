@@ -1,6 +1,9 @@
 package elevengo
 
-import "github.com/deadblue/elevengo/core"
+import (
+	"github.com/deadblue/elevengo/core"
+	"time"
+)
 
 type _FileVideoResult struct {
 	_FileRetrieveResult
@@ -18,7 +21,7 @@ func (c *Client) GetVideoInfo(pickcode string) (hlsInfo []byte, err error) {
 	// call API to get video url
 	qs := core.NewQueryString().
 		WithString("pickcode", pickcode).
-		WithTimestamp("_")
+		WithInt64("_", time.Now().Unix())
 	result := &_FileVideoResult{}
 	err = c.requestJson(apiFileVideo, qs, nil, result)
 	if err == nil && !result.State {

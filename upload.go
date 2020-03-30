@@ -38,7 +38,7 @@ func (c *Client) UploadData(categoryId, storeName string, data []byte) (file *Cl
 
 func (c *Client) upload(categoryId string, storeName string, size int64, data io.Reader) (file *CloudFile, err error) {
 	// get upload parameters
-	form := core.NewForm(false).
+	form := core.NewForm().
 		WithString("userid", c.info.UserId).
 		WithString("target", fmt.Sprintf("U_1_%s", categoryId)).
 		WithString("filename", storeName).
@@ -49,7 +49,7 @@ func (c *Client) upload(categoryId string, storeName string, size int64, data io
 		return
 	}
 	// fill upload form
-	form = core.NewForm(true).
+	form = core.NewMultipartForm().
 		WithString("OSSAccessKeyId", uir.AccessKeyId).
 		WithString("key", uir.ObjectKey).
 		WithString("policy", uir.Policy).

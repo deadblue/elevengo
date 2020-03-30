@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/deadblue/elevengo/core"
 	"strconv"
+	"time"
 )
 
 type _QrcodeGenericResult struct {
@@ -60,7 +61,7 @@ func (c *Client) QrcodeCheck(token *QrcodeToken) (err error) {
 		WithString("uid", token.Uid).
 		WithString("time", strconv.FormatInt(token.Time, 10)).
 		WithString("sign", token.Sign).
-		WithTimestamp("_")
+		WithInt64("_", time.Now().Unix())
 	status := new(_QrcodeStatus)
 	if err = c.callQrcodeApi(apiQrcodeStatus, qs, nil, status); err != nil {
 		status = nil

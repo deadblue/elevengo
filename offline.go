@@ -4,13 +4,14 @@ import (
 	"github.com/deadblue/elevengo/core"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func (c *Client) updateOfflineSpace() (err error) {
 	qs := core.NewQueryString().
 		WithString("ct", "offline").
 		WithString("ac", "space").
-		WithTimestamp("_")
+		WithInt64("_", time.Now().Unix())
 	result := &_OfflineSpaceResult{}
 	if err = c.requestJson(apiBasic, qs, nil, result); err != nil {
 		return
@@ -24,14 +25,14 @@ func (c *Client) updateOfflineSpace() (err error) {
 	return nil
 }
 
-func (c *Client) callOfflineApi(url string, form *core.Form, result interface{}) (err error) {
+func (c *Client) callOfflineApi(url string, form core.Form, result interface{}) (err error) {
 	if c.offline == nil {
 		if err = c.updateOfflineSpace(); err != nil {
 			return
 		}
 	}
 	if form == nil {
-		form = core.NewForm(false)
+		form = core.NewForm()
 	}
 	form.WithString("uid", c.info.UserId).
 		WithString("sign", c.offline.Sign).
@@ -41,7 +42,7 @@ func (c *Client) callOfflineApi(url string, form *core.Form, result interface{})
 }
 
 func (c *Client) OfflineList(page int) (tasks []*OfflineTask, remain int, err error) {
-	form := core.NewForm(false).WithInt("page", page)
+	form := core.NewForm().WithInt("page", page)
 	result := &_OfflineListResult{}
 	err = c.callOfflineApi(apiOfflineList, form, result)
 	if err == nil {
@@ -57,7 +58,7 @@ func (c *Client) OfflineList(page int) (tasks []*OfflineTask, remain int, err er
 }
 
 func (c *Client) OfflineDelete(hash ...string) (err error) {
-	form := core.NewForm(false).WithStrings("hash", hash)
+	form := core.NewForm().WithStrings("hash", hash)
 	result := &_OfflineBasicResult{}
 	err = c.callOfflineApi(apiOfflineDelete, form, result)
 	if err == nil && !result.State {
@@ -67,7 +68,7 @@ func (c *Client) OfflineDelete(hash ...string) (err error) {
 }
 
 func (c *Client) OfflineClear(flag ClearFlag) (err error) {
-	form := core.NewForm(false).WithInt("flag", int(flag))
+	form := core.NewForm().WithInt("flag", int(flag))
 	result := &_OfflineBasicResult{}
 	err = c.callOfflineApi(apiOfflineClear, form, result)
 	if err == nil && !result.State {
@@ -77,7 +78,7 @@ func (c *Client) OfflineClear(flag ClearFlag) (err error) {
 }
 
 func (c *Client) OfflineAddUrl(url string) (hash string, err error) {
-	form := core.NewForm(false).
+	form := core.NewForm().
 		WithString("url", url)
 	result := &_OfflineAddResult{}
 	err = c.callOfflineApi(apiOfflineAddUrl, form, result)
@@ -99,7 +100,7 @@ func (c *Client) OfflineAddTorrent(torrentFile string, filter TorrentFileFilter)
 		WithString("ct", "lixian").
 		WithString("ac", "get_id").
 		WithString("torrent", "1").
-		WithTimestamp("_")
+		WithInt64("_", time.Now().Unix())
 	gdr := &_OfflineGetDirResult{}
 	if err = c.requestJson(apiBasic, qs, nil, gdr); err != nil {
 		return
@@ -110,7 +111,7 @@ func (c *Client) OfflineAddTorrent(torrentFile string, filter TorrentFileFilter)
 		return
 	}
 	// get torrent info
-	form := core.NewForm(false).
+	form := core.NewForm().
 		WithString("pickcode", cf.PickCode).
 		WithString("sha1", cf.Sha1)
 	tir := &_OfflineTorrentInfoResult{}
@@ -128,7 +129,7 @@ func (c *Client) OfflineAddTorrent(torrentFile string, filter TorrentFileFilter)
 	if selectCount == 0 {
 		return "", ErrOfflineNothindToAdd
 	}
-	form = core.NewForm(false).
+	form = core.NewForm().
 		WithString("savepath", tir.TorrentName).
 		WithString("info_hash", tir.InfoHash).
 		WithString("wanted", strings.Join(wanted[:selectCount], ","))

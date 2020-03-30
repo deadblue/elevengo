@@ -11,7 +11,7 @@ func (c *Client) captchaValueImage() ([]byte, error) {
 	qs := core.NewQueryString().
 		WithString("ct", "index").
 		WithString("ac", "code").
-		WithTimestamp("_t")
+		WithInt64("_t", time.Now().Unix())
 	return c.request(apiCaptcha, qs, nil)
 }
 
@@ -19,7 +19,7 @@ func (c *Client) captchaKeyImage(index int) ([]byte, error) {
 	qs := core.NewQueryString().
 		WithString("ct", "index").
 		WithString("ac", "code").
-		WithTimestamp("_t")
+		WithInt64("_t", time.Now().Unix())
 	if index < 0 || index > 9 {
 		qs.WithString("t", "all")
 	} else {
@@ -63,13 +63,13 @@ func (c *Client) CaptchaSubmit(code string, session *CaptchaSession) (err error)
 		WithString("ac", "code").
 		WithString("t", "sign").
 		WithString("callback", cb).
-		WithTimestamp("_")
+		WithInt64("_t", time.Now().Unix())
 	signResult := &_CaptchaSignResult{}
 	if err = c.requestJsonp(apiCaptcha, qs, signResult); err != nil {
 		return
 	}
 	// post captcha code
-	form := core.NewForm(false).
+	form := core.NewForm().
 		WithString("ac", "security_code").
 		WithString("type", "web").
 		WithString("code", code).

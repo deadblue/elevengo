@@ -42,7 +42,7 @@ func (so *SortOption) OrderByName() *SortOption {
 	return so
 }
 func (so *SortOption) OrderBySize() *SortOption {
-	so.flag = orderFlagTime
+	so.flag = orderFlagSize
 	return so
 }
 func (so *SortOption) Asc() *SortOption {

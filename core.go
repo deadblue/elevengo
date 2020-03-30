@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-func (c *Client) request(url string, qs *core.QueryString, form *core.Form) (data []byte, err error) {
+func (c *Client) request(url string, qs core.QueryString, form core.Form) (data []byte, err error) {
 	// append query string
 	if qs != nil {
 		index := strings.IndexRune(url, '?')
@@ -26,7 +26,7 @@ func (c *Client) request(url string, qs *core.QueryString, form *core.Form) (dat
 	if form == nil {
 		method, body = http.MethodGet, nil
 	} else {
-		method, body = http.MethodPost, form.Finish()
+		method, body = http.MethodPost, form.Archive()
 	}
 	// ignore errer when creating request
 	req, _ := http.NewRequest(method, url, body)
@@ -53,7 +53,7 @@ func (c *Client) request(url string, qs *core.QueryString, form *core.Form) (dat
 	return
 }
 
-func (c *Client) requestJson(url string, qs *core.QueryString, form *core.Form, result interface{}) (err error) {
+func (c *Client) requestJson(url string, qs core.QueryString, form core.Form, result interface{}) (err error) {
 	if data, err := c.request(url, qs, form); err != nil {
 		return err
 	} else {
@@ -65,7 +65,7 @@ func (c *Client) requestJson(url string, qs *core.QueryString, form *core.Form, 
 	}
 }
 
-func (c *Client) requestJsonp(url string, qs *core.QueryString, result interface{}) (err error) {
+func (c *Client) requestJsonp(url string, qs core.QueryString, result interface{}) (err error) {
 	data, err := c.request(url, qs, nil)
 	if err != nil {
 		return
