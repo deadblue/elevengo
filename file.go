@@ -1,6 +1,7 @@
 package elevengo
 
 import (
+	"errors"
 	"fmt"
 	"github.com/deadblue/elevengo/core"
 	"github.com/deadblue/elevengo/internal"
@@ -8,28 +9,41 @@ import (
 	"time"
 )
 
+const (
+	apiFileIndex = "https://webapi.115.com/files/index_info"
+
+	apiFileList       = "https://webapi.115.com/files"
+	apiFileListByName = "https://aps.115.com/natsort/files.php"
+
+	apiFileAdd    = "https://webapi.115.com/files/add"
+	apiFileCopy   = "https://webapi.115.com/files/copy"
+	apiFileMove   = "https://webapi.115.com/files/move"
+	apiFileRename = "https://webapi.115.com/files/batch_rename" // params: files_new_name
+	apiFileDelete = "https://webapi.115.com/rb/delete"
+)
+
 func (c *Client) FileIndex() (err error) {
 	result := new(internal.FileIndexResult)
-	err = c.hc.JsonApi(internal.ApiFileIndex, nil, nil, result)
+	err = c.hc.JsonApi(apiFileIndex, nil, nil, result)
 	if err != nil {
-		// TODO
+		// TODO: handle api result
 	}
 	return
 }
 
-func parseTimestampString(s string) time.Time {
+func parseTimestamp(s string) time.Time {
 	sec, _ := strconv.ParseInt(s, 10, 64)
 	return time.Unix(sec, 0)
 }
 
-func (c *Client) FileList(dirId string, page *PageParam, sort *SortParam) (files []CloudFile, err error) {
+func (c *Client) FileList(categoryId string, page *PageParam, sort *SortParam) (files []FileItem, err error) {
 	// prepare parameters
 	if sort == nil {
 		sort = (&SortParam{}).ByTime().Desc()
 	}
 	qs := core.NewQueryString().
 		WithString("aid", "1").
-		WithString("cid", dirId).
+		WithString("cid", categoryId).
 		WithString("show_dir", "1").
 		WithString("snap", "0").
 		WithString("natsort", "1").
@@ -43,9 +57,9 @@ func (c *Client) FileList(dirId string, page *PageParam, sort *SortParam) (files
 		qs.WithString("asc", "0")
 	}
 	// select API URL
-	apiUrl := internal.ApiFileList
+	apiUrl := apiFileList
 	if sort.flag == "file_name" {
-		apiUrl = internal.ApiFileListByName
+		apiUrl = apiFileListByName
 	}
 	// call API
 	result := new(internal.FileListResult)
@@ -63,8 +77,8 @@ func (c *Client) FileList(dirId string, page *PageParam, sort *SortParam) (files
 			CategoryId: data.CategoryId,
 			Name:       data.Name,
 			PickCode:   data.PickCode,
-			CreateTime: parseTimestampString(data.CreateTime),
-			UpdateTime: parseTimestampString(data.UpdateTime),
+			CreateTime: parseTimestamp(data.CreateTime),
+			UpdateTime: parseTimestamp(data.UpdateTime),
 		}
 		if data.FileId != "" {
 			fi.IsCategory = false
@@ -78,27 +92,63 @@ func (c *Client) FileList(dirId string, page *PageParam, sort *SortParam) (files
 
 		files[i] = fi
 	}
+	return
+}
 
-	//for index, data := range result.Data {
-	//	info := &CloudFile{
-	//		IsCategory: false,
-	//		IsSystem:   (index + result.Offset) < result.SysCount,
-	//		CategoryId: data.CategoryId,
-	//		Name:       data.Name,
-	//		Size:       data.Size,
-	//		PickCode:   data.PickCode,
-	//	}
-	//	info.CreateTime, _ = strconv.ParseInt(data.CreateTime, 10, 64)
-	//	info.UpdateTime, _ = strconv.ParseInt(data.UpdateTime, 10, 64)
-	//	if data.FileId == nil {
-	//		info.IsCategory = true
-	//		info.ParentId = *data.ParentId
-	//	} else {
-	//		info.FileId = *data.FileId
-	//		info.Sha1 = *data.Sha1
-	//	}
-	//	files[index] = info
-	//}
+func (c *Client) FileCopy(parentId string, fileIds ...string) (err error) {
+	form := core.NewForm().
+		WithString("pid", parentId).
+		WithStrings("fid", fileIds)
+	result := &internal.FileOperateResult{}
+	err = c.hc.JsonApi(apiFileCopy, nil, form, result)
+	if err == nil && !result.State {
+		// TODO: convert upstream error
+		err = errors.New(result.Error)
+	}
+	return
+}
+
+func (c Client) FileMove(parentId string, fileIds ...string) (err error) {
+	form := core.NewForm().
+		WithString("pid", parentId).
+		WithStrings("fid", fileIds)
+	result := &internal.FileOperateResult{}
+	err = c.hc.JsonApi(apiFileMove, nil, form, result)
+	if err == nil && !result.State {
+		// TODO: convert upstream error
+		err = errors.New(result.Error)
+	}
+	return
+}
+
+func (c *Client) FileDelete(parentId string, fileIds ...string) (err error) {
+	form := core.NewForm().
+		WithString("pid", parentId).
+		WithStrings("fid", fileIds)
+	result := &internal.FileOperateResult{}
+	err = c.hc.JsonApi(apiFileDelete, nil, form, result)
+	if err == nil && !result.State {
+		// TODO: convert upstream error
+		err = errors.New(result.Error)
+	}
+	return
+}
+
+func (c *Client) CategoryAdd(parentId, name string) (categoryId string, err error) {
+	form := core.NewForm().
+		WithString("pid", parentId).
+		WithString("cname", name)
+	result := &internal.CategoryAddResult{}
+	err = c.hc.JsonApi(apiFileAdd, nil, form, result)
+	if err != nil {
+		return
+	}
+	if !result.State {
+		// TODO: convert error
+		err = errors.New(result.Error)
+	} else {
+		categoryId = result.CategoryId
+	}
 	return
 }
 
@@ -176,58 +226,3 @@ func (c *Client) FileList(dirId string, page *PageParam, sort *SortParam) (files
 //	return
 //}
 //
-//func (c *Client) FileCopy(parentId string, fileIds ...string) (err error) {
-//	form := core.NewForm().
-//		WithString("pid", parentId).
-//		WithStrings("fid", fileIds)
-//	result := new(_FileOperateResult)
-//	err = c.requestJson(apiFileCopy, nil, form, result)
-//	if err == nil && !result.State {
-//		err = apiError(-1)
-//	}
-//	return
-//}
-//
-//func (c *Client) FileMove(parentId string, fileIds ...string) (err error) {
-//	form := core.NewForm().
-//		WithString("pid", parentId).
-//		WithStrings("fid", fileIds)
-//	result := new(_FileOperateResult)
-//	err = c.requestJson(apiFileMove, nil, form, result)
-//	if err == nil && !result.State {
-//		err = apiError(-1)
-//	}
-//	return
-//}
-//
-//func (c *Client) FileDelete(parentId string, fileIds ...string) (err error) {
-//	form := core.NewForm().
-//		WithString("pid", parentId).
-//		WithStrings("fid", fileIds)
-//	result := new(_FileOperateResult)
-//	err = c.requestJson(apiFileDelete, nil, form, result)
-//	if err == nil && !result.State {
-//		err = apiError(-1)
-//	}
-//	return
-//}
-//
-//func (c *Client) CategoryAdd(parentId, name string) (err error) {
-//	form := core.NewForm().
-//		WithString("pid", parentId).
-//		WithString("cname", name)
-//	result := &_FileAddResult{}
-//	err = c.requestJson(apiFileAdd, nil, form, result)
-//	if err == nil && !result.State {
-//		err = apiError(-1)
-//	}
-//	return
-//}
-//
-//func (c *Client) CategoryInfo(categoryId string) (err error) {
-//	qs := core.NewQueryString().
-//		WithString("aid", "1").
-//		WithString("cid", categoryId)
-//	result := &CategoryInfoResult{}
-//	return c.requestJson(apiCategoryGet, qs, nil, result)
-//}

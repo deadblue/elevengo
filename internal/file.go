@@ -42,3 +42,18 @@ type FileListResult struct {
 	Path     []Path `json:"path"`
 	Data     []File `json:"data"`
 }
+
+type FileOperateResult struct {
+	State bool   `json:"state"`
+	Error string `json:"error"`
+	Errno string `json:"errno"`
+}
+
+type CategoryAddResult struct {
+	FileOperateResult
+	AreaId       int    `json:"aid"`
+	CategoryId   string `json:"cid"`
+	CategoryName string `json:"cname"`
+	FileId       string `json:"file_id"`
+	FileName     string `json:"file_name"`
+}

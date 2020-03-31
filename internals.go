@@ -1,17 +1,5 @@
 package elevengo
 
-//
-//type _UserInfo struct {
-//	UserId string
-//}
-//
-//type _OfflineToken struct {
-//	Sign        string
-//	Time        int64
-//	QuotaTotal  int
-//	QuotaRemain int
-//}
-//
 //type _BasicResult struct {
 //	State       bool    `json:"state"`
 //	Error       *string `json:"error"`
@@ -156,9 +144,4 @@ package elevengo
 //	FileSize    int64           `json:"file_size"`
 //	FileCount   int             `json:"file_count"`
 //	FileList    []*_TorrentFile `json:"torrent_filelist_web"`
-//}
-//
-//type _CaptchaSignResult struct {
-//	State bool   `json:"state"`
-//	Sign  string `json:"sign"`
 //}
