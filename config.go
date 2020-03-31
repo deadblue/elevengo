@@ -36,9 +36,6 @@ const (
 	apiOfflineTorrentInfo = "https://115.com/web/lixian/?ct=lixian&ac=torrent"
 	apiOfflineAddTorrent  = "https://115.com/web/lixian/?ct=lixian&ac=add_task_bt"
 
-	apiCaptcha       = "https://captchaapi.115.com/"
-	apiCaptchaSubmit = "https://webapi.115.com/user/captcha"
-
 	apiQrcodeToken  = "https://qrcodeapi.115.com/api/1.0/web/1.0/token"
 	apiQrcodeStatus = "https://qrcodeapi.115.com/get/status/"
 	apiQrcodeLogin  = "https://passportapi.115.com/app/1.0/web/1.0/login/qrcode"

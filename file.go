@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/deadblue/elevengo/core"
 	"github.com/deadblue/elevengo/internal"
+	"strconv"
+	"time"
 )
 
 func (c *Client) FileIndex() (err error) {
@@ -13,6 +15,11 @@ func (c *Client) FileIndex() (err error) {
 		// TODO
 	}
 	return
+}
+
+func parseTimestampString(s string) time.Time {
+	sec, _ := strconv.ParseInt(s, 10, 64)
+	return time.Unix(sec, 0)
 }
 
 func (c *Client) FileList(dirId string, page *PageParam, sort *SortParam) (files []CloudFile, err error) {
@@ -50,26 +57,28 @@ func (c *Client) FileList(dirId string, page *PageParam, sort *SortParam) (files
 		return
 	}
 	// convert API result
-	files = make([]CloudFile, len(result.Data))
+	files = make([]FileItem, len(result.Data))
 	for i, data := range result.Data {
-		cf := CloudFile{
-			Name:     data.Name,
-			Size:     data.Size,
-			PickCode: data.PickCode,
+		fi := FileItem{
+			CategoryId: data.CategoryId,
+			Name:       data.Name,
+			PickCode:   data.PickCode,
+			CreateTime: parseTimestampString(data.CreateTime),
+			UpdateTime: parseTimestampString(data.UpdateTime),
 		}
 		if data.FileId != "" {
-			// A file
-			cf.FileId = data.FileId
-			cf.ParentId = data.CategoryId
-			cf.IsDir = false
+			fi.IsCategory = false
+			fi.FileId = data.FileId
+			fi.Size = data.Size
+			fi.Sha1 = data.Sha1
 		} else {
-			// A directory
-			cf.FileId = data.CategoryId
-			cf.ParentId = data.ParentId
-			cf.IsDir = true
+			fi.IsCategory = true
+			fi.ParentId = data.ParentId
 		}
-		files[i] = cf
+
+		files[i] = fi
 	}
+
 	//for index, data := range result.Data {
 	//	info := &CloudFile{
 	//		IsCategory: false,
