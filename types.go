@@ -1,25 +1,28 @@
 package elevengo
 
+import "time"
+
 type Credentials struct {
 	UID  string
 	CID  string
 	SEID string
 }
 
-type CloudFile struct {
+type FileItem struct {
 	FileId     string
+	CategoryId string
 	ParentId   string
-	IsDir      bool
+	IsCategory bool
 	Name       string
 	Size       int64
 	PickCode   string
 	Sha1       string
-	CreateTime int64
-	UpdateTime int64
+	CreateTime time.Time
+	UpdateTime time.Time
 }
 
 type CaptchaSession struct {
-	Callback  string
+	callback  string
 	CodeValue []byte
 	CodeKeys  []byte
 }
@@ -55,7 +58,4 @@ type DownloadInfo struct {
 	Url       string
 	UserAgent string
 	Cookies   []*DownloadCookie
-}
-
-type VideoInfo struct {
 }
