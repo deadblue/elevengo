@@ -6,20 +6,16 @@ import (
 	"github.com/deadblue/elevengo/core"
 	"github.com/deadblue/elevengo/internal"
 	"math/rand"
-	"net/url"
 	"time"
 )
 
 const (
 	apiCaptcha       = "https://captchaapi.115.com/"
 	apiCaptchaSubmit = "https://webapi.115.com/user/captcha"
-
-	cookieCaptcha = "acw_tc"
 )
 
 type CaptchaSession struct {
 	callback string
-	cookie   string
 	code     []byte
 }
 
@@ -28,7 +24,7 @@ func (cs *CaptchaSession) CodeImage() []byte {
 }
 
 func (c *Client) CaptchaStart() (session *CaptchaSession, err error) {
-	// Request captcha page
+	// Fetch captcha page
 	callback := fmt.Sprintf("Close911_%d", time.Now().UnixNano())
 	qs := core.NewQueryString().
 		WithString("ac", "security_code").
@@ -37,15 +33,7 @@ func (c *Client) CaptchaStart() (session *CaptchaSession, err error) {
 	if _, err = c.hc.Get(apiCaptcha, qs); err != nil {
 		return
 	}
-	// Get cookie value
-	cookieValue := ""
-	u, _ := url.Parse(apiCaptcha)
-	for _, ck := range c.cj.Cookies(u) {
-		if ck.Name == cookieCaptcha {
-			cookieValue = ck.Value
-		}
-	}
-	// Request captcha images
+	// Fetch captcha value image
 	qs = core.NewQueryString().
 		WithString("ct", "index").
 		WithString("ac", "code").
@@ -57,14 +45,12 @@ func (c *Client) CaptchaStart() (session *CaptchaSession, err error) {
 	// Build session
 	session = &CaptchaSession{
 		callback: callback,
-		cookie:   cookieValue,
 		code:     code,
 	}
 	return
 }
 
-func (c *Client) CaptchaAllKeyImage(session *CaptchaSession) ([]byte, error) {
-	// TODO: Check cookie value before request key image
+func (c *Client) CaptchaAllKeysImage(session *CaptchaSession) ([]byte, error) {
 	qs := core.NewQueryString().
 		WithString("ct", "index").
 		WithString("ac", "code").
@@ -74,7 +60,11 @@ func (c *Client) CaptchaAllKeyImage(session *CaptchaSession) ([]byte, error) {
 }
 
 func (c *Client) CaptchaKeyImage(session *CaptchaSession, index int) ([]byte, error) {
-	// TODO: Check cookie value before request key image
+	if index < 0 {
+		index = 0
+	} else if index > 9 {
+		index = 9
+	}
 	qs := core.NewQueryString().
 		WithString("ct", "index").
 		WithString("ac", "code").
@@ -85,14 +75,13 @@ func (c *Client) CaptchaKeyImage(session *CaptchaSession, index int) ([]byte, er
 }
 
 func (c *Client) CaptchaSubmit(session *CaptchaSession, code string) (err error) {
-	// TODO: Check cookie value before submit code
 	// Get captcha sign
 	cb := fmt.Sprintf("jQuery%d_%d", rand.Uint64(), time.Now().UnixNano())
 	qs := core.NewQueryString().
 		WithString("ac", "code").
 		WithString("t", "sign").
 		WithString("callback", cb).
-		WithInt64("_t", time.Now().Unix())
+		WithInt64("_", time.Now().Unix())
 	signResult := &internal.CaptchaSignResult{}
 	if err = c.hc.JsonpApi(apiCaptcha, qs, signResult); err != nil {
 		return
@@ -101,8 +90,8 @@ func (c *Client) CaptchaSubmit(session *CaptchaSession, code string) (err error)
 	form := core.NewForm().
 		WithString("ac", "security_code").
 		WithString("type", "web").
-		WithString("code", code).
 		WithString("sign", signResult.Sign).
+		WithString("code", code).
 		WithString("cb", session.callback)
 	submitResult := &internal.CaptchaSubmitResult{}
 	err = c.hc.JsonApi(apiCaptchaSubmit, nil, form, submitResult)
