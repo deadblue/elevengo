@@ -17,8 +17,10 @@ type Form interface {
 	WithInt(name string, value int) Form
 	// Add an int64 value
 	WithInt64(name string, value int64) Form
-	// Add a string array value
+	// Add a string slice value
 	WithStrings(name string, value []string) Form
+	// Add a string map value
+	WithStringMap(name string, value map[string]string) Form
 	// Add a file
 	WithFile(name, filename string, stream io.Reader) Form
 	// Return content-type of the form
@@ -55,6 +57,13 @@ func (f *implForm) WithStrings(name string, value []string) Form {
 	for index, subValue := range value {
 		subName := fmt.Sprintf("%s[%d]", name, index)
 		f.WithString(subName, subValue)
+	}
+	return f
+}
+func (f *implForm) WithStringMap(name string, value map[string]string) Form {
+	for mapKey, mapVal := range value {
+		subName := fmt.Sprintf("%s[%s]", name, mapKey)
+		f.WithString(subName, mapVal)
 	}
 	return f
 }
