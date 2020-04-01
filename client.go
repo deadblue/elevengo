@@ -26,7 +26,7 @@ func New(userAgent string) *Client {
 	if userAgent == "" {
 		userAgent = defaultUserAgent
 	}
-	opts := core.NewHttpOpts()
+	opts := &core.HttpOpts{}
 	opts.Jar, _ = cookiejar.New(nil)
 	opts.BeforeSend = func(req *http.Request) {
 		// Set headers
