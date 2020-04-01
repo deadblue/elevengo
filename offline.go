@@ -1,45 +1,78 @@
 package elevengo
 
-//import (
-//	"github.com/deadblue/elevengo/core"
-//	"strconv"
-//	"strings"
-//	"time"
-//)
-//
-//func (c *Client) updateOfflineSpace() (err error) {
-//	qs := core.NewQueryString().
-//		WithString("ct", "offline").
-//		WithString("ac", "space").
-//		WithInt64("_", time.Now().Unix())
-//	result := &_OfflineSpaceResult{}
-//	if err = c.requestJson(apiBasic, qs, nil, result); err != nil {
-//		return
-//	}
-//	// store to client
-//	if c.offline == nil {
-//		c.offline = &_OfflineToken{}
-//	}
-//	c.offline.Sign = result.Sign
-//	c.offline.Time = result.Time
-//	return nil
-//}
-//
-//func (c *Client) callOfflineApi(url string, form core.Form, result interface{}) (err error) {
-//	if c.offline == nil {
-//		if err = c.updateOfflineSpace(); err != nil {
-//			return
-//		}
-//	}
-//	if form == nil {
-//		form = core.NewForm()
-//	}
-//	form.WithString("uid", c.info.UserId).
-//		WithString("sign", c.offline.Sign).
-//		WithInt64("time", c.offline.Time)
-//	err = c.requestJson(url, nil, form, result)
-//	return
-//}
+import (
+	"github.com/deadblue/elevengo/core"
+	"github.com/deadblue/elevengo/internal"
+	"time"
+)
+
+const (
+	apiOfflineSpace = "https://115.com/"
+)
+
+type ClearParams struct {
+	flag int
+}
+
+func (cp *ClearParams) All(delete bool) *ClearParams {
+	if delete {
+		cp.flag = 5
+	} else {
+		cp.flag = 1
+	}
+	return cp
+}
+func (cp *ClearParams) Complete(delete bool) *ClearParams {
+	if delete {
+		cp.flag = 4
+	} else {
+		cp.flag = 0
+	}
+	return cp
+}
+func (cp *ClearParams) Failed() *ClearParams {
+	cp.flag = 2
+	return cp
+}
+func (cp *ClearParams) Running() *ClearParams {
+	cp.flag = 3
+	return cp
+}
+
+func (c *Client) offlineSpace() (err error) {
+	qs := core.NewQueryString().
+		WithString("ct", "offline").
+		WithString("ac", "space").
+		WithInt64("_", time.Now().Unix())
+	result := &internal.OfflineSpaceResult{}
+	if err = c.hc.JsonApi(apiOfflineSpace, qs, nil, result); err != nil {
+		return
+	}
+	// store to client
+	if c.ot == nil {
+		c.ot = &internal.OfflineToken{}
+	}
+	c.ot.Sign = result.Sign
+	c.ot.Time = result.Time
+	return nil
+}
+
+func (c *Client) callOfflineApi(url string, form core.Form, result interface{}) (err error) {
+	if c.ot == nil {
+		if err = c.offlineSpace(); err != nil {
+			return
+		}
+	}
+	if form == nil {
+		form = core.NewForm()
+	}
+	form.WithString("uid", c.ui.UserId).
+		WithString("sign", c.ot.Sign).
+		WithInt64("time", c.ot.Time)
+	err = c.hc.JsonApi(url, nil, form, result)
+	return
+}
+
 //
 //func (c *Client) OfflineList(page int) (tasks []*OfflineTask, remain int, err error) {
 //	form := core.NewForm().WithInt("page", page)
