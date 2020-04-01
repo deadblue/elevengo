@@ -10,18 +10,88 @@ import (
 )
 
 const (
-	apiFileIndex = "https://webapi.115.com/files/index_info"
-
+	apiFileIndex      = "https://webapi.115.com/files/index_info"
 	apiFileList       = "https://webapi.115.com/files"
 	apiFileListByName = "https://aps.115.com/natsort/files.php"
+	apiFileAdd        = "https://webapi.115.com/files/add"
+	apiFileCopy       = "https://webapi.115.com/files/copy"
+	apiFileMove       = "https://webapi.115.com/files/move"
+	apiFileRename     = "https://webapi.115.com/files/batch_rename"
+	apiFileDelete     = "https://webapi.115.com/rb/delete"
+	apiFileSearch     = "https://webapi.115.com/files/search"
 
-	apiFileAdd    = "https://webapi.115.com/files/add"
-	apiFileCopy   = "https://webapi.115.com/files/copy"
-	apiFileMove   = "https://webapi.115.com/files/move"
-	apiFileRename = "https://webapi.115.com/files/batch_rename"
-	apiFileDelete = "https://webapi.115.com/rb/delete"
-	apiFileSearch = "https://webapi.115.com/files/search"
+	filePageSizeMin     = 10
+	filePageSizeMax     = 1000
+	filePageSizeDefault = 100
 )
+
+// Page parameter for `Client.FileList()` and `Client.FileSearch()`
+type FilePageParam struct {
+	index, size int
+}
+
+func (p *FilePageParam) Size(size int) *FilePageParam {
+	if size < filePageSizeMin {
+		p.size = filePageSizeMin
+	} else if size > filePageSizeMax {
+		p.size = filePageSizeMax
+	} else {
+		p.size = size
+	}
+	return p
+}
+func (p *FilePageParam) Next() *FilePageParam {
+	p.index += 1
+	return p
+}
+func (p *FilePageParam) Prev() *FilePageParam {
+	if p.index > 0 {
+		p.index -= 1
+	}
+	return p
+}
+func (p *FilePageParam) Goto(num int) *FilePageParam {
+	if num > 0 {
+		p.index = num - 1
+	}
+	return p
+}
+func (p *FilePageParam) limit() int {
+	if p.size == 0 {
+		p.size = filePageSizeDefault
+	}
+	return p.size
+}
+func (p *FilePageParam) offset() int {
+	return p.index * p.limit()
+}
+
+// Sort parameter for `Client.FileList()`
+type FileSortParam struct {
+	flag string
+	asc  int
+}
+
+func (p *FileSortParam) ByTime() *FileSortParam {
+	p.flag = "user_ptime"
+	return p
+}
+func (p *FileSortParam) ByName() *FileSortParam {
+	p.flag = "file_name"
+	return p
+}
+func (p *FileSortParam) BySize() *FileSortParam {
+	p.flag = "file_size"
+	return p
+}
+func (p *FileSortParam) Asc() *FileSortParam {
+	p.asc = 1
+	return p
+}
+func (p *FileSortParam) Desc() *FileSortParam {
+	p.asc = 0
+	return p
+}
 
 // CloudFile is a remote file/category object
 type CloudFile struct {
@@ -51,10 +121,10 @@ func parseTimestamp(s string) time.Time {
 	return time.Unix(sec, 0)
 }
 
-func (c *Client) FileList(categoryId string, page *PageParam, sort *SortParam) (files []*CloudFile, err error) {
+func (c *Client) FileList(categoryId string, page *FilePageParam, sort *FileSortParam) (files []*CloudFile, err error) {
 	// prepare parameters
 	if sort == nil {
-		sort = (&SortParam{}).ByTime().Desc()
+		sort = (&FileSortParam{}).ByTime().Desc()
 	}
 	qs := core.NewQueryString().
 		WithString("aid", "1").
@@ -63,14 +133,10 @@ func (c *Client) FileList(categoryId string, page *PageParam, sort *SortParam) (
 		WithString("snap", "0").
 		WithString("natsort", "1").
 		WithString("format", "json").
+		WithString("o", sort.flag).
+		WithInt("asc", sort.asc).
 		WithInt("offset", page.offset()).
-		WithInt("limit", page.limit()).
-		WithString("o", sort.flag)
-	if sort.asc {
-		qs.WithString("asc", "1")
-	} else {
-		qs.WithString("asc", "0")
-	}
+		WithInt("limit", page.limit())
 	// select API URL
 	apiUrl := apiFileList
 	if sort.flag == "file_name" {
