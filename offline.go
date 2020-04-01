@@ -15,7 +15,7 @@ const (
 	apiOfflineDelete  = "https://115.com/web/lixian/?ct=lixian&ac=task_del"
 	apiOfflineClear   = "https://115.com/web/lixian/?ct=lixian&ac=task_clear"
 
-	errOfflineNeedCaptcha  = 911
+	errOfflineCaptcha      = 911
 	errOfflineTaskExisting = 10008
 )
 
@@ -48,7 +48,26 @@ func (p *OfflineClearParams) Running() *OfflineClearParams {
 	return p
 }
 
+type OfflineTaskStatus int
+
+func (s OfflineTaskStatus) IsRunning() bool {
+	return s == 1
+}
+func (s OfflineTaskStatus) IsComplete() bool {
+	return s == 2
+}
+func (s OfflineTaskStatus) IsFailed() bool {
+	// TODO: need test
+	return s == 3
+}
+
 type OfflineTask struct {
+	InfoHash string
+	Name     string
+	Url      string
+	Status   OfflineTaskStatus
+	Percent  int
+	FileId   string
 }
 
 func (c *Client) offlineSpace() (err error) {
@@ -85,7 +104,10 @@ func (c *Client) callOfflineApi(url string, form core.Form, result interface{}) 
 	return
 }
 
-func (c *Client) OfflineList(page int) (tasks []*OfflineTask, remain int, err error) {
+func (c *Client) OfflineList(page int) (tasks []*OfflineTask, next bool, err error) {
+	if page < 1 {
+		page = 1
+	}
 	form := core.NewForm().WithInt("page", page)
 	result := &internal.OfflineListResult{}
 	err = c.callOfflineApi(apiOfflineList, form, result)
@@ -95,7 +117,18 @@ func (c *Client) OfflineList(page int) (tasks []*OfflineTask, remain int, err er
 	if err != nil {
 		return
 	}
-	// TODO: fill result data
+	tasks = make([]*OfflineTask, len(result.Tasks))
+	for index, data := range result.Tasks {
+		tasks[index] = &OfflineTask{
+			InfoHash: data.InfoHash,
+			Name:     data.Name,
+			Url:      data.Url,
+			Status:   OfflineTaskStatus(data.Status),
+			Percent:  data.Precent,
+			FileId:   data.FileId,
+		}
+	}
+	next = result.Count-(result.Page*result.PageSize) > 0
 	return
 }
 
