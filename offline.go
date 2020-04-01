@@ -57,8 +57,7 @@ func (s OfflineTaskStatus) IsComplete() bool {
 	return s == 2
 }
 func (s OfflineTaskStatus) IsFailed() bool {
-	// TODO: need test
-	return s == 3
+	return s == -1
 }
 
 type OfflineTask struct {

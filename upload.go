@@ -1,14 +1,38 @@
 package elevengo
 
-//import (
-//	"bytes"
-//	"fmt"
-//	"github.com/deadblue/elevengo/core"
-//	"io"
-//	"os"
-//	"strconv"
-//)
-//
+import (
+	"fmt"
+	"github.com/deadblue/elevengo/core"
+	"github.com/deadblue/elevengo/internal"
+	"io"
+)
+
+const (
+	apiUploadInit = "https://uplb.115.com/3.0/sampleinitupload.php"
+)
+
+func (c *Client) UploadFile(categoryId string, name string, size int64, data io.Reader) (err error) {
+	// request upload token
+	form := core.NewForm().
+		WithString("userid", c.ui.UserId).
+		WithString("filename", name).
+		WithInt64("filesize", size).
+		WithString("target", fmt.Sprintf("U_1_%s", categoryId))
+	ir := &internal.UploadInitResult{}
+	err = c.hc.JsonApi(apiUploadInit, nil, form, ir)
+	// Post data
+	form = core.NewMultipartForm()
+	form.WithString("OSSAccessKeyId", ir.AccessKeyId).
+		WithString("key", ir.ObjectKey).
+		WithString("policy", ir.Policy).
+		WithString("callback", ir.Callback).
+		WithString("signature", ir.Signature).
+		WithString("name", name).
+		WithFile("file", name, data)
+	ur := &internal.UploadResult{}
+	return c.hc.JsonApi(ir.Host, nil, form, ur)
+}
+
 //func (c *Client) UploadFile(categoryId, localFile, storeName string) (file *CloudFile, err error) {
 //	// open local file
 //	fp, err := os.OpenFile(localFile, os.O_RDONLY, 0644)
