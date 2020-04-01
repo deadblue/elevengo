@@ -16,8 +16,14 @@ const (
 )
 
 var (
-	_ReUserId = regexp.MustCompile(`(?m)USER_ID = '([0-9]+)';`)
+	regexpUserId = regexp.MustCompile(`(?m)USER_ID = '([0-9]+)';`)
 )
+
+type Credentials struct {
+	UID  string
+	CID  string
+	SEID string
+}
 
 func (c *Client) ImportCredentials(cr *Credentials) (err error) {
 	cks := []*http.Cookie{
@@ -38,7 +44,7 @@ func (c *Client) getUserData() (err error) {
 	}
 	// search and store user id
 	body := string(data)
-	matches := _ReUserId.FindAllStringSubmatch(body, -1)
+	matches := regexpUserId.FindAllStringSubmatch(body, -1)
 	if len(matches) == 0 {
 		return errors.New("not login")
 	}

@@ -5,6 +5,8 @@ import (
 	"strconv"
 )
 
+// `IntString` uses for JSON field which's type may be int or string.
+// It implements `json.Unmarshaler` interface
 type IntString string
 
 func (is *IntString) UnmarshalJSON(b []byte) error {
