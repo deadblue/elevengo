@@ -37,18 +37,18 @@ if err != nil {
 
 * Login
   * [x] Import credentials from cookies
-  * [ ] Login via QRCode
+  * [x] Login via QRCode
   * [ ] Login via Account/Password (No idea now)
 * File API
   * [x] List
-  * [x] Search
+  * [ ] Search
   * [x] Rename
   * [x] Move
   * [x] Copy
   * [x] Delete
-  * [x] Download
-  * [x] Upload
   * [x] Create folder
+  * [ ] Download
+  * [ ] Upload
 * Offline API
   * [x] List tasks
   * [x] Create url task
@@ -62,4 +62,4 @@ if err != nil {
 
 # License
 
-![WTFPL](http://www.wtfpl.net/wp-content/uploads/2012/12/wtfpl-badge-2.png)
+MIT
