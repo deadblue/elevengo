@@ -22,6 +22,20 @@ const (
 	apiFileDelete = "https://webapi.115.com/rb/delete"
 )
 
+// CloudFile is a remote file/category object
+type CloudFile struct {
+	IsCategory bool
+	FileId     string
+	CategoryId string
+	ParentId   string
+	Name       string
+	Size       int64
+	PickCode   string
+	Sha1       string
+	CreateTime time.Time
+	UpdateTime time.Time
+}
+
 func (c *Client) FileIndex() (err error) {
 	result := new(internal.FileIndexResult)
 	err = c.hc.JsonApi(apiFileIndex, nil, nil, result)
@@ -36,7 +50,7 @@ func parseTimestamp(s string) time.Time {
 	return time.Unix(sec, 0)
 }
 
-func (c *Client) FileList(categoryId string, page *PageParam, sort *SortParam) (files []FileItem, err error) {
+func (c *Client) FileList(categoryId string, page *PageParam, sort *SortParam) (files []*CloudFile, err error) {
 	// prepare parameters
 	if sort == nil {
 		sort = (&SortParam{}).ByTime().Desc()
@@ -62,7 +76,7 @@ func (c *Client) FileList(categoryId string, page *PageParam, sort *SortParam) (
 		apiUrl = apiFileListByName
 	}
 	// call API
-	result := new(internal.FileListResult)
+	result := &internal.FileListResult{}
 	err = c.hc.JsonApi(apiUrl, qs, nil, result)
 	if err == nil && !result.State {
 		err = fmt.Errorf("get file list failed")
@@ -70,10 +84,10 @@ func (c *Client) FileList(categoryId string, page *PageParam, sort *SortParam) (
 	if err != nil {
 		return
 	}
-	// convert API result
-	files = make([]FileItem, len(result.Data))
+	// Fill files array
+	files = make([]*CloudFile, len(result.Data))
 	for i, data := range result.Data {
-		fi := FileItem{
+		f := &CloudFile{
 			CategoryId: data.CategoryId,
 			Name:       data.Name,
 			PickCode:   data.PickCode,
@@ -81,16 +95,15 @@ func (c *Client) FileList(categoryId string, page *PageParam, sort *SortParam) (
 			UpdateTime: parseTimestamp(data.UpdateTime),
 		}
 		if data.FileId != "" {
-			fi.IsCategory = false
-			fi.FileId = data.FileId
-			fi.Size = data.Size
-			fi.Sha1 = data.Sha1
+			f.IsCategory = false
+			f.FileId = data.FileId
+			f.Size = data.Size
+			f.Sha1 = data.Sha1
 		} else {
-			fi.IsCategory = true
-			fi.ParentId = data.ParentId
+			f.IsCategory = true
+			f.ParentId = data.ParentId
 		}
-
-		files[i] = fi
+		files[i] = f
 	}
 	return
 }
@@ -121,6 +134,18 @@ func (c Client) FileMove(parentId string, fileIds ...string) (err error) {
 	return
 }
 
+func (c *Client) FileRename(fileId, name string) (err error) {
+	form := core.NewForm().
+		WithStringMap("files_new_name", map[string]string{fileId: name})
+	result := &internal.FileOperateResult{}
+	err = c.hc.JsonApi(apiFileRename, nil, form, result)
+	if err == nil && !result.State {
+		// TODO: convert upstream error
+		err = errors.New(result.Error)
+	}
+	return
+}
+
 func (c *Client) FileDelete(parentId string, fileIds ...string) (err error) {
 	form := core.NewForm().
 		WithString("pid", parentId).
@@ -144,7 +169,7 @@ func (c *Client) CategoryAdd(parentId, name string) (categoryId string, err erro
 		return
 	}
 	if !result.State {
-		// TODO: convert error
+		// TODO: convert upstream error
 		err = errors.New(result.Error)
 	} else {
 		categoryId = result.CategoryId
@@ -213,16 +238,3 @@ func (c *Client) CategoryAdd(parentId, name string) (categoryId string, err erro
 //	}
 //	return
 //}
-
-//func (c *Client) FileRename(fileId, name string) (err error) {
-//	form := core.NewForm().
-//		WithString("fid", fileId).
-//		WithString("file_name", name)
-//	result := new(_FileOperateResult)
-//	err = c.requestJson(apiFileEdit, nil, form, result)
-//	if err == nil && !result.State {
-//		err = apiError(-1)
-//	}
-//	return
-//}
-//

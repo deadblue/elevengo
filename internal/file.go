@@ -16,14 +16,14 @@ type FileIndexResult struct {
 	} `json:"data"`
 }
 
-type Path struct {
+type FilePath struct {
 	AreaId     IntString `json:"aid"`
 	CategoryId IntString `json:"cid"`
 	ParentId   IntString `json:"pid"`
 	Name       string    `json:"name"`
 }
 
-type File struct {
+type FileData struct {
 	FileId     string `json:"fid"`
 	CategoryId string `json:"cid"`
 	ParentId   string `json:"pid"`
@@ -37,16 +37,16 @@ type File struct {
 
 type FileListResult struct {
 	_BaseResult
-	Count    int    `json:"count"`
-	SysCount int    `json:"sys_count"`
-	Path     []Path `json:"path"`
-	Data     []File `json:"data"`
+	Count    int         `json:"count"`
+	SysCount int         `json:"sys_count"`
+	Path     []*FilePath `json:"path"`
+	Data     []*FileData `json:"data"`
 }
 
 type FileOperateResult struct {
-	State bool   `json:"state"`
-	Error string `json:"error"`
-	Errno string `json:"errno"`
+	State     bool      `json:"state"`
+	ErrorCode IntString `json:"errno"`
+	Error     string    `json:"error"`
 }
 
 type CategoryAddResult struct {
