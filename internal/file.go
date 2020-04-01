@@ -1,17 +1,18 @@
 package internal
 
-type SizeInfo struct {
+type SpaceSizeInfo struct {
 	Size       float64 `json:"size"`
 	SizeFormat string  `json:"size_format"`
 }
 
 type FileIndexResult struct {
-	_BaseResult
-	Data struct {
+	State bool   `json:"state"`
+	Error string `json:"error"`
+	Data  struct {
 		SpaceInfo struct {
-			AllTotal  SizeInfo `json:"all_total"`
-			AllRemain SizeInfo `json:"all_remain"`
-			AllUsed   SizeInfo `json:"all_use"`
+			AllTotal  SpaceSizeInfo `json:"all_total"`
+			AllRemain SpaceSizeInfo `json:"all_remain"`
+			AllUsed   SpaceSizeInfo `json:"all_use"`
 		} `json:"space_info"`
 	} `json:"data"`
 }
@@ -36,7 +37,8 @@ type FileData struct {
 }
 
 type FileListResult struct {
-	_BaseResult
+	State    bool        `json:"state"`
+	Error    string      `json:"error"`
 	Count    int         `json:"count"`
 	SysCount int         `json:"sys_count"`
 	Path     []*FilePath `json:"path"`

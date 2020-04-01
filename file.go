@@ -18,8 +18,9 @@ const (
 	apiFileAdd    = "https://webapi.115.com/files/add"
 	apiFileCopy   = "https://webapi.115.com/files/copy"
 	apiFileMove   = "https://webapi.115.com/files/move"
-	apiFileRename = "https://webapi.115.com/files/batch_rename" // params: files_new_name
+	apiFileRename = "https://webapi.115.com/files/batch_rename"
 	apiFileDelete = "https://webapi.115.com/rb/delete"
+	apiFileSearch = "https://webapi.115.com/files/search"
 )
 
 // CloudFile is a remote file/category object

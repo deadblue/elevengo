@@ -1,5 +1,10 @@
 package internal
 
+type OfflineToken struct {
+	Sign string
+	Time int64
+}
+
 type OfflineSpaceResult struct {
 	State bool    `json:"state"`
 	Data  float64 `json:"data"`
@@ -20,17 +25,29 @@ type OfflineBasicResult struct {
 
 type OfflineListResult struct {
 	OfflineBasicResult
-	Count     int `json:"count"`
-	Page      int `json:"page"`
-	PageCount int `json:"page_count"`
-	PageSize  int `json:"page_row"`
-	Tasks     []*OfflineTask
+	Count       int                `json:"count"`
+	Page        int                `json:"page"`
+	PageCount   int                `json:"page_count"`
+	PageSize    int                `json:"page_row"`
+	QuotaRemain int                `json:"quota"`
+	QuotaTotal  int                `json:"total"`
+	Tasks       []*OfflineTaskData `json:"tasks"`
 }
 
-type OfflineTask struct {
-	InfoHash string `json:"info_hash"`
-	Name     string `json:"name"`
-	AddTime  int64  `json:"add_time"`
+type OfflineTaskData struct {
+	InfoHash     string `json:"info_hash"`
+	Name         string `json:"name"`
+	Size         int64  `json:"size"`
+	Url          string `json:"url"`
+	Status       int    `json:"status"`
+	AddTime      int64  `json:"add_time"`
+	LeftTime     int64  `json:"left_time"`
+	UpdateTime   int64  `json:"last_update"`
+	Precent      int    `json:"percentDone"`
+	Move         int    `json:"move"`
+	FileId       string `json:"file_id"`
+	DeleteFileId string `json:"delete_file_id"`
+	DeletePath   string `json:"del_path"`
 }
 
 type OfflineAddUrlResult struct {

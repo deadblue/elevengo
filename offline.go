@@ -1,42 +1,54 @@
 package elevengo
 
 import (
+	"errors"
 	"github.com/deadblue/elevengo/core"
 	"github.com/deadblue/elevengo/internal"
 	"time"
 )
 
 const (
-	apiOfflineSpace = "https://115.com/"
+	apiOfflineSpace   = "https://115.com/"
+	apiOfflineList    = "https://115.com/web/lixian/?ct=lixian&ac=task_lists"
+	apiOfflineAddUrl  = "https://115.com/web/lixian/?ct=lixian&ac=add_task_url"
+	apiOfflineAddUrls = "https://115.com/web/lixian/?ct=lixian&ac=add_task_urls"
+	apiOfflineDelete  = "https://115.com/web/lixian/?ct=lixian&ac=task_del"
+	apiOfflineClear   = "https://115.com/web/lixian/?ct=lixian&ac=task_clear"
+
+	errOfflineNeedCaptcha  = 911
+	errOfflineTaskExisting = 10008
 )
 
-type ClearParams struct {
+type OfflineClearParams struct {
 	flag int
 }
 
-func (cp *ClearParams) All(delete bool) *ClearParams {
+func (p *OfflineClearParams) All(delete bool) *OfflineClearParams {
 	if delete {
-		cp.flag = 5
+		p.flag = 5
 	} else {
-		cp.flag = 1
+		p.flag = 1
 	}
-	return cp
+	return p
 }
-func (cp *ClearParams) Complete(delete bool) *ClearParams {
+func (p *OfflineClearParams) Complete(delete bool) *OfflineClearParams {
 	if delete {
-		cp.flag = 4
+		p.flag = 4
 	} else {
-		cp.flag = 0
+		p.flag = 0
 	}
-	return cp
+	return p
 }
-func (cp *ClearParams) Failed() *ClearParams {
-	cp.flag = 2
-	return cp
+func (p *OfflineClearParams) Failed() *OfflineClearParams {
+	p.flag = 2
+	return p
 }
-func (cp *ClearParams) Running() *ClearParams {
-	cp.flag = 3
-	return cp
+func (p *OfflineClearParams) Running() *OfflineClearParams {
+	p.flag = 3
+	return p
+}
+
+type OfflineTask struct {
 }
 
 func (c *Client) offlineSpace() (err error) {
@@ -73,107 +85,58 @@ func (c *Client) callOfflineApi(url string, form core.Form, result interface{}) 
 	return
 }
 
-//
-//func (c *Client) OfflineList(page int) (tasks []*OfflineTask, remain int, err error) {
-//	form := core.NewForm().WithInt("page", page)
-//	result := &_OfflineListResult{}
-//	err = c.callOfflineApi(apiOfflineList, form, result)
-//	if err == nil {
-//		if !result.State {
-//			err = apiError(result.ErrorNo)
-//		} else {
-//			c.offline.QuotaTotal = result.QuotaTotal
-//			c.offline.QuotaRemain = result.Quota
-//			tasks, remain = result.Tasks, result.PageCount-1
-//		}
-//	}
-//	return
-//}
-//
-//func (c *Client) OfflineDelete(hash ...string) (err error) {
-//	form := core.NewForm().WithStrings("hash", hash)
-//	result := &_OfflineBasicResult{}
-//	err = c.callOfflineApi(apiOfflineDelete, form, result)
-//	if err == nil && !result.State {
-//		err = apiError(result.ErrorNo)
-//	}
-//	return
-//}
-//
-//func (c *Client) OfflineClear(flag ClearFlag) (err error) {
-//	form := core.NewForm().WithInt("flag", int(flag))
-//	result := &_OfflineBasicResult{}
-//	err = c.callOfflineApi(apiOfflineClear, form, result)
-//	if err == nil && !result.State {
-//		err = apiError(result.ErrorNo)
-//	}
-//	return
-//}
-//
-//func (c *Client) OfflineAddUrl(url string) (hash string, err error) {
-//	form := core.NewForm().
-//		WithString("url", url)
-//	result := &_OfflineAddResult{}
-//	err = c.callOfflineApi(apiOfflineAddUrl, form, result)
-//	if err == nil {
-//		if !result.State {
-//			err = apiError(result.ErrorNo)
-//		} else {
-//			hash = result.InfoHash
-//		}
-//	}
-//	return
-//}
-//
-//type TorrentFileFilter func(path string, size int64) bool
-//
-//func (c *Client) OfflineAddTorrent(torrentFile string, filter TorrentFileFilter) (hash string, err error) {
-//	// get torrent dir
-//	qs := core.NewQueryString().
-//		WithString("ct", "lixian").
-//		WithString("ac", "get_id").
-//		WithString("torrent", "1").
-//		WithInt64("_", time.Now().Unix())
-//	gdr := &_OfflineGetDirResult{}
-//	if err = c.requestJson(apiBasic, qs, nil, gdr); err != nil {
-//		return
-//	}
-//	// upload torrent
-//	cf, err := c.UploadFile(gdr.CategoryId, torrentFile, "")
-//	if err != nil {
-//		return
-//	}
-//	// get torrent info
-//	form := core.NewForm().
-//		WithString("pickcode", cf.PickCode).
-//		WithString("sha1", cf.Sha1)
-//	tir := &_OfflineTorrentInfoResult{}
-//	if err = c.callOfflineApi(apiOfflineTorrentInfo, form, tir); err != nil {
-//		return
-//	}
-//	// add bt task
-//	wanted, selectCount := make([]string, tir.FileCount), 0
-//	for index, tf := range tir.FileList {
-//		if filter == nil || filter(tf.Path, tf.Size) {
-//			wanted[selectCount] = strconv.Itoa(index)
-//			selectCount += 1
-//		}
-//	}
-//	if selectCount == 0 {
-//		return "", ErrOfflineNothindToAdd
-//	}
-//	form = core.NewForm().
-//		WithString("savepath", tir.TorrentName).
-//		WithString("info_hash", tir.InfoHash).
-//		WithString("wanted", strings.Join(wanted[:selectCount], ","))
-//	result := &_OfflineAddResult{}
-//	err = c.callOfflineApi(apiOfflineAddTorrent, form, result)
-//	if err == nil {
-//		if !result.State {
-//			err = apiError(result.ErrorNo)
-//		} else {
-//			hash = result.InfoHash
-//		}
-//	}
-//	return
-//}
+func (c *Client) OfflineList(page int) (tasks []*OfflineTask, remain int, err error) {
+	form := core.NewForm().WithInt("page", page)
+	result := &internal.OfflineListResult{}
+	err = c.callOfflineApi(apiOfflineList, form, result)
+	if err == nil && !result.State {
+		err = errors.New(result.ErrorMsg)
+	}
+	if err != nil {
+		return
+	}
+	// TODO: fill result data
+	return
+}
+
+func (c *Client) OfflineAddUrls(url ...string) (err error) {
+	form, isSingle := core.NewForm(), len(url) == 1
+	if isSingle {
+		form.WithString("url", url[0])
+		result := &internal.OfflineAddUrlResult{}
+		err = c.callOfflineApi(apiOfflineAddUrl, form, result)
+	} else {
+		form.WithStrings("url", url)
+		result := &internal.OfflineAddUrlsResult{}
+		err = c.callOfflineApi(apiOfflineAddUrls, form, result)
+	}
+	// TODO: return add result
+	return
+}
+
+func (c *Client) OfflineDelete(deleteFile bool, hash ...string) (err error) {
+	form := core.NewForm().WithStrings("hash", hash)
+	if deleteFile {
+		form.WithInt("flag", 1)
+	}
+	result := &internal.OfflineBasicResult{}
+	err = c.callOfflineApi(apiOfflineDelete, form, result)
+	if err == nil && !result.State {
+		err = errors.New(result.ErrorMsg)
+	}
+	return
+}
+
+func (c *Client) OfflineClear(params *OfflineClearParams) (err error) {
+	if params == nil {
+		params = (&OfflineClearParams{}).Complete(false)
+	}
+	form := core.NewForm().
+		WithInt("flag", params.flag)
+	result := &internal.OfflineBasicResult{}
+	err = c.callOfflineApi(apiOfflineClear, form, result)
+	if err == nil && !result.State {
+		err = errors.New(result.ErrorMsg)
+	}
+	return
+}

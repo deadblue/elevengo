@@ -38,7 +38,7 @@ if err != nil {
 * Login
   * [x] Import credentials from cookies
   * [x] Login via QRCode
-  * [ ] Login via Account/Password (No idea now)
+  * [ ] ~~Login via Account/Password~~ (No idea)
 * File API
   * [x] List
   * [ ] Search
@@ -51,10 +51,7 @@ if err != nil {
   * [ ] Upload
 * Offline API
   * [x] List tasks
-  * [x] Create url task
-  * [x] Create task
-    * [x] Create URL task
-    * [x] Create torrent task
+  * [x] Create URL task(s)
   * [x] Delete tasks
   * [x] Clear tasks
 * Other
