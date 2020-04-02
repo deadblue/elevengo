@@ -11,12 +11,18 @@ const (
 	apiUploadInit = "https://uplb.115.com/3.0/sampleinitupload.php"
 )
 
-func (c *Client) UploadFile(categoryId string, name string, size int64, data io.Reader) (err error) {
+type UploadFile struct {
+	Name string
+	Size int64
+	Data io.Reader
+}
+
+func (c *Client) UploadFile(categoryId string, file *UploadFile) (err error) {
 	// request upload token
 	form := core.NewForm().
 		WithString("userid", c.ui.UserId).
-		WithString("filename", name).
-		WithInt64("filesize", size).
+		WithString("filename", file.Name).
+		WithInt64("filesize", file.Size).
 		WithString("target", fmt.Sprintf("U_1_%s", categoryId))
 	ir := &internal.UploadInitResult{}
 	err = c.hc.JsonApi(apiUploadInit, nil, form, ir)
@@ -27,39 +33,12 @@ func (c *Client) UploadFile(categoryId string, name string, size int64, data io.
 		WithString("policy", ir.Policy).
 		WithString("callback", ir.Callback).
 		WithString("signature", ir.Signature).
-		WithString("name", name).
-		WithFile("file", name, data)
+		WithString("name", file.Name).
+		WithFile("file", file.Name, file.Data)
 	ur := &internal.UploadResult{}
 	return c.hc.JsonApi(ir.Host, nil, form, ur)
 }
 
-//func (c *Client) UploadFile(categoryId, localFile, storeName string) (file *CloudFile, err error) {
-//	// open local file
-//	fp, err := os.OpenFile(localFile, os.O_RDONLY, 0644)
-//	if err != nil {
-//		return
-//	}
-//	defer fp.Close()
-//	// get file info
-//	fi, err := fp.Stat()
-//	if err != nil {
-//		return
-//	}
-//	if fi.IsDir() {
-//		return nil, ErrUploadDirectory
-//	}
-//	// ready to upload
-//	if storeName == "" {
-//		storeName = fi.Name()
-//	}
-//	return c.upload(categoryId, storeName, fi.Size(), fp)
-//}
-//
-//func (c *Client) UploadData(categoryId, storeName string, data []byte) (file *CloudFile, err error) {
-//	size, reader := int64(len(data)), bytes.NewReader(data)
-//	return c.upload(categoryId, storeName, size, reader)
-//}
-//
 //func (c *Client) upload(categoryId string, storeName string, size int64, data io.Reader) (file *CloudFile, err error) {
 //	// get upload parameters
 //	form := core.NewForm().
