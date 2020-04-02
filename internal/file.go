@@ -6,7 +6,7 @@ type SpaceSizeInfo struct {
 }
 
 type FileIndexResult struct {
-	State bool   `json:"state"`
+	BaseApiResult
 	Error string `json:"error"`
 	Data  struct {
 		SpaceInfo struct {
@@ -37,7 +37,7 @@ type FileData struct {
 }
 
 type FileListResult struct {
-	State    bool        `json:"state"`
+	BaseApiResult
 	Error    string      `json:"error"`
 	Count    int         `json:"count"`
 	SysCount int         `json:"sys_count"`
@@ -46,7 +46,7 @@ type FileListResult struct {
 }
 
 type FileOperateResult struct {
-	State     bool      `json:"state"`
+	BaseApiResult
 	ErrorCode IntString `json:"errno"`
 	Error     string    `json:"error"`
 }

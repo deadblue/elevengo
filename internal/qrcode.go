@@ -3,7 +3,7 @@ package internal
 import "encoding/json"
 
 type QrcodeApiResult struct {
-	State   int             `json:"state"`
+	BaseApiResult
 	Code    int             `json:"code"`
 	Message int             `json:"message"`
 	Data    json.RawMessage `json:"data"`
@@ -23,8 +23,8 @@ type QrcodeStatusData struct {
 }
 
 type QrcodeLoginResult struct {
-	State int `json:"state"`
-	Data  struct {
+	BaseApiResult
+	Data struct {
 		Cookie struct {
 			CID  string `json:"CID"`
 			SEID string `json:"SEID"`

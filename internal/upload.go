@@ -25,7 +25,7 @@ type UploadData struct {
 }
 
 type UploadResult struct {
-	State   bool        `json:"state"`
+	BaseApiResult
 	Code    int         `json:"code"`
 	Message string      `json:"message"`
 	Data    *UploadData `json:"data"`

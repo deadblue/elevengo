@@ -1,12 +1,7 @@
 package internal
 
-type OfflineToken struct {
-	Sign string
-	Time int64
-}
-
 type OfflineSpaceResult struct {
-	State bool    `json:"state"`
+	BaseApiResult
 	Data  float64 `json:"data"`
 	Size  string  `json:"size"`
 	Limit int64   `json:"limit"`
@@ -17,7 +12,7 @@ type OfflineSpaceResult struct {
 }
 
 type OfflineBasicResult struct {
-	State     bool   `json:"state"`
+	BaseApiResult
 	ErrorCode int    `json:"errcode"`
 	ErrorType string `json:"errtype"`
 	ErrorMsg  string `json:"error_msg"`
