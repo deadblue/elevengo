@@ -1,35 +1,59 @@
 package elevengo
 
-//import (
-//	"github.com/deadblue/elevengo/core"
-//	"net/url"
-//	"time"
-//)
-//
-//func (c *Client) GetDownloadInfo(pickcode string) (info *DownloadInfo, err error) {
-//	// call API to get download url
-//	qs := core.NewQueryString().
-//		WithString("pickcode", pickcode).
-//		WithInt64("_", time.Now().Unix())
-//	result := &_FileDownloadResult{}
-//	err = c.requestJson(apiFileDownload, qs, nil, result)
-//	if err == nil && !result.State {
-//		err = apiError(result.ErrorNo)
-//	}
-//	if err != nil {
-//		return
-//	}
-//	// get cookies for downloading
-//	u, _ := url.Parse(result.FileUrl)
-//	cookies := c.jar.Cookies(u)
-//	// fill info
-//	info = &DownloadInfo{
-//		Url:       result.FileUrl,
-//		UserAgent: c.ua,
-//		Cookies:   make([]*DownloadCookie, len(cookies)),
-//	}
-//	for index, ck := range cookies {
-//		info.Cookies[index] = &DownloadCookie{ck.Name, ck.Value}
-//	}
-//	return
-//}
+import (
+	"fmt"
+	"github.com/deadblue/elevengo/core"
+	"github.com/deadblue/elevengo/internal"
+	"net/url"
+	"strings"
+	"time"
+)
+
+const (
+	apiFileDownload = "https://webapi.115.com/files/download"
+)
+
+// DownloadTicket contains all required information to download a file.
+type DownloadTicket struct {
+	// Download URL.
+	Url string
+	// Request headers which SHOULD be sent with download URL.
+	Headers map[string]string
+	// File name
+	FileName string
+	// File size in bytes
+	FileSize int64
+}
+
+// Create a download ticket.
+func (c *Client) DownloadCreateTicket(pickcode string) (ticket *DownloadTicket, err error) {
+	// Get download information
+	qs := core.NewQueryString().
+		WithString("pickcode", pickcode).
+		WithInt64("_", time.Now().Unix())
+	result := &internal.DownloadInfoResult{}
+	err = c.hc.JsonApi(apiFileDownload, qs, nil, result)
+	if err == nil && result.IsFailed() {
+		err = ErrRemoteFailed
+	}
+	// Create download ticket
+	ticket = &DownloadTicket{
+		Url:      result.FileUrl,
+		Headers:  make(map[string]string),
+		FileName: result.FileName,
+		FileSize: internal.MustParseInt(result.FileSize),
+	}
+	// Add user-agent header
+	ticket.Headers["User-Agent"] = c.ua
+	// Add cookie header
+	sb := &strings.Builder{}
+	downUrl, _ := url.Parse(result.FileUrl)
+	for i, ck := range c.cj.Cookies(downUrl) {
+		if i > 0 {
+			sb.WriteString("; ")
+		}
+		fmt.Fprintf(sb, "%s=%s", ck.Name, ck.Value)
+	}
+	ticket.Headers["Cookie"] = sb.String()
+	return
+}
