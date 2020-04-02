@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/deadblue/elevengo/core"
 	"github.com/deadblue/elevengo/internal"
-	"strconv"
 	"time"
 )
 
@@ -72,28 +71,37 @@ type FileSortParam struct {
 	asc  int
 }
 
+// Sort files by update time
 func (p *FileSortParam) ByTime() *FileSortParam {
 	p.flag = "user_ptime"
 	return p
 }
+
+// Sort files by name
 func (p *FileSortParam) ByName() *FileSortParam {
 	p.flag = "file_name"
 	return p
 }
+
+// Sort files by size
 func (p *FileSortParam) BySize() *FileSortParam {
 	p.flag = "file_size"
 	return p
 }
+
+// Use ascending order
 func (p *FileSortParam) Asc() *FileSortParam {
 	p.asc = 1
 	return p
 }
+
+// Use descending order
 func (p *FileSortParam) Desc() *FileSortParam {
 	p.asc = 0
 	return p
 }
 
-// CloudFile is a remote file/category object
+// CloudFile describe a remote file/category.
 type CloudFile struct {
 	IsCategory bool
 	FileId     string
@@ -116,13 +124,12 @@ func (c *Client) FileIndex() (err error) {
 	return
 }
 
-func parseTimestamp(s string) time.Time {
-	sec, _ := strconv.ParseInt(s, 10, 64)
-	return time.Unix(sec, 0)
-}
-
+// Get one page of files under specific category(directory).
+// The remote API can get at most 1000 files in one page, so if
+// there are more than 1000 files in a category, you should call
+// this API more than 1 times.
 func (c *Client) FileList(categoryId string, page *FilePageParam, sort *FileSortParam) (files []*CloudFile, err error) {
-	// prepare parameters
+	// Prepare parameters
 	if sort == nil {
 		sort = (&FileSortParam{}).ByTime().Desc()
 	}
@@ -137,12 +144,12 @@ func (c *Client) FileList(categoryId string, page *FilePageParam, sort *FileSort
 		WithInt("asc", sort.asc).
 		WithInt("offset", page.offset()).
 		WithInt("limit", page.limit())
-	// select API URL
+	// Select API URL
 	apiUrl := apiFileList
 	if sort.flag == "file_name" {
 		apiUrl = apiFileListByName
 	}
-	// call API
+	// Call API
 	result := &internal.FileListResult{}
 	err = c.hc.JsonApi(apiUrl, qs, nil, result)
 	if err == nil && !result.State {
@@ -158,8 +165,8 @@ func (c *Client) FileList(categoryId string, page *FilePageParam, sort *FileSort
 			CategoryId: data.CategoryId,
 			Name:       data.Name,
 			PickCode:   data.PickCode,
-			CreateTime: parseTimestamp(data.CreateTime),
-			UpdateTime: parseTimestamp(data.UpdateTime),
+			CreateTime: internal.ParseUnixTime(data.CreateTime),
+			UpdateTime: internal.ParseUnixTime(data.UpdateTime),
 		}
 		if data.FileId != "" {
 			f.IsCategory = false

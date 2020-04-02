@@ -20,17 +20,7 @@ if err := client.ImportCredentials(cr); err != nil {
 	panic(err)
 }
 
-// Get files
-files, remain, err := client.FileList("0", 0, 100)
-if err != nil {
-    panic(err)
-}
-
-// Get offline tasks
-tasks, remain, err := client.OfflineList(1)
-if err != nil {
-    panic(err)
-}
+// TODO: Update example codes.
 ```
 
 # Features

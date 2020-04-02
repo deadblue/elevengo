@@ -1,3 +1,2 @@
-// This package all internal types.
-// Normally they are useless for developers.
+// This package contains all internal types that you needn't care about. :P
 package internal

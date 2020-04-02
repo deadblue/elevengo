@@ -3,10 +3,14 @@ package internal
 import "encoding/json"
 
 type QrcodeApiResult struct {
-	BaseApiResult
+	State   int             `json:"state"`
 	Code    int             `json:"code"`
 	Message int             `json:"message"`
 	Data    json.RawMessage `json:"data"`
+}
+
+func (r *QrcodeApiResult) IsFailed() bool {
+	return r.State == 0
 }
 
 type QrcodeTokenData struct {
@@ -22,19 +26,16 @@ type QrcodeStatusData struct {
 	Version string `json:"version"`
 }
 
-type QrcodeLoginResult struct {
-	BaseApiResult
-	Data struct {
-		Cookie struct {
-			CID  string `json:"CID"`
-			SEID string `json:"SEID"`
-			UID  string `json:"UID"`
-		} `json:"cookie"`
-		UserId   int    `json:"user_id"`
-		UserName string `json:"user_name"`
-		Email    string `json:"email"`
-		Mobile   string `json:"mobile"`
-		Country  string `json:"country"`
-		From     string `json:"from"`
-	} `json:"data"`
+type QrcodeLoginData struct {
+	Cookie struct {
+		CID  string `json:"CID"`
+		SEID string `json:"SEID"`
+		UID  string `json:"UID"`
+	} `json:"cookie"`
+	UserId   int    `json:"user_id"`
+	UserName string `json:"user_name"`
+	Email    string `json:"email"`
+	Mobile   string `json:"mobile"`
+	Country  string `json:"country"`
+	From     string `json:"from"`
 }
