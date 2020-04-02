@@ -1,13 +1,13 @@
 package internal
 
 type ApiResult interface {
-	IsOK() bool
+	IsFailed() bool
 }
 
 type BaseApiResult struct {
 	State bool `json:"state"`
 }
 
-func (r *BaseApiResult) IsOK() bool {
-	return r.State
+func (r *BaseApiResult) IsFailed() bool {
+	return !r.State
 }
