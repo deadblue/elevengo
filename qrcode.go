@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"github.com/deadblue/elevengo/core"
 	"github.com/deadblue/elevengo/internal"
-	"io"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -21,16 +19,12 @@ const (
 
 // QrcodeSession holds the information during a QRcode login process.
 type QrcodeSession struct {
-	uid     string
-	time    int64
-	sign    string
-	content string
-}
-
-// Get the raw data of QRcode.
-// You should use a thridparty tools/libraries to convert it into QRcode image.
-func (qs *QrcodeSession) Content() io.Reader {
-	return strings.NewReader(qs.content)
+	uid  string
+	time int64
+	sign string
+	// The raw data of QRcode, you should use thridparty
+	// tools/libraries to convert it into QRcode image.
+	Content []byte
 }
 
 // QrcodeStatus is returned by `Client.QrcodeStatus()`.
@@ -58,16 +52,17 @@ func (qs QrcodeStatus) IsCanceled() bool {
 	return qs == -2
 }
 
-type QrcodeError struct {
+// Return true if the QRcode is expired.
+func (qs QrcodeStatus) IsExpired() bool {
+	return qs == codeQrcodeExpired
+}
+
+type qrcodeError struct {
 	code int
 }
 
-func (qe *QrcodeError) Error() string {
+func (qe *qrcodeError) Error() string {
 	return fmt.Sprintf("upstream qrcode API error: %d", qe.code)
-}
-
-func (qe *QrcodeError) IsExpired() bool {
-	return qe.code == codeQrcodeExpired
 }
 
 func (c *Client) callQrcodeApi(url string, qs core.QueryString, form core.Form, data interface{}) error {
@@ -76,7 +71,7 @@ func (c *Client) callQrcodeApi(url string, qs core.QueryString, form core.Form, 
 		return err
 	}
 	if result.IsFailed() {
-		return &QrcodeError{
+		return &qrcodeError{
 			code: result.Code,
 		}
 	}
@@ -91,7 +86,7 @@ func (c *Client) QrcodeStart() (session *QrcodeSession, err error) {
 			uid:     data.Uid,
 			time:    data.Time,
 			sign:    data.Sign,
-			content: data.Qrcode,
+			Content: []byte(data.Qrcode),
 		}
 	}
 	return
@@ -109,6 +104,10 @@ func (c *Client) QrcodeStatus(session *QrcodeSession) (status QrcodeStatus, err 
 	data := &internal.QrcodeStatusData{}
 	if err = c.callQrcodeApi(apiQrcodeStatus, qs, nil, data); err == nil {
 		status = QrcodeStatus(data.Status)
+	} else {
+		if qerr, ok := err.(*qrcodeError); ok && qerr.code == codeQrcodeExpired {
+			status, err = QrcodeStatus(codeQrcodeExpired), nil
+		}
 	}
 	return
 }
