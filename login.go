@@ -26,19 +26,19 @@ type Credentials struct {
 }
 
 // Import the credentials into client.
-func (c *Client) ImportCredentials(cr *Credentials) (err error) {
+func (a *Agent) ImportCredentials(cr *Credentials) (err error) {
 	cks := []*http.Cookie{
 		{Name: "UID", Value: cr.UID, Domain: cookieDomain, Path: "/", HttpOnly: true},
 		{Name: "CID", Value: cr.CID, Domain: cookieDomain, Path: "/", HttpOnly: true},
 		{Name: "SEID", Value: cr.SEID, Domain: cookieDomain, Path: "/", HttpOnly: true},
 	}
 	u, _ := url.Parse(cookieUrl)
-	c.cj.SetCookies(u, cks)
-	return c.getUserInfo()
+	a.cj.SetCookies(u, cks)
+	return a.getUserInfo()
 }
 
 // A new and graceful way to get user information.
-func (c *Client) getUserInfo() (err error) {
+func (a *Agent) getUserInfo() (err error) {
 	cb := fmt.Sprintf("jQuery%d_%d", rand.Uint64(), time.Now().Unix())
 	qs := core.NewQueryString().
 		WithString("ct", "ajax").
@@ -46,13 +46,13 @@ func (c *Client) getUserInfo() (err error) {
 		WithString("callback", cb).
 		WithInt64("_", time.Now().Unix())
 	result := &internal.UserInfoResult{}
-	if err = c.hc.JsonpApi(apiUserInfo, qs, result); err != nil {
+	if err = a.hc.JsonpApi(apiUserInfo, qs, result); err != nil {
 		return
 	}
-	if c.ui == nil {
-		c.ui = new(internal.UserInfo)
+	if a.ui == nil {
+		a.ui = new(internal.UserInfo)
 	}
-	c.ui.UserId = result.Data.UserId
-	c.ui.UserName = result.Data.UserName
+	a.ui.UserId = result.Data.UserId
+	a.ui.UserName = result.Data.UserName
 	return
 }

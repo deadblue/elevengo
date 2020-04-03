@@ -13,7 +13,7 @@ const (
 	defaultUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36"
 )
 
-type Client struct {
+type Agent struct {
 	cj http.CookieJar
 	hc core.HttpClient
 	ua string
@@ -22,9 +22,9 @@ type Client struct {
 	ot *internal.OfflineToken
 }
 
-func New(userAgent string) *Client {
-	if userAgent == "" {
-		userAgent = defaultUserAgent
+func New(name string) *Agent {
+	if name == "" {
+		name = defaultUserAgent
 	}
 	opts := &core.HttpOpts{}
 	opts.Jar, _ = cookiejar.New(nil)
@@ -32,15 +32,15 @@ func New(userAgent string) *Client {
 		// Set headers
 		req.Header.Set("Accept", "*/*")
 		req.Header.Set("Cache-Control", "no-cache")
-		req.Header.Set("User-Agent", userAgent)
+		req.Header.Set("User-Agent", name)
 	}
-	return &Client{
-		ua: userAgent,
+	return &Agent{
+		ua: name,
 		cj: opts.Jar,
 		hc: core.NewHttpClient(opts),
 	}
 }
 
-func Default() *Client {
-	return New("")
+func Default() *Agent {
+	return New(defaultUserAgent)
 }

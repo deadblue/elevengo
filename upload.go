@@ -23,15 +23,15 @@ type UploadTicket struct {
 }
 
 // Create an upload ticket.
-func (c *Client) CreateUploadTicket(parentId string, info UploadInfo) (ticket *UploadTicket, err error) {
+func (a *Agent) CreateUploadTicket(parentId string, info UploadInfo) (ticket *UploadTicket, err error) {
 	// Request upload token
 	form := core.NewForm().
-		WithInt("userid", c.ui.UserId).
+		WithInt("userid", a.ui.UserId).
 		WithString("filename", info.Name()).
 		WithInt64("filesize", info.Size()).
 		WithString("target", fmt.Sprintf("U_1_%s", parentId))
 	result := &internal.UploadInitResult{}
-	if err = c.hc.JsonApi(apiUploadInit, nil, form, result); err != nil {
+	if err = a.hc.JsonApi(apiUploadInit, nil, form, result); err != nil {
 		return
 	}
 	// Create upload ticket
@@ -50,7 +50,7 @@ func (c *Client) CreateUploadTicket(parentId string, info UploadInfo) (ticket *U
 	return
 }
 
-func (c *Client) UploadFile(parentId, localFile string) (err error) {
+func (a *Agent) UploadFile(parentId, localFile string) (err error) {
 	// Open local file
 	file, err := os.Open(localFile)
 	if err != nil {
@@ -62,7 +62,7 @@ func (c *Client) UploadFile(parentId, localFile string) (err error) {
 		return nil
 	}
 	// Create upload ticket
-	ticket, err := c.CreateUploadTicket(parentId, info)
+	ticket, err := a.CreateUploadTicket(parentId, info)
 	if err != nil {
 		return nil
 	}
@@ -73,5 +73,5 @@ func (c *Client) UploadFile(parentId, localFile string) (err error) {
 		form.WithString(name, value)
 	}
 	result := &internal.UploadResult{}
-	return c.hc.JsonApi(ticket.Endpoint, nil, form, result)
+	return a.hc.JsonApi(ticket.Endpoint, nil, form, result)
 }

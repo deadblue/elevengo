@@ -117,9 +117,9 @@ type CloudFile struct {
 }
 
 // TODO: Plan to rename this method to "StorageInfo()".
-func (c *Client) FileIndex() (err error) {
+func (a *Agent) FileIndex() (err error) {
 	result := new(internal.FileIndexResult)
-	err = c.hc.JsonApi(apiFileIndex, nil, nil, result)
+	err = a.hc.JsonApi(apiFileIndex, nil, nil, result)
 	if err != nil {
 		// TODO: handle api result
 	}
@@ -130,7 +130,7 @@ func (c *Client) FileIndex() (err error) {
 // The remote API can get at most 1000 files in one page, so if
 // there are more than 1000 files in a category, you should call
 // this API more than 1 times.
-func (c *Client) FileList(parentId string, page *FilePageParam, sort *FileSortParam) (files []*CloudFile, err error) {
+func (a *Agent) FileList(parentId string, page *FilePageParam, sort *FileSortParam) (files []*CloudFile, err error) {
 	// Prepare parameters
 	if sort == nil {
 		sort = (&FileSortParam{}).ByTime().Desc()
@@ -156,7 +156,7 @@ func (c *Client) FileList(parentId string, page *FilePageParam, sort *FileSortPa
 	}
 	// Call API
 	result := &internal.FileListResult{}
-	err = c.hc.JsonApi(apiUrl, qs, nil, result)
+	err = a.hc.JsonApi(apiUrl, qs, nil, result)
 	if err == nil && !result.State {
 		err = fmt.Errorf("get file list failed")
 	}
@@ -187,7 +187,7 @@ func (c *Client) FileList(parentId string, page *FilePageParam, sort *FileSortPa
 	return
 }
 
-func (c *Client) FileSearch(parentId, keyword string, page *FilePageParam) (files []*CloudFile, next bool, err error) {
+func (a *Agent) FileSearch(parentId, keyword string, page *FilePageParam) (files []*CloudFile, next bool, err error) {
 	qs := core.NewQueryString().
 		WithString("aid", "1").
 		WithString("cid", parentId).
@@ -196,19 +196,19 @@ func (c *Client) FileSearch(parentId, keyword string, page *FilePageParam) (file
 		WithInt("limit", page.limit()).
 		WithString("format", "json")
 	result := &internal.FileSearchResult{}
-	err = c.hc.JsonApi(apiFileSearch, qs, nil, result)
+	err = a.hc.JsonApi(apiFileSearch, qs, nil, result)
 	if err != nil {
 		return
 	}
 	return
 }
 
-func (c *Client) FileCopy(parentId string, fileIds ...string) (err error) {
+func (a *Agent) FileCopy(parentId string, fileIds ...string) (err error) {
 	form := core.NewForm().
 		WithString("pid", parentId).
 		WithStrings("fid", fileIds)
 	result := &internal.FileOperateResult{}
-	err = c.hc.JsonApi(apiFileCopy, nil, form, result)
+	err = a.hc.JsonApi(apiFileCopy, nil, form, result)
 	if err == nil && !result.State {
 		// TODO: convert upstream error
 		err = errors.New(result.Error)
@@ -216,12 +216,12 @@ func (c *Client) FileCopy(parentId string, fileIds ...string) (err error) {
 	return
 }
 
-func (c *Client) FileMove(parentId string, fileIds ...string) (err error) {
+func (a *Agent) FileMove(parentId string, fileIds ...string) (err error) {
 	form := core.NewForm().
 		WithString("pid", parentId).
 		WithStrings("fid", fileIds)
 	result := &internal.FileOperateResult{}
-	err = c.hc.JsonApi(apiFileMove, nil, form, result)
+	err = a.hc.JsonApi(apiFileMove, nil, form, result)
 	if err == nil && !result.State {
 		// TODO: convert upstream error
 		err = errors.New(result.Error)
@@ -229,11 +229,11 @@ func (c *Client) FileMove(parentId string, fileIds ...string) (err error) {
 	return
 }
 
-func (c *Client) FileRename(fileId, name string) (err error) {
+func (a *Agent) FileRename(fileId, name string) (err error) {
 	form := core.NewForm().
 		WithStringMap("files_new_name", map[string]string{fileId: name})
 	result := &internal.FileOperateResult{}
-	err = c.hc.JsonApi(apiFileRename, nil, form, result)
+	err = a.hc.JsonApi(apiFileRename, nil, form, result)
 	if err == nil && !result.State {
 		// TODO: convert upstream error
 		err = errors.New(result.Error)
@@ -241,12 +241,12 @@ func (c *Client) FileRename(fileId, name string) (err error) {
 	return
 }
 
-func (c *Client) FileDelete(parentId string, fileIds ...string) (err error) {
+func (a *Agent) FileDelete(parentId string, fileIds ...string) (err error) {
 	form := core.NewForm().
 		WithString("pid", parentId).
 		WithStrings("fid", fileIds)
 	result := &internal.FileOperateResult{}
-	err = c.hc.JsonApi(apiFileDelete, nil, form, result)
+	err = a.hc.JsonApi(apiFileDelete, nil, form, result)
 	if err == nil && !result.State {
 		// TODO: convert upstream error
 		err = errors.New(result.Error)
@@ -254,12 +254,12 @@ func (c *Client) FileDelete(parentId string, fileIds ...string) (err error) {
 	return
 }
 
-func (c *Client) CategoryAdd(parentId, name string) (categoryId string, err error) {
+func (a *Agent) CategoryAdd(parentId, name string) (categoryId string, err error) {
 	form := core.NewForm().
 		WithString("pid", parentId).
 		WithString("cname", name)
 	result := &internal.CategoryAddResult{}
-	err = c.hc.JsonApi(apiFileAdd, nil, form, result)
+	err = a.hc.JsonApi(apiFileAdd, nil, form, result)
 	if err != nil {
 		return
 	}

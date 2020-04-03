@@ -26,13 +26,13 @@ type DownloadTicket struct {
 }
 
 // Create a download ticket.
-func (c *Client) CreateDownloadTicket(pickcode string) (ticket *DownloadTicket, err error) {
+func (a *Agent) CreateDownloadTicket(pickcode string) (ticket *DownloadTicket, err error) {
 	// Get download information
 	qs := core.NewQueryString().
 		WithString("pickcode", pickcode).
 		WithInt64("_", time.Now().Unix())
 	result := &internal.DownloadInfoResult{}
-	err = c.hc.JsonApi(apiFileDownload, qs, nil, result)
+	err = a.hc.JsonApi(apiFileDownload, qs, nil, result)
 	if err == nil && result.IsFailed() {
 		err = ErrRemoteFailed
 	}
@@ -44,11 +44,11 @@ func (c *Client) CreateDownloadTicket(pickcode string) (ticket *DownloadTicket, 
 		FileSize: internal.MustParseInt(result.FileSize),
 	}
 	// Add user-agent header
-	ticket.Headers["User-Agent"] = c.ua
+	ticket.Headers["User-Agent"] = a.ua
 	// Add cookie header
 	sb := &strings.Builder{}
 	downUrl, _ := url.Parse(result.FileUrl)
-	for i, ck := range c.cj.Cookies(downUrl) {
+	for i, ck := range a.cj.Cookies(downUrl) {
 		if i > 0 {
 			sb.WriteString("; ")
 		}
