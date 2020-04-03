@@ -44,7 +44,7 @@ func (a *Agent) CreateDownloadTicket(pickcode string) (ticket *DownloadTicket, e
 		FileSize: internal.MustParseInt(result.FileSize),
 	}
 	// Add user-agent header
-	ticket.Headers["User-Agent"] = a.ua
+	ticket.Headers["User-Agent"] = a.name
 	// Add cookie header
 	sb := &strings.Builder{}
 	downUrl, _ := url.Parse(result.FileUrl)
