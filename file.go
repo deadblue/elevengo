@@ -182,6 +182,10 @@ func (c *Client) FileList(categoryId string, page *FilePageParam, sort *FileSort
 	return
 }
 
+func (c *Client) FileSearch(categoryId, keyword string, page *FilePageParam) (files []*CloudFile, next bool, err error) {
+	return
+}
+
 func (c *Client) FileCopy(parentId string, fileIds ...string) (err error) {
 	form := core.NewForm().
 		WithString("pid", parentId).
