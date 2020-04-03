@@ -25,15 +25,16 @@ type FilePath struct {
 }
 
 type FileData struct {
-	FileId     string `json:"fid"`
-	CategoryId string `json:"cid"`
-	ParentId   string `json:"pid"`
-	Name       string `json:"n"`
-	Size       int64  `json:"s"`
-	PickCode   string `json:"pc"`
-	Sha1       string `json:"sha"`
-	CreateTime string `json:"tp"`
-	UpdateTime string `json:"te"`
+	AreaId     string      `json:"aid"`
+	FileId     string      `json:"fid"`
+	CategoryId string      `json:"cid"`
+	ParentId   string      `json:"pid"`
+	Name       string      `json:"n"`
+	Size       StringInt64 `json:"s"`
+	CreateTime string      `json:"tp"`
+	UpdateTime string      `json:"te"`
+	PickCode   string      `json:"pc"`
+	Sha1       string      `json:"sha"`
 }
 
 type FileListResult struct {
@@ -43,6 +44,16 @@ type FileListResult struct {
 	SysCount int         `json:"sys_count"`
 	Path     []*FilePath `json:"path"`
 	Data     []*FileData `json:"data"`
+}
+
+type FileSearchResult struct {
+	BaseApiResult
+	Error     string      `json:"error"`
+	ErrorCode int         `json:"errCode"`
+	Count     int         `json:"count"`
+	Offset    int         `json:"offset"`
+	PageSize  int         `json:"page_size"`
+	Data      []*FileData `json:"data"`
 }
 
 type FileOperateResult struct {

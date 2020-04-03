@@ -12,19 +12,19 @@ const (
 	apiFileIndex      = "https://webapi.115.com/files/index_info"
 	apiFileList       = "https://webapi.115.com/files"
 	apiFileListByName = "https://aps.115.com/natsort/files.php"
+	apiFileSearch     = "https://webapi.115.com/files/search"
 	apiFileAdd        = "https://webapi.115.com/files/add"
 	apiFileCopy       = "https://webapi.115.com/files/copy"
 	apiFileMove       = "https://webapi.115.com/files/move"
 	apiFileRename     = "https://webapi.115.com/files/batch_rename"
 	apiFileDelete     = "https://webapi.115.com/rb/delete"
-	apiFileSearch     = "https://webapi.115.com/files/search"
 
 	filePageSizeMin     = 10
 	filePageSizeMax     = 1000
 	filePageSizeDefault = 100
 )
 
-// Page parameter for `Client.FileList()` and `Client.FileSearch()`
+// File page parameter.
 type FilePageParam struct {
 	index, size int
 }
@@ -65,7 +65,7 @@ func (p *FilePageParam) offset() int {
 	return p.index * p.limit()
 }
 
-// Sort parameter for `Client.FileList()`
+// Sort file parameter.
 type FileSortParam struct {
 	flag string
 	asc  int
@@ -77,31 +77,32 @@ func (p *FileSortParam) ByTime() *FileSortParam {
 	return p
 }
 
-// Sort files by name
+// Sort files by name.
 func (p *FileSortParam) ByName() *FileSortParam {
 	p.flag = "file_name"
 	return p
 }
 
-// Sort files by size
+// Sort files by size.
 func (p *FileSortParam) BySize() *FileSortParam {
 	p.flag = "file_size"
 	return p
 }
 
-// Use ascending order
+// Use ascending order.
 func (p *FileSortParam) Asc() *FileSortParam {
 	p.asc = 1
 	return p
 }
 
-// Use descending order
+// Use descending order.
 func (p *FileSortParam) Desc() *FileSortParam {
 	p.asc = 0
 	return p
 }
 
 // CloudFile describe a remote file/category.
+// TODO: rename CloudFile to Category.
 type CloudFile struct {
 	IsCategory bool
 	FileId     string
@@ -115,6 +116,7 @@ type CloudFile struct {
 	UpdateTime time.Time
 }
 
+// TODO: Plan to rename this method to "StorageInfo()".
 func (c *Client) FileIndex() (err error) {
 	result := new(internal.FileIndexResult)
 	err = c.hc.JsonApi(apiFileIndex, nil, nil, result)
@@ -132,6 +134,9 @@ func (c *Client) FileList(parentId string, page *FilePageParam, sort *FileSortPa
 	// Prepare parameters
 	if sort == nil {
 		sort = (&FileSortParam{}).ByTime().Desc()
+	}
+	if sort.flag == "" {
+		sort.flag = "user_ptime"
 	}
 	qs := core.NewQueryString().
 		WithString("aid", "1").
@@ -171,7 +176,7 @@ func (c *Client) FileList(parentId string, page *FilePageParam, sort *FileSortPa
 		if data.FileId != "" {
 			f.IsCategory = false
 			f.FileId = data.FileId
-			f.Size = data.Size
+			f.Size = int64(data.Size)
 			f.Sha1 = data.Sha1
 		} else {
 			f.IsCategory = true
@@ -183,6 +188,18 @@ func (c *Client) FileList(parentId string, page *FilePageParam, sort *FileSortPa
 }
 
 func (c *Client) FileSearch(parentId, keyword string, page *FilePageParam) (files []*CloudFile, next bool, err error) {
+	qs := core.NewQueryString().
+		WithString("aid", "1").
+		WithString("cid", parentId).
+		WithString("search_value", keyword).
+		WithInt("offset", page.offset()).
+		WithInt("limit", page.limit()).
+		WithString("format", "json")
+	result := &internal.FileSearchResult{}
+	err = c.hc.JsonApi(apiFileSearch, qs, nil, result)
+	if err != nil {
+		return
+	}
 	return
 }
 
@@ -254,65 +271,3 @@ func (c *Client) CategoryAdd(parentId, name string) (categoryId string, err erro
 	}
 	return
 }
-
-// Search files which's name contains the specific keyword,
-// the searching is recursive, starts from the specific category.
-//
-// `keyword` can not be empty
-//
-// `offset` is base on zero.
-//
-// `limit` can not be lower than `FileListMinLimit`,
-//  and can not be higher than `FileListMaxLimit`
-//func (c *Client) FileSearch(categoryId, keyword string, page *PageParam) (files []*CloudFile, remain int, err error) {
-//	if len(keyword) == 0 {
-//		return nil, 0, ErrEmptyKeyword
-//	}
-//	if page == nil {
-//		page = &PageParam{}
-//	}
-//	qs := core.NewQueryString().
-//		WithString("aid", "1").
-//		WithString("cid", categoryId).
-//		WithString("search_value", keyword).
-//		WithString("format", "json").
-//		WithInt("offset", page.offset()).
-//		WithInt("limit", page.limit())
-//	// call API
-//	result := &_FileSearchResult{}
-//	err = c.requestJson(apiFileSearch, qs, nil, result)
-//	if err == nil && !result.State {
-//		err = apiError(result.MessageCode)
-//	}
-//	if err != nil {
-//		return
-//	}
-//	// remain file count
-//	remain = result.TotalCount - (result.Offset + result.PageSize)
-//	if remain < 0 {
-//		remain = 0
-//	}
-//	// convert result
-//	files = make([]*CloudFile, len(result.Data))
-//	for index, data := range result.Data {
-//		info := &CloudFile{
-//			IsCategory: false,
-//			IsSystem:   false,
-//			CategoryId: data.CategoryId,
-//			Name:       data.Name,
-//			Size:       data.Size,
-//			PickCode:   data.PickCode,
-//		}
-//		info.CreateTime, _ = strconv.ParseInt(data.CreateTime, 10, 64)
-//		info.UpdateTime, _ = strconv.ParseInt(data.UpdateTime, 10, 64)
-//		if data.FileId == nil {
-//			info.IsCategory = true
-//			info.ParentId = *data.ParentId
-//		} else {
-//			info.FileId = *data.FileId
-//			info.Sha1 = *data.Sha1
-//		}
-//		files[index] = info
-//	}
-//	return
-//}
