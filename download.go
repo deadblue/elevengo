@@ -19,14 +19,14 @@ type DownloadTicket struct {
 	Url string
 	// Request headers which SHOULD be sent with download URL.
 	Headers map[string]string
-	// File name
+	// File name.
 	FileName string
-	// File size in bytes
+	// File size in bytes.
 	FileSize int64
 }
 
 // Create a download ticket.
-func (c *Client) DownloadCreateTicket(pickcode string) (ticket *DownloadTicket, err error) {
+func (c *Client) CreateDownloadTicket(pickcode string) (ticket *DownloadTicket, err error) {
 	// Get download information
 	qs := core.NewQueryString().
 		WithString("pickcode", pickcode).

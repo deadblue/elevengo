@@ -4,39 +4,42 @@ import (
 	"fmt"
 	"github.com/deadblue/elevengo/core"
 	"github.com/deadblue/elevengo/internal"
-	"io"
 )
 
 const (
 	apiUploadInit = "https://uplb.115.com/3.0/sampleinitupload.php"
 )
 
-type UploadFile struct {
-	Name string
-	Size int64
-	Data io.Reader
+type UploadTicket struct {
+	Values    map[string]string
+	FileField string
 }
 
-func (c *Client) UploadFile(categoryId string, file *UploadFile) (err error) {
-	// request upload token
+// Create an upload ticket.
+func (c *Client) CreateUploadTicket(categoryId string, filename string, filesize int64) (ticket *UploadTicket, err error) {
+	// Request upload token
 	form := core.NewForm().
 		WithString("userid", c.ui.UserId).
-		WithString("filename", file.Name).
-		WithInt64("filesize", file.Size).
+		WithString("filename", filename).
+		WithInt64("filesize", filesize).
 		WithString("target", fmt.Sprintf("U_1_%s", categoryId))
 	ir := &internal.UploadInitResult{}
-	err = c.hc.JsonApi(apiUploadInit, nil, form, ir)
-	// Post data
-	form = core.NewMultipartForm()
-	form.WithString("OSSAccessKeyId", ir.AccessKeyId).
-		WithString("key", ir.ObjectKey).
-		WithString("policy", ir.Policy).
-		WithString("callback", ir.Callback).
-		WithString("signature", ir.Signature).
-		WithString("name", file.Name).
-		WithFile("file", file.Name, file.Data)
-	ur := &internal.UploadResult{}
-	return c.hc.JsonApi(ir.Host, nil, form, ur)
+	if err = c.hc.JsonApi(apiUploadInit, nil, form, ir); err != nil {
+		return
+	}
+	// Create upload ticket
+	ticket = &UploadTicket{
+		Values: map[string]string{
+			"OSSAccessKeyId": ir.AccessKeyId,
+			"key":            ir.ObjectKey,
+			"policy":         ir.Policy,
+			"callback":       ir.Callback,
+			"signature":      ir.Signature,
+			"name":           filename,
+		},
+		FileField: "file",
+	}
+	return
 }
 
 //func (c *Client) upload(categoryId string, storeName string, size int64, data io.Reader) (file *CloudFile, err error) {
