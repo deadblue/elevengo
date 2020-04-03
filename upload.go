@@ -16,13 +16,13 @@ type UploadTicket struct {
 }
 
 // Create an upload ticket.
-func (c *Client) CreateUploadTicket(categoryId string, filename string, filesize int64) (ticket *UploadTicket, err error) {
+func (c *Client) CreateUploadTicket(parentId string, filename string, filesize int64) (ticket *UploadTicket, err error) {
 	// Request upload token
 	form := core.NewForm().
 		WithString("userid", c.ui.UserId).
 		WithString("filename", filename).
 		WithInt64("filesize", filesize).
-		WithString("target", fmt.Sprintf("U_1_%s", categoryId))
+		WithString("target", fmt.Sprintf("U_1_%s", parentId))
 	ir := &internal.UploadInitResult{}
 	if err = c.hc.JsonApi(apiUploadInit, nil, form, ir); err != nil {
 		return

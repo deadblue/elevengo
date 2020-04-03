@@ -128,14 +128,14 @@ func (c *Client) FileIndex() (err error) {
 // The remote API can get at most 1000 files in one page, so if
 // there are more than 1000 files in a category, you should call
 // this API more than 1 times.
-func (c *Client) FileList(categoryId string, page *FilePageParam, sort *FileSortParam) (files []*CloudFile, err error) {
+func (c *Client) FileList(parentId string, page *FilePageParam, sort *FileSortParam) (files []*CloudFile, err error) {
 	// Prepare parameters
 	if sort == nil {
 		sort = (&FileSortParam{}).ByTime().Desc()
 	}
 	qs := core.NewQueryString().
 		WithString("aid", "1").
-		WithString("cid", categoryId).
+		WithString("cid", parentId).
 		WithString("show_dir", "1").
 		WithString("snap", "0").
 		WithString("natsort", "1").
@@ -182,7 +182,7 @@ func (c *Client) FileList(categoryId string, page *FilePageParam, sort *FileSort
 	return
 }
 
-func (c *Client) FileSearch(categoryId, keyword string, page *FilePageParam) (files []*CloudFile, next bool, err error) {
+func (c *Client) FileSearch(parentId, keyword string, page *FilePageParam) (files []*CloudFile, next bool, err error) {
 	return
 }
 
@@ -199,7 +199,7 @@ func (c *Client) FileCopy(parentId string, fileIds ...string) (err error) {
 	return
 }
 
-func (c Client) FileMove(parentId string, fileIds ...string) (err error) {
+func (c *Client) FileMove(parentId string, fileIds ...string) (err error) {
 	form := core.NewForm().
 		WithString("pid", parentId).
 		WithStrings("fid", fileIds)
