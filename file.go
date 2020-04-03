@@ -12,19 +12,20 @@ const (
 	apiFileIndex      = "https://webapi.115.com/files/index_info"
 	apiFileList       = "https://webapi.115.com/files"
 	apiFileListByName = "https://aps.115.com/natsort/files.php"
+	apiFileStat       = "https://webapi.115.com/category/get"
+	apiFileSearch     = "https://webapi.115.com/files/search"
 	apiFileAdd        = "https://webapi.115.com/files/add"
 	apiFileCopy       = "https://webapi.115.com/files/copy"
 	apiFileMove       = "https://webapi.115.com/files/move"
 	apiFileRename     = "https://webapi.115.com/files/batch_rename"
 	apiFileDelete     = "https://webapi.115.com/rb/delete"
-	apiFileSearch     = "https://webapi.115.com/files/search"
 
 	filePageSizeMin     = 10
-	filePageSizeMax     = 1000
+	filePageSizeMax     = 1150
 	filePageSizeDefault = 100
 )
 
-// Page parameter for `Client.FileList()` and `Client.FileSearch()`
+// File page parameter.
 type FilePageParam struct {
 	index, size int
 }
@@ -65,7 +66,7 @@ func (p *FilePageParam) offset() int {
 	return p.index * p.limit()
 }
 
-// Sort parameter for `Client.FileList()`
+// Sort file parameter.
 type FileSortParam struct {
 	flag string
 	asc  int
@@ -77,31 +78,42 @@ func (p *FileSortParam) ByTime() *FileSortParam {
 	return p
 }
 
-// Sort files by name
+// Sort files by name.
 func (p *FileSortParam) ByName() *FileSortParam {
 	p.flag = "file_name"
 	return p
 }
 
-// Sort files by size
+// Sort files by size.
 func (p *FileSortParam) BySize() *FileSortParam {
 	p.flag = "file_size"
 	return p
 }
 
-// Use ascending order
+// Use ascending order.
 func (p *FileSortParam) Asc() *FileSortParam {
 	p.asc = 1
 	return p
 }
 
-// Use descending order
+// Use descending order.
 func (p *FileSortParam) Desc() *FileSortParam {
 	p.asc = 0
 	return p
 }
 
+// Storage information.
+type StorageInfo struct {
+	// Total size in bytes.
+	Size int64
+	// Used size in bytes.
+	Used int64
+	// Avail size in bytes.
+	Avail int64
+}
+
 // CloudFile describe a remote file/category.
+// TODO: rename CloudFile to Category.
 type CloudFile struct {
 	IsCategory bool
 	FileId     string
@@ -111,15 +123,21 @@ type CloudFile struct {
 	Size       int64
 	PickCode   string
 	Sha1       string
-	CreateTime time.Time
-	UpdateTime time.Time
+	CreateTime *time.Time
+	UpdateTime *time.Time
 }
 
-func (c *Client) FileIndex() (err error) {
+// Get storage size information
+func (a *Agent) StorageStat() (info *StorageInfo, err error) {
 	result := new(internal.FileIndexResult)
-	err = c.hc.JsonApi(apiFileIndex, nil, nil, result)
+	err = a.hc.JsonApi(apiFileIndex, nil, nil, result)
 	if err != nil {
-		// TODO: handle api result
+		return
+	}
+	info = &StorageInfo{
+		Size:  int64(result.Data.SpaceInfo.AllTotal.Size),
+		Used:  int64(result.Data.SpaceInfo.AllUsed.Size),
+		Avail: int64(result.Data.SpaceInfo.AllRemain.Size),
 	}
 	return
 }
@@ -128,10 +146,13 @@ func (c *Client) FileIndex() (err error) {
 // The remote API can get at most 1000 files in one page, so if
 // there are more than 1000 files in a category, you should call
 // this API more than 1 times.
-func (c *Client) FileList(parentId string, page *FilePageParam, sort *FileSortParam) (files []*CloudFile, err error) {
+func (a *Agent) FileList(parentId string, page *FilePageParam, sort *FileSortParam) (files []*CloudFile, err error) {
 	// Prepare parameters
 	if sort == nil {
 		sort = (&FileSortParam{}).ByTime().Desc()
+	}
+	if sort.flag == "" {
+		sort.flag = "user_ptime"
 	}
 	qs := core.NewQueryString().
 		WithString("aid", "1").
@@ -151,7 +172,7 @@ func (c *Client) FileList(parentId string, page *FilePageParam, sort *FileSortPa
 	}
 	// Call API
 	result := &internal.FileListResult{}
-	err = c.hc.JsonApi(apiUrl, qs, nil, result)
+	err = a.hc.JsonApi(apiUrl, qs, nil, result)
 	if err == nil && !result.State {
 		err = fmt.Errorf("get file list failed")
 	}
@@ -171,7 +192,7 @@ func (c *Client) FileList(parentId string, page *FilePageParam, sort *FileSortPa
 		if data.FileId != "" {
 			f.IsCategory = false
 			f.FileId = data.FileId
-			f.Size = data.Size
+			f.Size = int64(data.Size)
 			f.Sha1 = data.Sha1
 		} else {
 			f.IsCategory = true
@@ -182,16 +203,29 @@ func (c *Client) FileList(parentId string, page *FilePageParam, sort *FileSortPa
 	return
 }
 
-func (c *Client) FileSearch(parentId, keyword string, page *FilePageParam) (files []*CloudFile, next bool, err error) {
+func (a *Agent) FileSearch(parentId, keyword string, page *FilePageParam) (files []*CloudFile, next bool, err error) {
+	qs := core.NewQueryString().
+		WithString("aid", "1").
+		WithString("cid", parentId).
+		WithString("search_value", keyword).
+		WithInt("offset", page.offset()).
+		WithInt("limit", page.limit()).
+		WithString("format", "json")
+	result := &internal.FileSearchResult{}
+	err = a.hc.JsonApi(apiFileSearch, qs, nil, result)
+	if err != nil {
+		return
+	}
+	// TODO: convert API result
 	return
 }
 
-func (c *Client) FileCopy(parentId string, fileIds ...string) (err error) {
+func (a *Agent) FileCopy(parentId string, fileIds ...string) (err error) {
 	form := core.NewForm().
 		WithString("pid", parentId).
 		WithStrings("fid", fileIds)
 	result := &internal.FileOperateResult{}
-	err = c.hc.JsonApi(apiFileCopy, nil, form, result)
+	err = a.hc.JsonApi(apiFileCopy, nil, form, result)
 	if err == nil && !result.State {
 		// TODO: convert upstream error
 		err = errors.New(result.Error)
@@ -199,12 +233,12 @@ func (c *Client) FileCopy(parentId string, fileIds ...string) (err error) {
 	return
 }
 
-func (c *Client) FileMove(parentId string, fileIds ...string) (err error) {
+func (a *Agent) FileMove(parentId string, fileIds ...string) (err error) {
 	form := core.NewForm().
 		WithString("pid", parentId).
 		WithStrings("fid", fileIds)
 	result := &internal.FileOperateResult{}
-	err = c.hc.JsonApi(apiFileMove, nil, form, result)
+	err = a.hc.JsonApi(apiFileMove, nil, form, result)
 	if err == nil && !result.State {
 		// TODO: convert upstream error
 		err = errors.New(result.Error)
@@ -212,11 +246,11 @@ func (c *Client) FileMove(parentId string, fileIds ...string) (err error) {
 	return
 }
 
-func (c *Client) FileRename(fileId, name string) (err error) {
+func (a *Agent) FileRename(fileId, name string) (err error) {
 	form := core.NewForm().
 		WithStringMap("files_new_name", map[string]string{fileId: name})
 	result := &internal.FileOperateResult{}
-	err = c.hc.JsonApi(apiFileRename, nil, form, result)
+	err = a.hc.JsonApi(apiFileRename, nil, form, result)
 	if err == nil && !result.State {
 		// TODO: convert upstream error
 		err = errors.New(result.Error)
@@ -224,12 +258,12 @@ func (c *Client) FileRename(fileId, name string) (err error) {
 	return
 }
 
-func (c *Client) FileDelete(parentId string, fileIds ...string) (err error) {
+func (a *Agent) FileDelete(parentId string, fileIds ...string) (err error) {
 	form := core.NewForm().
 		WithString("pid", parentId).
 		WithStrings("fid", fileIds)
 	result := &internal.FileOperateResult{}
-	err = c.hc.JsonApi(apiFileDelete, nil, form, result)
+	err = a.hc.JsonApi(apiFileDelete, nil, form, result)
 	if err == nil && !result.State {
 		// TODO: convert upstream error
 		err = errors.New(result.Error)
@@ -237,12 +271,12 @@ func (c *Client) FileDelete(parentId string, fileIds ...string) (err error) {
 	return
 }
 
-func (c *Client) CategoryAdd(parentId, name string) (categoryId string, err error) {
+func (a *Agent) CategoryAdd(parentId, name string) (categoryId string, err error) {
 	form := core.NewForm().
 		WithString("pid", parentId).
 		WithString("cname", name)
 	result := &internal.CategoryAddResult{}
-	err = c.hc.JsonApi(apiFileAdd, nil, form, result)
+	err = a.hc.JsonApi(apiFileAdd, nil, form, result)
 	if err != nil {
 		return
 	}
@@ -255,64 +289,16 @@ func (c *Client) CategoryAdd(parentId, name string) (categoryId string, err erro
 	return
 }
 
-// Search files which's name contains the specific keyword,
-// the searching is recursive, starts from the specific category.
-//
-// `keyword` can not be empty
-//
-// `offset` is base on zero.
-//
-// `limit` can not be lower than `FileListMinLimit`,
-//  and can not be higher than `FileListMaxLimit`
-//func (c *Client) FileSearch(categoryId, keyword string, page *PageParam) (files []*CloudFile, remain int, err error) {
-//	if len(keyword) == 0 {
-//		return nil, 0, ErrEmptyKeyword
-//	}
-//	if page == nil {
-//		page = &PageParam{}
-//	}
-//	qs := core.NewQueryString().
-//		WithString("aid", "1").
-//		WithString("cid", categoryId).
-//		WithString("search_value", keyword).
-//		WithString("format", "json").
-//		WithInt("offset", page.offset()).
-//		WithInt("limit", page.limit())
-//	// call API
-//	result := &_FileSearchResult{}
-//	err = c.requestJson(apiFileSearch, qs, nil, result)
-//	if err == nil && !result.State {
-//		err = apiError(result.MessageCode)
-//	}
-//	if err != nil {
-//		return
-//	}
-//	// remain file count
-//	remain = result.TotalCount - (result.Offset + result.PageSize)
-//	if remain < 0 {
-//		remain = 0
-//	}
-//	// convert result
-//	files = make([]*CloudFile, len(result.Data))
-//	for index, data := range result.Data {
-//		info := &CloudFile{
-//			IsCategory: false,
-//			IsSystem:   false,
-//			CategoryId: data.CategoryId,
-//			Name:       data.Name,
-//			Size:       data.Size,
-//			PickCode:   data.PickCode,
-//		}
-//		info.CreateTime, _ = strconv.ParseInt(data.CreateTime, 10, 64)
-//		info.UpdateTime, _ = strconv.ParseInt(data.UpdateTime, 10, 64)
-//		if data.FileId == nil {
-//			info.IsCategory = true
-//			info.ParentId = *data.ParentId
-//		} else {
-//			info.FileId = *data.FileId
-//			info.Sha1 = *data.Sha1
-//		}
-//		files[index] = info
-//	}
-//	return
-//}
+// Get a file/category
+func (a *Agent) FileStat(fileId string) (err error) {
+	qs := core.NewQueryString().
+		WithString("aid", "1").
+		WithString("cid", fileId)
+	result := &internal.FileStatResult{}
+	err = a.hc.JsonApi(apiFileStat, qs, nil, result)
+	if err == nil {
+		a.l.Info(fmt.Sprintf("Stat: %#v", result))
+	}
+	// TODO: T.B.D
+	return
+}

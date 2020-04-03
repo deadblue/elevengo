@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"github.com/deadblue/elevengo/core"
 	"github.com/deadblue/elevengo/internal"
-	"strconv"
-	"time"
+q	"time"
 )
 
 const (
@@ -27,7 +26,7 @@ type QrcodeSession struct {
 	Content []byte
 }
 
-// QrcodeStatus is returned by `Client.QrcodeStatus()`.
+// QrcodeStatus is returned by `Agent.QrcodeStatus()`.
 // You can call `QrcodeStatus.IsXXX()` method to check the status,
 // or directly check its value.
 type QrcodeStatus int
@@ -42,7 +41,7 @@ func (qs QrcodeStatus) IsScanned() bool {
 	return qs == 1
 }
 
-// Return true if user allowed this login process, you can call "Client.QrcodeLogin()" after then.
+// Return true if user allowed this login process, you can call "Agent.QrcodeLogin()" after then.
 func (qs QrcodeStatus) IsAllowed() bool {
 	return qs == 2
 }
@@ -65,9 +64,9 @@ func (qe *qrcodeError) Error() string {
 	return fmt.Sprintf("upstream qrcode API error: %d", qe.code)
 }
 
-func (c *Client) callQrcodeApi(url string, qs core.QueryString, form core.Form, data interface{}) error {
+func (a *Agent) callQrcodeApi(url string, qs core.QueryString, form core.Form, data interface{}) error {
 	result := &internal.QrcodeApiResult{}
-	if err := c.hc.JsonApi(url, qs, form, result); err != nil {
+	if err := a.hc.JsonApi(url, qs, form, result); err != nil {
 		return err
 	}
 	if result.IsFailed() {
@@ -79,9 +78,9 @@ func (c *Client) callQrcodeApi(url string, qs core.QueryString, form core.Form, 
 }
 
 // Start a QRcode login process.
-func (c *Client) QrcodeStart() (session *QrcodeSession, err error) {
+func (a *Agent) QrcodeStart() (session *QrcodeSession, err error) {
 	data := &internal.QrcodeTokenData{}
-	if err = c.callQrcodeApi(apiQrcodeToken, nil, nil, data); err == nil {
+	if err = a.callQrcodeApi(apiQrcodeToken, nil, nil, data); err == nil {
 		session = &QrcodeSession{
 			uid:     data.Uid,
 			time:    data.Time,
@@ -95,14 +94,14 @@ func (c *Client) QrcodeStart() (session *QrcodeSession, err error) {
 // Get QRcode login process status.
 // The remote API uses a long-pull request for 30 seconds, so this API
 // will also block at most 30 seconds, be careful to use it in main goroutine.
-func (c *Client) QrcodeStatus(session *QrcodeSession) (status QrcodeStatus, err error) {
+func (a *Agent) QrcodeStatus(session *QrcodeSession) (status QrcodeStatus, err error) {
 	qs := core.NewQueryString().
 		WithString("uid", session.uid).
 		WithInt64("time", session.time).
 		WithString("sign", session.sign).
 		WithInt64("_", time.Now().Unix())
 	data := &internal.QrcodeStatusData{}
-	if err = c.callQrcodeApi(apiQrcodeStatus, qs, nil, data); err == nil {
+	if err = a.callQrcodeApi(apiQrcodeStatus, qs, nil, data); err == nil {
 		status = QrcodeStatus(data.Status)
 	} else {
 		if qerr, ok := err.(*qrcodeError); ok && qerr.code == codeQrcodeExpired {
@@ -114,16 +113,16 @@ func (c *Client) QrcodeStatus(session *QrcodeSession) (status QrcodeStatus, err 
 
 // Login through QRcode.
 // You SHOULD call this method ONLY when `QrcodeStatus.IsAllowed()` is true.
-func (c *Client) QrcodeLogin(session *QrcodeSession) error {
+func (a *Agent) QrcodeLogin(session *QrcodeSession) error {
 	form := core.NewForm().
 		WithString("account", session.uid).
 		WithString("app", "web")
 	data := &internal.QrcodeLoginData{}
-	if err := c.callQrcodeApi(apiQrcodeLogin, nil, form, data); err != nil {
+	if err := a.callQrcodeApi(apiQrcodeLogin, nil, form, data); err != nil {
 		return err
 	} else {
-		c.ui = &internal.UserInfo{
-			UserId: strconv.Itoa(data.UserId),
+		a.ui = &internal.UserInfo{
+			UserId: data.UserId,
 		}
 		return nil
 	}

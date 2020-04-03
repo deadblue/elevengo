@@ -1,7 +1,7 @@
 package internal
 
 type UserInfo struct {
-	UserId   string
+	UserId   int
 	UserName string
 }
 

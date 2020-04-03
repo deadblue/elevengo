@@ -13,7 +13,7 @@ func MustParseInt(s string) int64 {
 	}
 }
 
-func ParseUnixTime(s string) time.Time {
-	ts := MustParseInt(s)
-	return time.Unix(ts, 0)
+func ParseUnixTime(s string) *time.Time {
+	t := time.Unix(MustParseInt(s), 0)
+	return &t
 }

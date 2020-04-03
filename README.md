@@ -4,23 +4,25 @@ An API wrapper for 115 NetDisk Service in Golang.
 
 # Exmaple
 
+Since the API has a lot of changes, example code may be changed in future.
+
 ```
 import "github.com/deadblue/elevengo"
 
-// Create API client in default config
-client := elevengo.Default()
+// Create agent
+agent = elevengo.Default()
 
-// Import cookie credentials
-cr := &elevengo.Credentials{
-	UID: "",
-	CID: "",
-	SEID: "",
+// Import credentials to login
+cr = &elevengo.Credentials{
+    UID: "",
+    CID: "",
+    SEID: "",
 }
-if err := client.ImportCredentials(cr); err != nil {
-	panic(err)
+if err := agent.ImportCredentials(cr); err != nil {
+    panic(err)
 }
 
-// TODO: Update example codes.
+// TODO: Call some API
 ```
 
 # Features
