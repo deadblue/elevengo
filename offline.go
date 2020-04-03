@@ -19,11 +19,12 @@ const (
 	errOfflineTaskExisting = 10008
 )
 
-type OfflineClearParams struct {
+// Parameter for "Client.OfflineClear()" method
+type OfflineClearParam struct {
 	flag int
 }
 
-func (p *OfflineClearParams) All(delete bool) *OfflineClearParams {
+func (p *OfflineClearParam) All(delete bool) *OfflineClearParam {
 	if delete {
 		p.flag = 5
 	} else {
@@ -31,7 +32,7 @@ func (p *OfflineClearParams) All(delete bool) *OfflineClearParams {
 	}
 	return p
 }
-func (p *OfflineClearParams) Complete(delete bool) *OfflineClearParams {
+func (p *OfflineClearParam) Complete(delete bool) *OfflineClearParam {
 	if delete {
 		p.flag = 4
 	} else {
@@ -39,11 +40,11 @@ func (p *OfflineClearParams) Complete(delete bool) *OfflineClearParams {
 	}
 	return p
 }
-func (p *OfflineClearParams) Failed() *OfflineClearParams {
+func (p *OfflineClearParam) Failed() *OfflineClearParam {
 	p.flag = 2
 	return p
 }
-func (p *OfflineClearParams) Running() *OfflineClearParams {
+func (p *OfflineClearParam) Running() *OfflineClearParam {
 	p.flag = 3
 	return p
 }
@@ -159,9 +160,9 @@ func (c *Client) OfflineDelete(deleteFile bool, hash ...string) (err error) {
 	return
 }
 
-func (c *Client) OfflineClear(params *OfflineClearParams) (err error) {
+func (c *Client) OfflineClear(params *OfflineClearParam) (err error) {
 	if params == nil {
-		params = (&OfflineClearParams{}).Complete(false)
+		params = (&OfflineClearParam{}).Complete(false)
 	}
 	form := core.NewForm().
 		WithInt("flag", params.flag)
