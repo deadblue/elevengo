@@ -12,6 +12,7 @@ const (
 	apiFileIndex      = "https://webapi.115.com/files/index_info"
 	apiFileList       = "https://webapi.115.com/files"
 	apiFileListByName = "https://aps.115.com/natsort/files.php"
+	apiFileStat       = "https://webapi.115.com/category/get"
 	apiFileSearch     = "https://webapi.115.com/files/search"
 	apiFileAdd        = "https://webapi.115.com/files/add"
 	apiFileCopy       = "https://webapi.115.com/files/copy"
@@ -20,7 +21,7 @@ const (
 	apiFileDelete     = "https://webapi.115.com/rb/delete"
 
 	filePageSizeMin     = 10
-	filePageSizeMax     = 1000
+	filePageSizeMax     = 1150
 	filePageSizeDefault = 100
 )
 
@@ -101,6 +102,16 @@ func (p *FileSortParam) Desc() *FileSortParam {
 	return p
 }
 
+// Storage information.
+type StorageInfo struct {
+	// Total size in bytes.
+	Size int64
+	// Used size in bytes.
+	Used int64
+	// Avail size in bytes.
+	Avail int64
+}
+
 // CloudFile describe a remote file/category.
 // TODO: rename CloudFile to Category.
 type CloudFile struct {
@@ -112,16 +123,21 @@ type CloudFile struct {
 	Size       int64
 	PickCode   string
 	Sha1       string
-	CreateTime time.Time
-	UpdateTime time.Time
+	CreateTime *time.Time
+	UpdateTime *time.Time
 }
 
-// TODO: Plan to rename this method to "StorageInfo()".
-func (a *Agent) FileIndex() (err error) {
+// Get storage size information
+func (a *Agent) StorageStat() (info *StorageInfo, err error) {
 	result := new(internal.FileIndexResult)
 	err = a.hc.JsonApi(apiFileIndex, nil, nil, result)
 	if err != nil {
-		// TODO: handle api result
+		return
+	}
+	info = &StorageInfo{
+		Size:  int64(result.Data.SpaceInfo.AllTotal.Size),
+		Used:  int64(result.Data.SpaceInfo.AllUsed.Size),
+		Avail: int64(result.Data.SpaceInfo.AllRemain.Size),
 	}
 	return
 }
@@ -200,6 +216,7 @@ func (a *Agent) FileSearch(parentId, keyword string, page *FilePageParam) (files
 	if err != nil {
 		return
 	}
+	// TODO: convert API result
 	return
 }
 
@@ -269,5 +286,19 @@ func (a *Agent) CategoryAdd(parentId, name string) (categoryId string, err error
 	} else {
 		categoryId = result.CategoryId
 	}
+	return
+}
+
+// Get a file/category
+func (a *Agent) FileStat(fileId string) (err error) {
+	qs := core.NewQueryString().
+		WithString("aid", "1").
+		WithString("cid", fileId)
+	result := &internal.FileStatResult{}
+	err = a.hc.JsonApi(apiFileStat, qs, nil, result)
+	if err == nil {
+		a.l.Info(fmt.Sprintf("Stat: %#v", result))
+	}
+	// TODO: T.B.D
 	return
 }

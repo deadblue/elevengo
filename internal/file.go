@@ -1,6 +1,8 @@
 package internal
 
-type SpaceSizeInfo struct {
+import "encoding/json"
+
+type StorageSizeInfo struct {
 	Size       float64 `json:"size"`
 	SizeFormat string  `json:"size_format"`
 }
@@ -10,9 +12,9 @@ type FileIndexResult struct {
 	Error string `json:"error"`
 	Data  struct {
 		SpaceInfo struct {
-			AllTotal  SpaceSizeInfo `json:"all_total"`
-			AllRemain SpaceSizeInfo `json:"all_remain"`
-			AllUsed   SpaceSizeInfo `json:"all_use"`
+			AllTotal  StorageSizeInfo `json:"all_total"`
+			AllRemain StorageSizeInfo `json:"all_remain"`
+			AllUsed   StorageSizeInfo `json:"all_use"`
 		} `json:"space_info"`
 	} `json:"data"`
 }
@@ -69,4 +71,49 @@ type CategoryAddResult struct {
 	CategoryName string `json:"cname"`
 	FileId       string `json:"file_id"`
 	FileName     string `json:"file_name"`
+}
+
+type FileStatPath struct {
+	FileId   IntString `json:"file_id"`
+	FileName string    `json:"file_name"`
+}
+
+type FileStatData struct {
+	Name        string          `json:"file_name"`
+	IsFile      string          `json:"file_category"`
+	CreateTime  string          `json:"ptime"`
+	UpdateTime  string          `json:"utime"`
+	FileCount   StringInt       `json:"count"`
+	FolderCount StringInt       `json:"folder_count"`
+	FormatSize  string          `json:"size"`
+	PickCode    string          `json:"pick_code"`
+	Sha1        string          `json:"sha1"`
+	Paths       []*FileStatPath `json:"paths"`
+}
+
+type FileStatResult struct {
+	BaseApiResult
+	Data *FileStatData
+}
+
+func (r *FileStatResult) UnmarshalJSON(data []byte) (err error) {
+	if data[0] == '[' {
+		*r = FileStatResult{
+			BaseApiResult: BaseApiResult{
+				State: false,
+			},
+			Data: nil,
+		}
+	} else {
+		d := &FileStatData{}
+		if err = json.Unmarshal(data, d); err == nil {
+			*r = FileStatResult{
+				BaseApiResult: BaseApiResult{
+					State: true,
+				},
+				Data: d,
+			}
+		}
+	}
+	return
 }
