@@ -19,11 +19,13 @@ const (
 	errOfflineTaskExisting = 10008
 )
 
-// Parameter for "Client.OfflineClear()" method
+// Parameter for "Client.OfflineClear()" method.
+// Default value is to clear all done tasks without deleteing downloaded files.
 type OfflineClearParam struct {
 	flag int
 }
 
+// Clear all tasks, delete the downloaded files if "delete" is true.
 func (p *OfflineClearParam) All(delete bool) *OfflineClearParam {
 	if delete {
 		p.flag = 5
@@ -32,7 +34,9 @@ func (p *OfflineClearParam) All(delete bool) *OfflineClearParam {
 	}
 	return p
 }
-func (p *OfflineClearParam) Complete(delete bool) *OfflineClearParam {
+
+// Clear done tasks, delete the downloaded files if "delete" is true.
+func (p *OfflineClearParam) Done(delete bool) *OfflineClearParam {
 	if delete {
 		p.flag = 4
 	} else {
@@ -40,23 +44,33 @@ func (p *OfflineClearParam) Complete(delete bool) *OfflineClearParam {
 	}
 	return p
 }
+
+// Clear failed tasks.
 func (p *OfflineClearParam) Failed() *OfflineClearParam {
 	p.flag = 2
 	return p
 }
+
+// Clean running tasks.
 func (p *OfflineClearParam) Running() *OfflineClearParam {
 	p.flag = 3
 	return p
 }
 
+// Describe status of an offline task.
 type OfflineTaskStatus int
 
+// Return true if the task is still running.
 func (s OfflineTaskStatus) IsRunning() bool {
 	return s == 1
 }
-func (s OfflineTaskStatus) IsComplete() bool {
+
+// Return true if the task has been done.
+func (s OfflineTaskStatus) IsDone() bool {
 	return s == 2
 }
+
+// Return true if the task has been failed.
 func (s OfflineTaskStatus) IsFailed() bool {
 	return s == -1
 }
@@ -70,7 +84,7 @@ type OfflineTask struct {
 	FileId   string
 }
 
-func (c *Client) offlineSpace() (err error) {
+func (c *Client) updateOfflineToken() (err error) {
 	qs := core.NewQueryString().
 		WithString("ct", "offline").
 		WithString("ac", "space").
@@ -90,20 +104,22 @@ func (c *Client) offlineSpace() (err error) {
 
 func (c *Client) callOfflineApi(url string, form core.Form, result interface{}) (err error) {
 	if c.ot == nil {
-		if err = c.offlineSpace(); err != nil {
+		if err = c.updateOfflineToken(); err != nil {
 			return
 		}
 	}
 	if form == nil {
 		form = core.NewForm()
 	}
-	form.WithString("uid", c.ui.UserId).
+	form.WithInt("uid", c.ui.UserId).
 		WithString("sign", c.ot.Sign).
 		WithInt64("time", c.ot.Time)
 	err = c.hc.JsonApi(url, nil, form, result)
+	// TODO: handle token expired error.
 	return
 }
 
+// Get one page of offline tasks, the page size is hard-coded to 24 by upstream API.
 func (c *Client) OfflineList(page int) (tasks []*OfflineTask, next bool, err error) {
 	if page < 1 {
 		page = 1
@@ -132,7 +148,8 @@ func (c *Client) OfflineList(page int) (tasks []*OfflineTask, next bool, err err
 	return
 }
 
-func (c *Client) OfflineAddUrls(url ...string) (err error) {
+// Add one or more offline task by URL.
+func (c *Client) OfflineAdd(url ...string) (err error) {
 	form, isSingle := core.NewForm(), len(url) == 1
 	if isSingle {
 		form.WithString("url", url[0])
@@ -147,6 +164,8 @@ func (c *Client) OfflineAddUrls(url ...string) (err error) {
 	return
 }
 
+// Delete some offline tasks.
+// if "deleteFile" is true, the downloaded files will be deleted.
 func (c *Client) OfflineDelete(deleteFile bool, hash ...string) (err error) {
 	form := core.NewForm().WithStrings("hash", hash)
 	if deleteFile {
@@ -160,12 +179,14 @@ func (c *Client) OfflineDelete(deleteFile bool, hash ...string) (err error) {
 	return
 }
 
-func (c *Client) OfflineClear(params *OfflineClearParam) (err error) {
-	if params == nil {
-		params = (&OfflineClearParam{}).Complete(false)
+// Clear offline tasks which specified by param, you can pass param as nil to
+// clear done tasks without deleting downloaded files.
+func (c *Client) OfflineClear(param *OfflineClearParam) (err error) {
+	if param == nil {
+		param = (&OfflineClearParam{}).Done(false)
 	}
 	form := core.NewForm().
-		WithInt("flag", params.flag)
+		WithInt("flag", param.flag)
 	result := &internal.OfflineBasicResult{}
 	err = c.callOfflineApi(apiOfflineClear, form, result)
 	if err == nil && !result.State {

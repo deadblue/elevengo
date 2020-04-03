@@ -6,7 +6,6 @@ import (
 	"github.com/deadblue/elevengo/core"
 	"github.com/deadblue/elevengo/internal"
 	"io"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -124,7 +123,7 @@ func (c *Client) QrcodeLogin(session *QrcodeSession) error {
 		return err
 	} else {
 		c.ui = &internal.UserInfo{
-			UserId: strconv.Itoa(data.UserId),
+			UserId: data.UserId,
 		}
 		return nil
 	}
