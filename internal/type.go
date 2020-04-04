@@ -14,8 +14,7 @@ func (v *IntString) UnmarshalJSON(b []byte) (err error) {
 		err = json.Unmarshal(b, &s)
 	} else {
 		var n int
-		err := json.Unmarshal(b, &n)
-		if err == nil {
+		if err := json.Unmarshal(b, &n); err == nil {
 			s = strconv.Itoa(n)
 		}
 	}
@@ -32,9 +31,8 @@ func (v *StringInt) UnmarshalJSON(b []byte) (err error) {
 	var i int
 	if b[0] == '"' {
 		var s string
-		err = json.Unmarshal(b, &s)
-		if err == nil {
-			i, err = strconv.Atoi(s)
+		if err = json.Unmarshal(b, &s); err == nil {
+			i = MustAtoi(s)
 		}
 	} else {
 		err = json.Unmarshal(b, &i)
@@ -52,9 +50,8 @@ func (v *StringInt64) UnmarshalJSON(b []byte) (err error) {
 	var i int64
 	if b[0] == '"' {
 		var s string
-		err = json.Unmarshal(b, &s)
-		if err == nil {
-			i, err = strconv.ParseInt(s, 10, 64)
+		if err = json.Unmarshal(b, &s); err == nil {
+			i = MustParseInt(s)
 		}
 	} else {
 		err = json.Unmarshal(b, &i)
