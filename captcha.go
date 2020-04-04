@@ -16,15 +16,15 @@ const (
 
 // CaptchaSession holds the information during a CAPTCHA process.
 type CaptchaSession struct {
-	// The callback function name, hide for caller.
-	callback string
-
 	// The CAPTCHA image data.
 	// There are 4 Chinese characters on this image, you need call
-	// "CaptchaKeysImage" to get a image with 10 Chinese characters and
-	// find 4 characters on it which matches with this image, the indexes
-	// of the 4 characters is the CAPTCHA code.
+	// "CaptchaKeysImage" to get a image with 10 Chinese characters on it,
+	// and find 4 characters from them which matches with this image, the
+	// indexes of the 4 characters is the CAPTCHA code.
 	Image []byte
+
+	// The callback function name, hide for caller.
+	callback string
 }
 
 // Start a CAPTCHA session.
