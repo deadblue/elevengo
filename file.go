@@ -112,22 +112,29 @@ type StorageInfo struct {
 	Avail int64
 }
 
-// CloudFile describe a remote file/category.
-// TODO: rename CloudFile to Category.
-type CloudFile struct {
-	IsCategory bool
-	FileId     string
-	CategoryId string
-	ParentId   string
-	Name       string
-	Size       int64
-	PickCode   string
-	Sha1       string
+// File describe a remote file or directory.
+type File struct {
+	// True of a file, false for a directory.
+	IsFile bool
+	// Unique ID for the file.
+	FileId string
+	// Parent directory ID.
+	ParentId string
+	// File name.
+	Name string
+	// File size in bytes, 0 for directory.
+	Size int64
+	// Pick code, you can use this to create a download ticket.
+	PickCode string
+	// Sha1 hash value of the file, empty for directory.
+	Sha1 string
+	// Create time of the file.
 	CreateTime *time.Time
+	// Update time of the file.
 	UpdateTime *time.Time
 }
 
-// Get storage size information
+// Get storage size information.
 func (a *Agent) StorageStat() (info *StorageInfo, err error) {
 	result := new(internal.FileIndexResult)
 	err = a.hc.JsonApi(apiFileIndex, nil, nil, result)
@@ -142,16 +149,14 @@ func (a *Agent) StorageStat() (info *StorageInfo, err error) {
 	return
 }
 
-// Get one page of files under specific category(directory).
-// The remote API can get at most 1000 files in one page, so if
-// there are more than 1000 files in a category, you should call
-// this API more than 1 times.
-func (a *Agent) FileList(parentId string, page *FilePageParam, sort *FileSortParam) (files []*CloudFile, err error) {
+// Get one page of files under specific directory.
+// The remote API can get at most 1000 files in one page, so if there are
+// more than 1000 files in a category, you should call this method multiple times.
+func (a *Agent) FileList(parentId string, page *FilePageParam, sort *FileSortParam) (files []*File, err error) {
 	// Prepare parameters
 	if sort == nil {
 		sort = (&FileSortParam{}).ByTime().Desc()
-	}
-	if sort.flag == "" {
+	} else if sort.flag == "" {
 		sort.flag = "user_ptime"
 	}
 	qs := core.NewQueryString().
@@ -173,37 +178,39 @@ func (a *Agent) FileList(parentId string, page *FilePageParam, sort *FileSortPar
 	// Call API
 	result := &internal.FileListResult{}
 	err = a.hc.JsonApi(apiUrl, qs, nil, result)
-	if err == nil && !result.State {
+	if err == nil && result.IsFailed() {
 		err = fmt.Errorf("get file list failed")
 	}
 	if err != nil {
 		return
 	}
 	// Fill files array
-	files = make([]*CloudFile, len(result.Data))
+	files = make([]*File, len(result.Data))
 	for i, data := range result.Data {
-		f := &CloudFile{
-			CategoryId: data.CategoryId,
+		f := &File{
 			Name:       data.Name,
+			Size:       int64(data.Size),
 			PickCode:   data.PickCode,
+			Sha1:       data.Sha1,
 			CreateTime: internal.ParseUnixTime(data.CreateTime),
 			UpdateTime: internal.ParseUnixTime(data.UpdateTime),
 		}
 		if data.FileId != "" {
-			f.IsCategory = false
+			f.IsFile = true
 			f.FileId = data.FileId
-			f.Size = int64(data.Size)
-			f.Sha1 = data.Sha1
+			f.ParentId = data.CategoryId
 		} else {
-			f.IsCategory = true
+			f.IsFile = false
+			f.FileId = data.CategoryId
 			f.ParentId = data.ParentId
 		}
 		files[i] = f
 	}
+	// TODO: Plan to update "page" parameter.
 	return
 }
 
-func (a *Agent) FileSearch(parentId, keyword string, page *FilePageParam) (files []*CloudFile, next bool, err error) {
+func (a *Agent) FileSearch(parentId, keyword string, page *FilePageParam) (files []*File, err error) {
 	qs := core.NewQueryString().
 		WithString("aid", "1").
 		WithString("cid", parentId).
@@ -213,13 +220,38 @@ func (a *Agent) FileSearch(parentId, keyword string, page *FilePageParam) (files
 		WithString("format", "json")
 	result := &internal.FileSearchResult{}
 	err = a.hc.JsonApi(apiFileSearch, qs, nil, result)
+	if err == nil && result.IsFailed() {
+		err = fmt.Errorf("remote API error: %s", result.Error)
+	}
 	if err != nil {
 		return
 	}
-	// TODO: convert API result
+	// Convert result to "File" slice
+	files = make([]*File, len(result.Data))
+	for i, data := range result.Data {
+		files[i] = &File{
+			Name:       data.Name,
+			Size:       int64(data.Size),
+			PickCode:   data.PickCode,
+			Sha1:       data.Sha1,
+			CreateTime: internal.ParseUnixTime(data.CreateTime),
+			UpdateTime: internal.ParseUnixTime(data.UpdateTime),
+		}
+		if data.FileId != "" {
+			files[i].IsFile = true
+			files[i].FileId = data.FileId
+			files[i].ParentId = data.CategoryId
+		} else {
+			files[i].IsFile = false
+			files[i].FileId = data.CategoryId
+			files[i].ParentId = data.ParentId
+		}
+	}
+	// TODO: Plan to update "page" parameter.
 	return
 }
 
+// Copy files to a directory.
 func (a *Agent) FileCopy(parentId string, fileIds ...string) (err error) {
 	form := core.NewForm().
 		WithString("pid", parentId).
@@ -233,6 +265,7 @@ func (a *Agent) FileCopy(parentId string, fileIds ...string) (err error) {
 	return
 }
 
+// Move files to a directory.
 func (a *Agent) FileMove(parentId string, fileIds ...string) (err error) {
 	form := core.NewForm().
 		WithString("pid", parentId).
@@ -246,6 +279,7 @@ func (a *Agent) FileMove(parentId string, fileIds ...string) (err error) {
 	return
 }
 
+// Rename file.
 func (a *Agent) FileRename(fileId, name string) (err error) {
 	form := core.NewForm().
 		WithStringMap("files_new_name", map[string]string{fileId: name})
@@ -258,6 +292,7 @@ func (a *Agent) FileRename(fileId, name string) (err error) {
 	return
 }
 
+// Delete files from a directory.
 func (a *Agent) FileDelete(parentId string, fileIds ...string) (err error) {
 	form := core.NewForm().
 		WithString("pid", parentId).
@@ -271,7 +306,8 @@ func (a *Agent) FileDelete(parentId string, fileIds ...string) (err error) {
 	return
 }
 
-func (a *Agent) CategoryAdd(parentId, name string) (categoryId string, err error) {
+// Create a directory under specific parent driectory with specific name.
+func (a *Agent) FileMkdir(parentId, name string) (categoryId string, err error) {
 	form := core.NewForm().
 		WithString("pid", parentId).
 		WithString("cname", name)
@@ -289,7 +325,7 @@ func (a *Agent) CategoryAdd(parentId, name string) (categoryId string, err error
 	return
 }
 
-// Get a file/category
+// Get remote file info.
 func (a *Agent) FileStat(fileId string) (err error) {
 	qs := core.NewQueryString().
 		WithString("aid", "1").
