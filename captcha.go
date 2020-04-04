@@ -14,15 +14,20 @@ const (
 	apiCaptchaSubmit = "https://webapi.115.com/user/captcha"
 )
 
+// CaptchaSession holds the information during a CAPTCHA process.
 type CaptchaSession struct {
+	// The callback function name, hide for caller.
 	callback string
-	code     []byte
+
+	// The CAPTCHA image data.
+	// There are 4 Chinese characters on this image, you need call
+	// "CaptchaKeysImage" to get a image with 10 Chinese characters and
+	// find 4 characters on it which matches with this image, the indexes
+	// of the 4 characters is the CAPTCHA code.
+	Image []byte
 }
 
-func (cs *CaptchaSession) CodeImage() []byte {
-	return cs.code
-}
-
+// Start a CAPTCHA session.
 func (a *Agent) CaptchaStart() (session *CaptchaSession, err error) {
 	// Fetch captcha page
 	callback := fmt.Sprintf("Close911_%d", time.Now().UnixNano())
@@ -38,19 +43,23 @@ func (a *Agent) CaptchaStart() (session *CaptchaSession, err error) {
 		WithString("ct", "index").
 		WithString("ac", "code").
 		WithInt64("_t", time.Now().Unix())
-	code, err := a.hc.Get(apiCaptcha, qs)
+	image, err := a.hc.Get(apiCaptcha, qs)
 	if err != nil {
 		return
 	}
 	// Build session
 	session = &CaptchaSession{
 		callback: callback,
-		code:     code,
+		Image:    image,
 	}
 	return
 }
 
-func (a *Agent) CaptchaAllKeysImage(session *CaptchaSession) ([]byte, error) {
+// Get CAPTCHA keys image.
+// There are 10 Chinese characters on the image, 5 in column and 2 in row.
+// You can call this method multiple times, everytime you call it, you will
+// get the same 10 characters but in different font.
+func (a *Agent) CaptchaKeysImage(session *CaptchaSession) ([]byte, error) {
 	qs := core.NewQueryString().
 		WithString("ct", "index").
 		WithString("ac", "code").
@@ -59,6 +68,9 @@ func (a *Agent) CaptchaAllKeysImage(session *CaptchaSession) ([]byte, error) {
 	return a.hc.Get(apiCaptcha, qs)
 }
 
+// Get one CAPTCHA key image.
+// You can call this method multiple times, everytime you call it, you will
+// get the same character but in different font.
 func (a *Agent) CaptchaKeyImage(session *CaptchaSession, index int) ([]byte, error) {
 	if index < 0 {
 		index = 0
@@ -74,6 +86,7 @@ func (a *Agent) CaptchaKeyImage(session *CaptchaSession, index int) ([]byte, err
 	return a.hc.Get(apiCaptcha, qs)
 }
 
+// Submit the CAPTCHA code.
 func (a *Agent) CaptchaSubmit(session *CaptchaSession, code string) (err error) {
 	// Get captcha sign
 	cb := fmt.Sprintf("jQuery%d_%d", rand.Uint64(), time.Now().UnixNano())
@@ -96,7 +109,7 @@ func (a *Agent) CaptchaSubmit(session *CaptchaSession, code string) (err error) 
 	submitResult := &internal.CaptchaSubmitResult{}
 	err = a.hc.JsonApi(apiCaptchaSubmit, nil, form, submitResult)
 	if err == nil && !submitResult.State {
-		// TODO: handle submit result
+		// TODO: handle error code.
 		err = errors.New("submit failed")
 	}
 	return
