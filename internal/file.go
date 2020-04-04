@@ -60,11 +60,11 @@ type FileSearchResult struct {
 
 type FileOperateResult struct {
 	BaseApiResult
-	ErrorCode IntString `json:"errno"`
+	ErrorCode StringInt `json:"errno"`
 	Error     string    `json:"error"`
 }
 
-type CategoryAddResult struct {
+type FileAddResult struct {
 	FileOperateResult
 	AreaId       int    `json:"aid"`
 	CategoryId   string `json:"cid"`

@@ -1,7 +1,6 @@
 package elevengo
 
 import (
-	"errors"
 	"fmt"
 	"github.com/deadblue/elevengo/core"
 	"github.com/deadblue/elevengo/internal"
@@ -23,7 +22,19 @@ const (
 	filePageSizeMin     = 10
 	filePageSizeMax     = 1150
 	filePageSizeDefault = 100
+
+	errDirectoryExisting = 20004
 )
+
+type FileError int
+
+func (e FileError) Error() string {
+	return fmt.Sprintf("remote error: %d", e)
+}
+
+func (e FileError) IsAlreadyExisting() bool {
+	return e == errDirectoryExisting
+}
 
 // File page parameter.
 type FilePageParam struct {
@@ -258,9 +269,8 @@ func (a *Agent) FileCopy(parentId string, fileIds ...string) (err error) {
 		WithStrings("fid", fileIds)
 	result := &internal.FileOperateResult{}
 	err = a.hc.JsonApi(apiFileCopy, nil, form, result)
-	if err == nil && !result.State {
-		// TODO: convert upstream error
-		err = errors.New(result.Error)
+	if err == nil && result.IsFailed() {
+		err = FileError(result.ErrorCode)
 	}
 	return
 }
@@ -272,9 +282,8 @@ func (a *Agent) FileMove(parentId string, fileIds ...string) (err error) {
 		WithStrings("fid", fileIds)
 	result := &internal.FileOperateResult{}
 	err = a.hc.JsonApi(apiFileMove, nil, form, result)
-	if err == nil && !result.State {
-		// TODO: convert upstream error
-		err = errors.New(result.Error)
+	if err == nil && result.IsFailed() {
+		err = FileError(result.ErrorCode)
 	}
 	return
 }
@@ -282,12 +291,13 @@ func (a *Agent) FileMove(parentId string, fileIds ...string) (err error) {
 // Rename file.
 func (a *Agent) FileRename(fileId, name string) (err error) {
 	form := core.NewForm().
+		WithString("fid", fileId).
+		WithString("file_name", name).
 		WithStringMap("files_new_name", map[string]string{fileId: name})
 	result := &internal.FileOperateResult{}
 	err = a.hc.JsonApi(apiFileRename, nil, form, result)
 	if err == nil && !result.State {
-		// TODO: convert upstream error
-		err = errors.New(result.Error)
+		err = FileError(result.ErrorCode)
 	}
 	return
 }
@@ -299,9 +309,8 @@ func (a *Agent) FileDelete(parentId string, fileIds ...string) (err error) {
 		WithStrings("fid", fileIds)
 	result := &internal.FileOperateResult{}
 	err = a.hc.JsonApi(apiFileDelete, nil, form, result)
-	if err == nil && !result.State {
-		// TODO: convert upstream error
-		err = errors.New(result.Error)
+	if err == nil && result.IsFailed() {
+		err = FileError(result.ErrorCode)
 	}
 	return
 }
@@ -311,15 +320,12 @@ func (a *Agent) FileMkdir(parentId, name string) (categoryId string, err error) 
 	form := core.NewForm().
 		WithString("pid", parentId).
 		WithString("cname", name)
-	result := &internal.CategoryAddResult{}
+	result := &internal.FileAddResult{}
 	err = a.hc.JsonApi(apiFileAdd, nil, form, result)
-	if err != nil {
-		return
+	if err == nil && result.IsFailed() {
+		err = FileError(result.ErrorCode)
 	}
-	if !result.State {
-		// TODO: convert upstream error
-		err = errors.New(result.Error)
-	} else {
+	if err == nil {
 		categoryId = result.CategoryId
 	}
 	return
