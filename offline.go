@@ -19,6 +19,33 @@ const (
 	errOfflineTaskExisting = 10008
 )
 
+type offlineCursor struct {
+	used      bool
+	page      int
+	pageCount int
+	total     int
+}
+
+func (c *offlineCursor) HasMore() bool {
+	return !c.used || c.page < c.pageCount
+}
+func (c *offlineCursor) Next() {
+	c.page += 1
+}
+func (c *offlineCursor) Total() int {
+	return c.total
+}
+
+// Create a cursor for "Agent.OfflineList()" method.
+func OfflineCursor() Cursor {
+	return &offlineCursor{
+		used:      false,
+		page:      1,
+		pageCount: 0,
+		total:     0,
+	}
+}
+
 // Parameter for "Agent.OfflineClear()" method.
 // Default value is to clear all done tasks without deleteing downloaded files.
 type OfflineClearParam struct {
@@ -126,13 +153,14 @@ func (a *Agent) callOfflineApi(url string, form core.Form, result interface{}) (
 	return
 }
 
-// Get one page of offline tasks, the page size is hard-coded to 24 by upstream API.
-// TODO: Using Cursor instead of "page" parameter.
-func (a *Agent) OfflineList(page int) (tasks []*OfflineTask, next bool, err error) {
-	if page < 1 {
-		page = 1
+// Get some of offline tasks.
+// TODO: update docs.
+func (a *Agent) OfflineList(cursor Cursor) (tasks []*OfflineTask, err error) {
+	oc, ok := cursor.(*offlineCursor)
+	if !ok {
+		return nil, errInvalidOfflineCursor
 	}
-	form := core.NewForm().WithInt("page", page)
+	form := core.NewForm().WithInt("page", oc.page)
 	result := &internal.OfflineListResult{}
 	err = a.callOfflineApi(apiOfflineList, form, result)
 	if err == nil && !result.State {
@@ -152,7 +180,9 @@ func (a *Agent) OfflineList(page int) (tasks []*OfflineTask, next bool, err erro
 			FileId:   data.FileId,
 		}
 	}
-	next = result.Count-(result.Page*result.PageSize) > 0
+	// Update cursor
+	oc.used, oc.total = true, result.Count
+	oc.page, oc.pageCount = result.Page, result.PageCount
 	return
 }
 

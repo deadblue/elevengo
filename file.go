@@ -19,9 +19,7 @@ const (
 	apiFileRename     = "https://webapi.115.com/files/batch_rename"
 	apiFileDelete     = "https://webapi.115.com/rb/delete"
 
-	filePageSizeMin     = 10
-	filePageSizeMax     = 1150
-	filePageSizeDefault = 100
+	fileDefaultLimit = 100
 
 	errListRetry = 20130827
 
@@ -38,7 +36,7 @@ func (e FileError) IsAlreadyExisting() bool {
 	return e == errDirectoryExisting
 }
 
-type Cursor struct {
+type fileCursor struct {
 	used   bool
 	order  string
 	asc    int
@@ -47,43 +45,24 @@ type Cursor struct {
 	total  int
 }
 
-// Return true if there are some data remained.
-// Caller need call Cursor.Next() then pass it to FileList() or
-// FileSearch() to fetch the remained data.
-func (c *Cursor) HasMore() bool {
+func (c *fileCursor) HasMore() bool {
 	return !c.used || c.offset < c.total
 }
-
-// Move cursor to next window and return it.
-func (c *Cursor) Next() *Cursor {
+func (c *fileCursor) Next() {
 	c.offset += c.limit
-	return c
 }
-
-// Move cursor to previous window and return it.
-func (c *Cursor) Prev() *Cursor {
-	c.offset -= c.limit
-	if c.offset < 0 {
-		c.offset = 0
-	}
-	return c
+func (c *fileCursor) Total() int {
+	return c.total
 }
-
-// Reset this cursor to default.
-func (c *Cursor) Reset() *Cursor {
-	c.offset = 0
-	if c.limit == 0 {
-		c.limit = filePageSizeDefault
+func FileCursor() Cursor {
+	return &fileCursor{
+		used:   false,
+		order:  "user_ptime",
+		asc:    0,
+		offset: 0,
+		limit:  fileDefaultLimit,
+		total:  0,
 	}
-	if c.order == "" {
-		c.order = "user_ptime"
-	}
-	return c
-}
-
-// Create a default cursor.
-func EmptyCursor() *Cursor {
-	return (&Cursor{}).Reset()
 }
 
 // Storage information.
@@ -98,8 +77,10 @@ type StorageInfo struct {
 
 // File describe a remote file or directory.
 type File struct {
-	// True of a file, false for a directory.
+	// True means a file.
 	IsFile bool
+	// True means a directory.
+	IsDirectory bool
 	// Unique ID for the file.
 	FileId string
 	// Parent directory ID.
@@ -135,15 +116,10 @@ func (a *Agent) StorageStat() (info *StorageInfo, err error) {
 
 // List files under specific directory.
 // TODO: Update the doc.
-func (a *Agent) FileList(parentId string, cursor *Cursor) (files []*File, err error) {
-	if cursor == nil {
-		cursor = EmptyCursor()
-	} else {
-		// If caller passes a self-created Cursor without call EmptyCursor(),
-		// call cursor.Reset() to make it valid.
-		if cursor.order == "" {
-			cursor.Reset()
-		}
+func (a *Agent) FileList(parentId string, cursor Cursor) (files []*File, err error) {
+	fc, ok := cursor.(*fileCursor)
+	if !ok {
+		return nil, errInvalidFileCursor
 	}
 	// Prepare parameters
 	qs := core.NewQueryString().
@@ -153,15 +129,15 @@ func (a *Agent) FileList(parentId string, cursor *Cursor) (files []*File, err er
 		WithString("snap", "0").
 		WithString("natsort", "1").
 		WithString("format", "json").
-		WithString("o", cursor.order).
-		WithInt("asc", cursor.asc).
-		WithInt("offset", cursor.offset).
-		WithInt("limit", cursor.limit)
+		WithString("o", fc.order).
+		WithInt("asc", fc.asc).
+		WithInt("offset", fc.offset).
+		WithInt("limit", fc.limit)
 	retry, result := true, &internal.FileListResult{}
 	for retry {
 		// Select API URL
 		apiUrl := apiFileList
-		if cursor.order == "file_name" {
+		if fc.order == "file_name" {
 			apiUrl = apiFileListByName
 		}
 		// Call API
@@ -171,10 +147,10 @@ func (a *Agent) FileList(parentId string, cursor *Cursor) (files []*File, err er
 		if err == nil && result.IsFailed() {
 			if result.ErrorCode == errListRetry {
 				// Update query string
-				qs.WithString("o", cursor.order).WithInt("asc", cursor.asc)
+				qs.WithString("o", fc.order).WithInt("asc", fc.asc)
 				// Update order flag
-				cursor.order = result.Order
-				cursor.asc = result.IsAsc
+				fc.order = result.Order
+				fc.asc = result.IsAsc
 				// Try to call API again
 				retry = true
 			} else {
@@ -186,8 +162,8 @@ func (a *Agent) FileList(parentId string, cursor *Cursor) (files []*File, err er
 		return
 	}
 	// Update cursor
-	cursor.used, cursor.total = true, result.Count
-	cursor.offset, cursor.limit = result.Offset, result.PageSize
+	fc.used, fc.total = true, result.Count
+	fc.offset, fc.limit = result.Offset, result.PageSize
 	// Fill files array
 	files = make([]*File, len(result.Data))
 	for i, data := range result.Data {
@@ -201,10 +177,12 @@ func (a *Agent) FileList(parentId string, cursor *Cursor) (files []*File, err er
 		}
 		if data.FileId != "" {
 			files[i].IsFile = true
+			files[i].IsDirectory = false
 			files[i].FileId = data.FileId
 			files[i].ParentId = data.CategoryId
 		} else {
 			files[i].IsFile = false
+			files[i].IsDirectory = true
 			files[i].FileId = data.CategoryId
 			files[i].ParentId = data.ParentId
 		}
@@ -214,22 +192,17 @@ func (a *Agent) FileList(parentId string, cursor *Cursor) (files []*File, err er
 
 // Search files which's name contains the specific keyword and under the specific directory.
 // TODO: Update the doc.
-func (a *Agent) FileSearch(parentId, keyword string, cursor *Cursor) (files []*File, err error) {
-	if cursor == nil {
-		cursor = EmptyCursor()
-	} else {
-		// If caller passes a self-created Cursor without call EmptyCursor(),
-		// call cursor.Reset() to make it valid.
-		if cursor.order == "" {
-			cursor.Reset()
-		}
+func (a *Agent) FileSearch(parentId, keyword string, cursor Cursor) (files []*File, err error) {
+	fc, ok := cursor.(*fileCursor)
+	if !ok {
+		return nil, errInvalidFileCursor
 	}
 	qs := core.NewQueryString().
 		WithString("aid", "1").
 		WithString("cid", parentId).
 		WithString("search_value", keyword).
-		WithInt("offset", cursor.offset).
-		WithInt("limit", cursor.limit).
+		WithInt("offset", fc.offset).
+		WithInt("limit", fc.limit).
 		WithString("format", "json")
 	result := &internal.FileSearchResult{}
 	err = a.hc.JsonApi(apiFileSearch, qs, nil, result)
@@ -240,8 +213,8 @@ func (a *Agent) FileSearch(parentId, keyword string, cursor *Cursor) (files []*F
 		return
 	}
 	// Update cursor
-	cursor.used, cursor.total = true, result.Count
-	cursor.offset, cursor.limit = result.Offset, result.PageSize
+	fc.used, fc.total = true, result.Count
+	fc.offset, fc.limit = result.Offset, result.PageSize
 	// Fill result files
 	files = make([]*File, len(result.Data))
 	for i, data := range result.Data {
@@ -255,10 +228,12 @@ func (a *Agent) FileSearch(parentId, keyword string, cursor *Cursor) (files []*F
 		}
 		if data.FileId != "" {
 			files[i].IsFile = true
+			files[i].IsDirectory = false
 			files[i].FileId = data.FileId
 			files[i].ParentId = data.CategoryId
 		} else {
 			files[i].IsFile = false
+			files[i].IsDirectory = true
 			files[i].FileId = data.CategoryId
 			files[i].ParentId = data.ParentId
 		}

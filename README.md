@@ -23,11 +23,20 @@ if err := agent.ImportCredentials(cr); err != nil {
 }
 
 // List files under root.
-for cursor := elevengo.EmptyCursor(); cursor.HasMore(); cursor.Next() {
+for cursor := elevengo.FileCursor(); cursor.HasMore(); cursor.Next() {
     if files, err := agent.FileList("0", cursor); err != nil {
         panic(err)
     } else {
         // TODO: handle the files
+    }
+}
+
+// List offline tasks.
+for cursor := elevengo.OfflineCursor(); cursor.HasMore(); cursor.Next() {
+    if tasks, err := agent.OfflineList(cursor); err != nil {
+        panic(err)
+    } else {
+        // TODO: handle the tasks
     }
 }
 
