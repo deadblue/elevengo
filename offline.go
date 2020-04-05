@@ -75,13 +75,20 @@ func (s OfflineTaskStatus) IsFailed() bool {
 	return s == -1
 }
 
+// OfflineTask describe a remote download task.
 type OfflineTask struct {
+	// Unique hash of the task.
 	InfoHash string
-	Name     string
-	Url      string
-	Status   OfflineTaskStatus
-	Percent  int
-	FileId   string
+	// Task name.
+	Name string
+	// Task URL.
+	Url string
+	// Task status.
+	Status OfflineTaskStatus
+	// Download percent of the task, 0 to 100.
+	Percent int
+	// File ID of the downloaded file on remote server.
+	FileId string
 }
 
 func (a *Agent) updateOfflineToken() (err error) {
@@ -120,6 +127,7 @@ func (a *Agent) callOfflineApi(url string, form core.Form, result interface{}) (
 }
 
 // Get one page of offline tasks, the page size is hard-coded to 24 by upstream API.
+// TODO: Using Cursor instead of "page" parameter.
 func (a *Agent) OfflineList(page int) (tasks []*OfflineTask, next bool, err error) {
 	if page < 1 {
 		page = 1
