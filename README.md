@@ -22,7 +22,15 @@ if err := agent.ImportCredentials(cr); err != nil {
     panic(err)
 }
 
-// TODO: Call some API
+// List files under root.
+for cursor := elevengo.EmptyCursor(); cursor.HasMore(); cursor.Next() {
+    if files, err := agent.FileList("0", cursor); err != nil {
+        panic(err)
+    } else {
+        // TODO: handle the files
+    }
+}
+
 ```
 
 # Features
@@ -38,9 +46,9 @@ if err := agent.ImportCredentials(cr); err != nil {
   * [x] Move
   * [x] Copy
   * [x] Delete
-  * [x] Create folder
-  * [ ] Download
-  * [ ] Upload
+  * [x] Mkdir
+  * [x] Download
+  * [x] Upload
 * Offline API
   * [x] List tasks
   * [x] Create URL task(s)

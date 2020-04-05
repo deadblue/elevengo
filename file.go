@@ -23,6 +23,8 @@ const (
 	filePageSizeMax     = 1150
 	filePageSizeDefault = 100
 
+	errListRetry = 20130827
+
 	errDirectoryExisting = 20004
 )
 
@@ -36,81 +38,52 @@ func (e FileError) IsAlreadyExisting() bool {
 	return e == errDirectoryExisting
 }
 
-// File page parameter.
-type FilePageParam struct {
-	index, size int
+type Cursor struct {
+	used   bool
+	order  string
+	asc    int
+	offset int
+	limit  int
+	total  int
 }
 
-func (p *FilePageParam) Size(size int) *FilePageParam {
-	if size < filePageSizeMin {
-		p.size = filePageSizeMin
-	} else if size > filePageSizeMax {
-		p.size = filePageSizeMax
-	} else {
-		p.size = size
+// Return true if there are some data remained.
+// Caller need call Cursor.Next() then pass it to FileList() or
+// FileSearch() to fetch the remained data.
+func (c *Cursor) HasMore() bool {
+	return !c.used || c.offset < c.total
+}
+
+// Move cursor to next window and return it.
+func (c *Cursor) Next() *Cursor {
+	c.offset += c.limit
+	return c
+}
+
+// Move cursor to previous window and return it.
+func (c *Cursor) Prev() *Cursor {
+	c.offset -= c.limit
+	if c.offset < 0 {
+		c.offset = 0
 	}
-	return p
+	return c
 }
-func (p *FilePageParam) Next() *FilePageParam {
-	p.index += 1
-	return p
-}
-func (p *FilePageParam) Prev() *FilePageParam {
-	if p.index > 0 {
-		p.index -= 1
+
+// Reset this cursor to default.
+func (c *Cursor) Reset() *Cursor {
+	c.offset = 0
+	if c.limit == 0 {
+		c.limit = filePageSizeDefault
 	}
-	return p
-}
-func (p *FilePageParam) Goto(num int) *FilePageParam {
-	if num > 0 {
-		p.index = num - 1
+	if c.order == "" {
+		c.order = "user_ptime"
 	}
-	return p
-}
-func (p *FilePageParam) limit() int {
-	if p.size == 0 {
-		p.size = filePageSizeDefault
-	}
-	return p.size
-}
-func (p *FilePageParam) offset() int {
-	return p.index * p.limit()
+	return c
 }
 
-// Sort file parameter.
-type FileSortParam struct {
-	flag string
-	asc  int
-}
-
-// Sort files by update time
-func (p *FileSortParam) ByTime() *FileSortParam {
-	p.flag = "user_ptime"
-	return p
-}
-
-// Sort files by name.
-func (p *FileSortParam) ByName() *FileSortParam {
-	p.flag = "file_name"
-	return p
-}
-
-// Sort files by size.
-func (p *FileSortParam) BySize() *FileSortParam {
-	p.flag = "file_size"
-	return p
-}
-
-// Use ascending order.
-func (p *FileSortParam) Asc() *FileSortParam {
-	p.asc = 1
-	return p
-}
-
-// Use descending order.
-func (p *FileSortParam) Desc() *FileSortParam {
-	p.asc = 0
-	return p
+// Create a default cursor.
+func EmptyCursor() *Cursor {
+	return (&Cursor{}).Reset()
 }
 
 // Storage information.
@@ -160,16 +133,18 @@ func (a *Agent) StorageStat() (info *StorageInfo, err error) {
 	return
 }
 
-// Get one page of files under specific directory.
-// The remote API can get at most 1000 files in one page, so if there are
-// more than 1000 files in a category, you should call this method multiple times.
-func (a *Agent) FileList(parentId string, page *FilePageParam, sort *FileSortParam) (files []*File, err error) {
-	// Prepare parameters
-	if sort == nil {
-		sort = (&FileSortParam{}).ByTime().Desc()
-	} else if sort.flag == "" {
-		sort.flag = "user_ptime"
+// List files under specific directory.
+func (a *Agent) FileList(parentId string, cursor *Cursor) (files []*File, err error) {
+	if cursor == nil {
+		cursor = EmptyCursor()
+	} else {
+		// If caller passes a self-created Cursor without call EmptyCursor(),
+		// call cursor.Reset() to make it valid.
+		if cursor.order == "" {
+			cursor.Reset()
+		}
 	}
+	// Prepare parameters
 	qs := core.NewQueryString().
 		WithString("aid", "1").
 		WithString("cid", parentId).
@@ -177,24 +152,42 @@ func (a *Agent) FileList(parentId string, page *FilePageParam, sort *FileSortPar
 		WithString("snap", "0").
 		WithString("natsort", "1").
 		WithString("format", "json").
-		WithString("o", sort.flag).
-		WithInt("asc", sort.asc).
-		WithInt("offset", page.offset()).
-		WithInt("limit", page.limit())
-	// Select API URL
-	apiUrl := apiFileList
-	if sort.flag == "file_name" {
-		apiUrl = apiFileListByName
-	}
-	// Call API
-	result := &internal.FileListResult{}
-	err = a.hc.JsonApi(apiUrl, qs, nil, result)
-	if err == nil && result.IsFailed() {
-		err = fmt.Errorf("get file list failed")
+		WithString("o", cursor.order).
+		WithInt("asc", cursor.asc).
+		WithInt("offset", cursor.offset).
+		WithInt("limit", cursor.limit)
+	retry, result := true, &internal.FileListResult{}
+	for retry {
+		// Select API URL
+		apiUrl := apiFileList
+		if cursor.order == "file_name" {
+			apiUrl = apiFileListByName
+		}
+		// Call API
+		err = a.hc.JsonApi(apiUrl, qs, nil, result)
+		// Handle error
+		retry = false
+		if err == nil && result.IsFailed() {
+			if result.ErrorCode == errListRetry {
+				// Update query string
+				qs.WithString("o", cursor.order).WithInt("asc", cursor.asc)
+				// Update order flag
+				cursor.order = result.Order
+				cursor.asc = result.IsAsc
+				// Try to call API again
+				retry = true
+			} else {
+				err = FileError(result.ErrorCode)
+			}
+		}
 	}
 	if err != nil {
 		return
 	}
+	// Update cursor
+	cursor.used = true
+	cursor.total = result.Count
+	cursor.offset, cursor.limit = result.Offset, result.PageSize
 	// Fill files array
 	files = make([]*File, len(result.Data))
 	for i, data := range result.Data {
@@ -217,17 +210,16 @@ func (a *Agent) FileList(parentId string, page *FilePageParam, sort *FileSortPar
 		}
 		files[i] = f
 	}
-	// TODO: Plan to update "page" parameter.
 	return
 }
 
-func (a *Agent) FileSearch(parentId, keyword string, page *FilePageParam) (files []*File, err error) {
+func (a *Agent) FileSearch(parentId, keyword string, cursor *Cursor) (files []*File, err error) {
 	qs := core.NewQueryString().
 		WithString("aid", "1").
 		WithString("cid", parentId).
 		WithString("search_value", keyword).
-		WithInt("offset", page.offset()).
-		WithInt("limit", page.limit()).
+		WithInt("offset", cursor.offset).
+		WithInt("limit", cursor.limit).
 		WithString("format", "json")
 	result := &internal.FileSearchResult{}
 	err = a.hc.JsonApi(apiFileSearch, qs, nil, result)
@@ -258,7 +250,7 @@ func (a *Agent) FileSearch(parentId, keyword string, page *FilePageParam) (files
 			files[i].ParentId = data.ParentId
 		}
 	}
-	// TODO: Plan to update "page" parameter.
+	// TODO: Update "cursor" parameter.
 	return
 }
 

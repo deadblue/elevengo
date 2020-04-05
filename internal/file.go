@@ -27,7 +27,7 @@ type FilePath struct {
 }
 
 type FileData struct {
-	AreaId     string      `json:"aid"`
+	AreaId     IntString   `json:"aid"`
 	FileId     string      `json:"fid"`
 	CategoryId string      `json:"cid"`
 	ParentId   string      `json:"pid"`
@@ -41,11 +41,17 @@ type FileData struct {
 
 type FileListResult struct {
 	BaseApiResult
-	Error    string      `json:"error"`
-	Count    int         `json:"count"`
-	SysCount int         `json:"sys_count"`
-	Path     []*FilePath `json:"path"`
-	Data     []*FileData `json:"data"`
+	Error     string      `json:"error"`
+	ErrorCode int         `json:"errNo"`
+	Count     int         `json:"count"`
+	SysCount  int         `json:"sys_count"`
+	Path      []*FilePath `json:"path"`
+	Data      []*FileData `json:"data"`
+	Order     string      `json:"order"`
+	IsAsc     int         `json:"is_asc"`
+	Offset    int         `json:"offset"`
+	Limit     int         `json:"limit"`
+	PageSize  int         `json:"page_size"`
 }
 
 type FileSearchResult struct {
