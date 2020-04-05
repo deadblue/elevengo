@@ -9,7 +9,7 @@ func (e *ApiError) Error() string {
 }
 
 var (
-	//ErrRemoteFailed = &ApiError{"call remote api failed"}
+	errUpstreamError = &ApiError{"call upstream API failed."}
 
 	errInvalidFileCursor    = &ApiError{"cursor must be created by FileCursor()"}
 	errInvalidOfflineCursor = &ApiError{"cursor must be created by OfflineCursor()"}

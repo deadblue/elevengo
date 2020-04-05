@@ -34,7 +34,7 @@ func (a *Agent) CreateDownloadTicket(pickcode string) (ticket *DownloadTicket, e
 	result := &internal.DownloadInfoResult{}
 	err = a.hc.JsonApi(apiFileDownload, qs, nil, result)
 	if err == nil && result.IsFailed() {
-		err = ErrRemoteFailed
+		err = errUpstreamError
 	}
 	// Create download ticket
 	ticket = &DownloadTicket{
