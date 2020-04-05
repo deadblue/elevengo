@@ -58,6 +58,15 @@ for cursor := elevengo.EmptyCursor(); cursor.HasMore(); cursor.Next() {
 * Other
   * [X] Captcha
 
+# Following works to do:
+
+* ~~Play games.(NO!)~~
+* Handle more upstream errors.
+* Re-design error system, merge all errors into one type.
+* Implement download/upload method, with progress echo.
+* Print logging throuhg Logger interface.
+* Add more docs and example codes.
+
 # License
 
 MIT
