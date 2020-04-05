@@ -41,12 +41,13 @@ for cursor := elevengo.EmptyCursor(); cursor.HasMore(); cursor.Next() {
   * [ ] ~~Login via Account/Password~~ (No idea)
 * File API
   * [x] List
-  * [ ] Search
+  * [x] Search
   * [x] Rename
   * [x] Move
   * [x] Copy
   * [x] Delete
   * [x] Mkdir
+  * [ ] Stat (W.I.P.)
   * [x] Download
   * [x] Upload
 * Offline API

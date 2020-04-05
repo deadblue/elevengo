@@ -134,6 +134,7 @@ func (a *Agent) StorageStat() (info *StorageInfo, err error) {
 }
 
 // List files under specific directory.
+// TODO: Update the doc.
 func (a *Agent) FileList(parentId string, cursor *Cursor) (files []*File, err error) {
 	if cursor == nil {
 		cursor = EmptyCursor()
@@ -185,51 +186,9 @@ func (a *Agent) FileList(parentId string, cursor *Cursor) (files []*File, err er
 		return
 	}
 	// Update cursor
-	cursor.used = true
-	cursor.total = result.Count
+	cursor.used, cursor.total = true, result.Count
 	cursor.offset, cursor.limit = result.Offset, result.PageSize
 	// Fill files array
-	files = make([]*File, len(result.Data))
-	for i, data := range result.Data {
-		f := &File{
-			Name:       data.Name,
-			Size:       int64(data.Size),
-			PickCode:   data.PickCode,
-			Sha1:       data.Sha1,
-			CreateTime: internal.ParseUnixTime(data.CreateTime),
-			UpdateTime: internal.ParseUnixTime(data.UpdateTime),
-		}
-		if data.FileId != "" {
-			f.IsFile = true
-			f.FileId = data.FileId
-			f.ParentId = data.CategoryId
-		} else {
-			f.IsFile = false
-			f.FileId = data.CategoryId
-			f.ParentId = data.ParentId
-		}
-		files[i] = f
-	}
-	return
-}
-
-func (a *Agent) FileSearch(parentId, keyword string, cursor *Cursor) (files []*File, err error) {
-	qs := core.NewQueryString().
-		WithString("aid", "1").
-		WithString("cid", parentId).
-		WithString("search_value", keyword).
-		WithInt("offset", cursor.offset).
-		WithInt("limit", cursor.limit).
-		WithString("format", "json")
-	result := &internal.FileSearchResult{}
-	err = a.hc.JsonApi(apiFileSearch, qs, nil, result)
-	if err == nil && result.IsFailed() {
-		err = fmt.Errorf("remote API error: %s", result.Error)
-	}
-	if err != nil {
-		return
-	}
-	// Convert result to "File" slice
 	files = make([]*File, len(result.Data))
 	for i, data := range result.Data {
 		files[i] = &File{
@@ -250,7 +209,60 @@ func (a *Agent) FileSearch(parentId, keyword string, cursor *Cursor) (files []*F
 			files[i].ParentId = data.ParentId
 		}
 	}
-	// TODO: Update "cursor" parameter.
+	return
+}
+
+// Search files which's name contains the specific keyword and under the specific directory.
+// TODO: Update the doc.
+func (a *Agent) FileSearch(parentId, keyword string, cursor *Cursor) (files []*File, err error) {
+	if cursor == nil {
+		cursor = EmptyCursor()
+	} else {
+		// If caller passes a self-created Cursor without call EmptyCursor(),
+		// call cursor.Reset() to make it valid.
+		if cursor.order == "" {
+			cursor.Reset()
+		}
+	}
+	qs := core.NewQueryString().
+		WithString("aid", "1").
+		WithString("cid", parentId).
+		WithString("search_value", keyword).
+		WithInt("offset", cursor.offset).
+		WithInt("limit", cursor.limit).
+		WithString("format", "json")
+	result := &internal.FileSearchResult{}
+	err = a.hc.JsonApi(apiFileSearch, qs, nil, result)
+	if err == nil && result.IsFailed() {
+		err = FileError(result.ErrorCode)
+	}
+	if err != nil {
+		return
+	}
+	// Update cursor
+	cursor.used, cursor.total = true, result.Count
+	cursor.offset, cursor.limit = result.Offset, result.PageSize
+	// Fill result files
+	files = make([]*File, len(result.Data))
+	for i, data := range result.Data {
+		files[i] = &File{
+			Name:       data.Name,
+			Size:       int64(data.Size),
+			PickCode:   data.PickCode,
+			Sha1:       data.Sha1,
+			CreateTime: internal.ParseUnixTime(data.CreateTime),
+			UpdateTime: internal.ParseUnixTime(data.UpdateTime),
+		}
+		if data.FileId != "" {
+			files[i].IsFile = true
+			files[i].FileId = data.FileId
+			files[i].ParentId = data.CategoryId
+		} else {
+			files[i].IsFile = false
+			files[i].FileId = data.CategoryId
+			files[i].ParentId = data.ParentId
+		}
+	}
 	return
 }
 
@@ -307,7 +319,7 @@ func (a *Agent) FileDelete(parentId string, fileIds ...string) (err error) {
 	return
 }
 
-// Create a directory under specific parent driectory with specific name.
+// Create a directory under specific parent directory with specific name.
 func (a *Agent) FileMkdir(parentId, name string) (categoryId string, err error) {
 	form := core.NewForm().
 		WithString("pid", parentId).
