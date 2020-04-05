@@ -48,7 +48,7 @@ func New(name string) *Agent {
 		name: name,
 		cj:   opts.Jar,
 		hc:   core.NewHttpClient(opts),
-		l:    &defaultLogger{},
+		l:    defaultLogger(),
 	}
 }
 

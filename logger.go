@@ -11,33 +11,35 @@ type Logger interface {
 	Debug(message string)
 	// Print an information level log.
 	Info(message string)
-	// Print a warnning level log.
+	// Print a warning level log.
 	Warn(message string)
 	// Print an error level log.
 	Error(message string)
 }
 
-// TODO: Inject Logger into Agent.
+type simpleLogger struct{}
 
-type defaultLogger struct{}
-
-func (l *defaultLogger) print(level, message string) {
+func (l *simpleLogger) print(level, message string) {
 	now := time.Now().Format(time.RFC3339)
-	fmt.Printf("[%s] %s - %s\n", now, level, message)
+	fmt.Printf("%s %s - %s\n", now, level, message)
 }
 
-func (l *defaultLogger) Debug(message string) {
+func (l *simpleLogger) Debug(message string) {
 	l.print("D", message)
 }
 
-func (l *defaultLogger) Info(message string) {
+func (l *simpleLogger) Info(message string) {
 	l.print("I", message)
 }
 
-func (l *defaultLogger) Warn(message string) {
+func (l *simpleLogger) Warn(message string) {
 	l.print("W", message)
 }
 
-func (l *defaultLogger) Error(message string) {
+func (l *simpleLogger) Error(message string) {
 	l.print("E", message)
+}
+
+func defaultLogger() Logger {
+	return &simpleLogger{}
 }
