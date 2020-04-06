@@ -1,16 +1,18 @@
 package elevengo
 
-type ApiError struct {
+type implError struct {
 	message string
 }
 
-func (e *ApiError) Error() string {
+func (e *implError) Error() string {
 	return e.message
 }
 
 var (
-	errUpstreamError = &ApiError{"call upstream API failed."}
+	errUpstreamError = &implError{"call upstream API failed."}
 
-	errInvalidFileCursor    = &ApiError{"cursor must be created by FileCursor()"}
-	errInvalidOfflineCursor = &ApiError{"cursor must be created by OfflineCursor()"}
+	errInvalidFileCursor    = &implError{"cursor must be created by FileCursor()"}
+	errInvalidOfflineCursor = &implError{"cursor must be created by OfflineCursor()"}
+
+	errCaptchaCodeIncorrect = &implError{"captcha code incorrect"}
 )

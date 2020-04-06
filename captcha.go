@@ -1,7 +1,6 @@
 package elevengo
 
 import (
-	"errors"
 	"fmt"
 	"github.com/deadblue/elevengo/core"
 	"github.com/deadblue/elevengo/internal"
@@ -18,9 +17,9 @@ const (
 type CaptchaSession struct {
 	// The CAPTCHA image data.
 	// There are 4 Chinese characters on this image, you need call
-	// "CaptchaKeysImage" to get a image with 10 Chinese characters on it,
-	// and find 4 characters from them which matches with this image, the
-	// indexes of the 4 characters is the CAPTCHA code.
+	// "CaptchaKeysImage" to get a image which consists of 10 Chinese characters,
+	// then find 4 characters from them which matches with this image, the indexes
+	// of the 4 characters is the CAPTCHA code. (Index bases on zero.)
 	Image []byte
 
 	// The callback function name, hide for caller.
@@ -108,9 +107,8 @@ func (a *Agent) CaptchaSubmit(session *CaptchaSession, code string) (err error) 
 		WithString("cb", session.callback)
 	submitResult := &internal.CaptchaSubmitResult{}
 	err = a.hc.JsonApi(apiCaptchaSubmit, nil, form, submitResult)
-	if err == nil && !submitResult.State {
-		// TODO: handle error code.
-		err = errors.New("submit failed")
+	if err == nil && submitResult.IsFailed() {
+		err = errCaptchaCodeIncorrect
 	}
 	return
 }
