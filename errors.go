@@ -11,8 +11,10 @@ func (e *implError) Error() string {
 var (
 	errUpstreamError = &implError{"call upstream API failed."}
 
-	errInvalidFileCursor    = &implError{"cursor must be created by FileCursor()"}
-	errInvalidOfflineCursor = &implError{"cursor must be created by OfflineCursor()"}
+	errFileCursorInvalid = &implError{"cursor must be created by FileCursor()"}
+	errFileStatFailed    = &implError{"get file info failed"}
+
+	errOfflineCursorInvalid = &implError{"cursor must be created by OfflineCursor()"}
 
 	errCaptchaCodeIncorrect = &implError{"captcha code incorrect"}
 )

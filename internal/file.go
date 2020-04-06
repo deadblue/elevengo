@@ -86,7 +86,7 @@ type FileStatPath struct {
 
 type FileStatData struct {
 	Name        string          `json:"file_name"`
-	IsFile      string          `json:"file_category"`
+	FileType    string          `json:"file_category"`
 	CreateTime  string          `json:"ptime"`
 	UpdateTime  string          `json:"utime"`
 	FileCount   StringInt       `json:"count"`

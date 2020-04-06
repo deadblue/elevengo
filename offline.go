@@ -158,7 +158,7 @@ func (a *Agent) callOfflineApi(url string, form core.Form, result interface{}) (
 func (a *Agent) OfflineList(cursor Cursor) (tasks []*OfflineTask, err error) {
 	oc, ok := cursor.(*offlineCursor)
 	if !ok {
-		return nil, errInvalidOfflineCursor
+		return nil, errOfflineCursorInvalid
 	}
 	form := core.NewForm().WithInt("page", oc.page)
 	result := &internal.OfflineListResult{}

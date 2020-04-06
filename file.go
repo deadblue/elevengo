@@ -99,6 +99,18 @@ type File struct {
 	UpdateTime *time.Time
 }
 
+// FileInfo is returned by FileStat(), contains basic information of a file.
+type FileInfo struct {
+	// True means a file.
+	IsFile bool
+	// True means a directory.
+	IsDirectory bool
+	// Path
+	ParentIds []string
+	// Donwload code
+	PickCode string
+}
+
 // Get storage size information.
 func (a *Agent) StorageStat() (info *StorageInfo, err error) {
 	result := new(internal.FileIndexResult)
@@ -119,7 +131,7 @@ func (a *Agent) StorageStat() (info *StorageInfo, err error) {
 func (a *Agent) FileList(parentId string, cursor Cursor) (files []*File, err error) {
 	fc, ok := cursor.(*fileCursor)
 	if !ok {
-		return nil, errInvalidFileCursor
+		return nil, errFileCursorInvalid
 	}
 	// Prepare parameters
 	qs := core.NewQueryString().
@@ -195,7 +207,7 @@ func (a *Agent) FileList(parentId string, cursor Cursor) (files []*File, err err
 func (a *Agent) FileSearch(parentId, keyword string, cursor Cursor) (files []*File, err error) {
 	fc, ok := cursor.(*fileCursor)
 	if !ok {
-		return nil, errInvalidFileCursor
+		return nil, errFileCursorInvalid
 	}
 	qs := core.NewQueryString().
 		WithString("aid", "1").
@@ -311,15 +323,26 @@ func (a *Agent) FileMkdir(parentId, name string) (categoryId string, err error) 
 }
 
 // Get remote file info.
-func (a *Agent) FileStat(fileId string) (err error) {
+func (a *Agent) FileStat(fileId string) (info *FileInfo, err error) {
 	qs := core.NewQueryString().
 		WithString("aid", "1").
 		WithString("cid", fileId)
 	result := &internal.FileStatResult{}
 	err = a.hc.JsonApi(apiFileStat, qs, nil, result)
-	if err == nil {
-		a.l.Info(fmt.Sprintf("Stat: %#v", result))
+	if err == nil && result.IsFailed() {
+		err = errFileStatFailed
 	}
-	// TODO: T.B.D
+	if err == nil {
+		data := result.Data
+		info = &FileInfo{
+			IsFile:      data.FileType == "1",
+			IsDirectory: data.FileType == "0",
+			PickCode:    data.PickCode,
+		}
+		info.ParentIds = make([]string, len(data.Paths))
+		for i, p := range data.Paths {
+			info.ParentIds[i] = string(p.FileId)
+		}
+	}
 	return
 }
