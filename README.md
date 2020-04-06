@@ -2,11 +2,11 @@
 
 An API wrapper for 115 NetDisk Service in Golang.
 
-# Exmaple
+# Example
 
 Since the API has a lot of changes, example code may be changed in future.
 
-```
+```go
 import "github.com/deadblue/elevengo"
 
 // Create agent
