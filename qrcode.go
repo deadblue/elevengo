@@ -18,12 +18,15 @@ const (
 
 // QrcodeSession holds the information during a QRcode login process.
 type QrcodeSession struct {
+	/*
+		The raw data of QR code, caller should use thridparty tools/libraries
+		to convert it into QR code matrix or image.
+	*/
+	Content string
+	// Hidden fields
 	uid  string
 	time int64
 	sign string
-	// The raw data of QRcode, you should use thridparty
-	// tools/libraries to convert it into QRcode image.
-	Content []byte
 }
 
 // QrcodeStatus is returned by `Agent.QrcodeStatus()`.
@@ -85,7 +88,7 @@ func (a *Agent) QrcodeStart() (session *QrcodeSession, err error) {
 			uid:     data.Uid,
 			time:    data.Time,
 			sign:    data.Sign,
-			Content: []byte(data.Qrcode),
+			Content: data.Qrcode,
 		}
 	}
 	return
