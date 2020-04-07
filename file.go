@@ -135,21 +135,8 @@ The upstream API restricts the data count in response, so for a directory which 
 a lot of files. you need pass a cursor to receive the cursor information, and use it to
 fetch remain files.
 
-The cursor should be created by FileCursor(). DO NOT pass the cursor as nil even you
-try to get file list under a empty directory.
-
-Example:
-
-	// Assume "agent" is an Agent instance, and "parentId" is the directory ID
-	// where you want to get file list from.
-	for cursor := FileCursor(); cursor.HasMore(); cursor.Next() {
-		files, err := agent.FileList(parentId, cursor)
-		if err != nil {
-			// handle the error
-		} else {
-			// deal with the files
-		}
-	}
+The cursor should be created by FileCursor(), and DO NOT pass it as nil even you try to
+get file list from a empty directory.
 */
 func (a *Agent) FileList(parentId string, cursor Cursor) (files []*File, err error) {
 	fc, ok := cursor.(*fileCursor)
@@ -225,18 +212,15 @@ func (a *Agent) FileList(parentId string, cursor Cursor) (files []*File, err err
 	return
 }
 
-/*
-Recursively search files which's name contains the keyword and under the directory.
-The upstream API has the same restriction as FileList() has, so you need use a cursor as FileList().
-*/
-func (a *Agent) FileSearch(parentId, keyword string, cursor Cursor) (files []*File, err error) {
+// Recursively search files which's name contains the keyword and under the directory.
+func (a *Agent) FileSearch(rootId, keyword string, cursor Cursor) (files []*File, err error) {
 	fc, ok := cursor.(*fileCursor)
 	if !ok {
 		return nil, errFileCursorInvalid
 	}
 	qs := core.NewQueryString().
 		WithString("aid", "1").
-		WithString("cid", parentId).
+		WithString("cid", rootId).
 		WithString("search_value", keyword).
 		WithInt("offset", fc.offset).
 		WithInt("limit", fc.limit).
