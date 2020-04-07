@@ -57,3 +57,5 @@ func (a *Agent) CreateDownloadTicket(pickcode string) (ticket *DownloadTicket, e
 	ticket.Headers["Cookie"] = sb.String()
 	return
 }
+
+// TODO: Implement a download method with progress listener.

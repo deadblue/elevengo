@@ -58,8 +58,9 @@ func (a *Agent) CreateUploadTicket(parentId string, info UploadInfo) (ticket *Up
 	return
 }
 
+// TODO: Implement a upload method with progress listener.
+
 // A simple upload implementation without progress echo.
-// I do not suggest using it to upload a large file.
 func (a *Agent) UploadFile(parentId, localFile string) (err error) {
 	// Open local file
 	file, err := os.Open(localFile)

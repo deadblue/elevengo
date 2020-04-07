@@ -54,6 +54,8 @@ func (c *fileCursor) Next() {
 func (c *fileCursor) Total() int {
 	return c.total
 }
+
+// Create a file cursor which is used in FileList and FileSearch.
 func FileCursor() Cursor {
 	return &fileCursor{
 		used:   false,
@@ -126,8 +128,29 @@ func (a *Agent) StorageStat() (info *StorageInfo, err error) {
 	return
 }
 
-// List files under specific directory.
-// TODO: Update the doc.
+/*
+Get file list from specific directory.
+
+The upstream API restricts the data count in response, so for a directory which contains
+a lot of files. you need pass a cursor to receive the cursor information, and use it to
+fetch remain files.
+
+The cursor should be created by FileCursor(). DO NOT pass the cursor as nil even you
+try to get file list under a empty directory.
+
+Example:
+
+	// Assume "agent" is an Agent instance, and "parentId" is the directory ID
+	// where you want to get file list from.
+	for cursor := FileCursor(); cursor.HasMore(); cursor.Next() {
+		files, err := agent.FileList(parentId, cursor)
+		if err != nil {
+			// handle the error
+		} else {
+			// deal with the files
+		}
+	}
+*/
 func (a *Agent) FileList(parentId string, cursor Cursor) (files []*File, err error) {
 	fc, ok := cursor.(*fileCursor)
 	if !ok {
@@ -202,8 +225,10 @@ func (a *Agent) FileList(parentId string, cursor Cursor) (files []*File, err err
 	return
 }
 
-// Search files which's name contains the specific keyword and under the specific directory.
-// TODO: Update the doc.
+/*
+Recursively search files which's name contains the keyword and under the directory.
+The upstream API has the same restriction as FileList() has, so you need use a cursor as FileList().
+*/
 func (a *Agent) FileSearch(parentId, keyword string, cursor Cursor) (files []*File, err error) {
 	fc, ok := cursor.(*fileCursor)
 	if !ok {
@@ -253,7 +278,7 @@ func (a *Agent) FileSearch(parentId, keyword string, cursor Cursor) (files []*Fi
 	return
 }
 
-// Copy files to a directory.
+// Copy files into specific directory.
 func (a *Agent) FileCopy(parentId string, fileIds ...string) (err error) {
 	form := core.NewForm().
 		WithString("pid", parentId).
@@ -266,7 +291,7 @@ func (a *Agent) FileCopy(parentId string, fileIds ...string) (err error) {
 	return
 }
 
-// Move files to a directory.
+// Move files into specific directory.
 func (a *Agent) FileMove(parentId string, fileIds ...string) (err error) {
 	form := core.NewForm().
 		WithString("pid", parentId).
@@ -306,8 +331,8 @@ func (a *Agent) FileDelete(parentId string, fileIds ...string) (err error) {
 	return
 }
 
-// Create a directory under specific parent directory with specific name.
-func (a *Agent) FileMkdir(parentId, name string) (categoryId string, err error) {
+// Create a directory under a directory with specific name.
+func (a *Agent) FileMkdir(parentId, name string) (directoryId string, err error) {
 	form := core.NewForm().
 		WithString("pid", parentId).
 		WithString("cname", name)
@@ -317,12 +342,15 @@ func (a *Agent) FileMkdir(parentId, name string) (categoryId string, err error) 
 		err = FileError(result.ErrorCode)
 	}
 	if err == nil {
-		categoryId = result.CategoryId
+		directoryId = result.CategoryId
 	}
 	return
 }
 
-// Get remote file info.
+/*
+Get file information related to the file ID.
+Since the upstream response is cheap, this method cat not return more information.
+*/
 func (a *Agent) FileStat(fileId string) (info *FileInfo, err error) {
 	qs := core.NewQueryString().
 		WithString("aid", "1").

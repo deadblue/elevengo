@@ -217,8 +217,10 @@ func (a *Agent) OfflineDelete(deleteFile bool, hash ...string) (err error) {
 	return
 }
 
-// Clear offline tasks which specified by param, you can pass param as nil to
-// clear done tasks without deleting downloaded files.
+/*
+Clear offline specific type of tasks.
+You can pass param as nil to clear the done tasks but keep the downloaded files.
+*/
 func (a *Agent) OfflineClear(param *OfflineClearParam) (err error) {
 	if param == nil {
 		param = (&OfflineClearParam{}).Done(false)
