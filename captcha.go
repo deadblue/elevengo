@@ -15,18 +15,41 @@ const (
 
 // CaptchaSession holds the information during a CAPTCHA process.
 type CaptchaSession struct {
-	// The CAPTCHA image data.
-	// There are 4 Chinese characters on this image, you need call
-	// "CaptchaKeysImage" to get a image which consists of 10 Chinese characters,
-	// then find 4 characters from them which matches with this image, the indexes
-	// of the 4 characters is the CAPTCHA code. (Index bases on zero.)
+	/*
+		The CAPTCHA image data.
+
+		There are 4 Chinese characters on this image, you need call "CaptchaKeysImage"
+		to get a image which consists of 10 Chinese characters, then find 4 characters
+		from them which matches with this image, the indexes of the 4 characters is
+		the CAPTCHA code. (Index bases on zero.)
+	*/
 	Image []byte
 
 	// The callback function name, hide for caller.
 	callback string
 }
 
-// Start a CAPTCHA session.
+/*
+Start a CAPTCHA session.
+
+Example:
+
+	// Start CAPTCHA session
+	session, err := agent.CaptchaStart()
+	if err != nil {
+		panic(err)
+	}
+	keysImg, err := agent.CaptchaKeysImage(session)
+	if err != nil {
+		panic(err)
+	}
+	// TODO: Solve the CAPTCHA here
+	// Submit CAPTCHA code
+	if err = agent.CaptchaSubmit(session, code); err != nil {
+		panic(err)
+	}
+
+*/
 func (a *Agent) CaptchaStart() (session *CaptchaSession, err error) {
 	// Fetch captcha page
 	callback := fmt.Sprintf("Close911_%d", time.Now().UnixNano())
@@ -54,10 +77,13 @@ func (a *Agent) CaptchaStart() (session *CaptchaSession, err error) {
 	return
 }
 
-// Get CAPTCHA keys image.
-// There are 10 Chinese characters on the image, 5 in column and 2 in row.
-// You can call this method multiple times, everytime you call it, you will
-// get the same 10 characters but in different font.
+/*
+Get CAPTCHA keys image data.
+
+There are 10 Chinese characters on the image, 5 in column and 2 in row.
+You can call this method multiple times, it will return the same 10
+characters in different font on every calling.
+*/
 func (a *Agent) CaptchaKeysImage(session *CaptchaSession) ([]byte, error) {
 	qs := core.NewQueryString().
 		WithString("ct", "index").
@@ -67,9 +93,12 @@ func (a *Agent) CaptchaKeysImage(session *CaptchaSession) ([]byte, error) {
 	return a.hc.Get(apiCaptcha, qs)
 }
 
-// Get one CAPTCHA key image.
-// You can call this method multiple times, everytime you call it, you will
-// get the same character but in different font.
+/*
+Get one CAPTCHA key image data.
+
+You can call this method multiple times, it will return the same character
+in different font on every calling.
+*/
 func (a *Agent) CaptchaKeyImage(session *CaptchaSession, index int) ([]byte, error) {
 	if index < 0 {
 		index = 0
