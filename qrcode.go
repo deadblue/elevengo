@@ -18,10 +18,8 @@ const (
 
 // QrcodeSession holds the information during a QRcode login process.
 type QrcodeSession struct {
-	/*
-		The raw data of QR code, caller should use thridparty tools/libraries
-		to convert it into QR code matrix or image.
-	*/
+	// The raw data of QR code, caller should use thridparty tools/libraries
+	// to convert it into QR code matrix or image.
 	Content string
 	// Hidden fields
 	uid  string
@@ -80,7 +78,31 @@ func (a *Agent) callQrcodeApi(url string, qs core.QueryString, form core.Form, d
 	return json.Unmarshal(result.Data, data)
 }
 
-// Start a QRcode login process.
+/*
+Start a QRcode login process.
+
+Example:
+
+	session, err := agent.QrcodeStart()
+	if err != nil {
+		panic(error)
+	}
+	// TODO: Show QRcode and prompt user to scan it in mobile app.
+	for {
+		if status, err := agent.QrcodeStatus(session); err != nil {
+			panic(err)
+		} else {
+			if status.IsAllowed() {
+				err = agent.QrcodeLogin(session)
+				break
+			} else status.IsCanceled() {
+				fmt.Println("User canceled ")
+				break
+			}
+		}
+	}
+
+*/
 func (a *Agent) QrcodeStart() (session *QrcodeSession, err error) {
 	data := &internal.QrcodeTokenData{}
 	if err = a.callQrcodeApi(apiQrcodeToken, nil, nil, data); err == nil {
