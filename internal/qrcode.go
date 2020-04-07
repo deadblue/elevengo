@@ -5,7 +5,7 @@ import "encoding/json"
 type QrcodeApiResult struct {
 	State   int             `json:"state"`
 	Code    int             `json:"code"`
-	Message int             `json:"message"`
+	Message string          `json:"message"`
 	Data    json.RawMessage `json:"data"`
 }
 
