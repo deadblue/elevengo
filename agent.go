@@ -19,7 +19,7 @@ type Agent struct {
 
 	cj http.CookieJar
 	hc core.HttpClient
-	l  Logger
+	l  core.LoggerEx
 
 	ui *internal.UserInfo
 	ot *internal.OfflineToken
@@ -48,7 +48,7 @@ func New(name string) *Agent {
 		name: name,
 		cj:   opts.Jar,
 		hc:   core.NewHttpClient(opts),
-		l:    defaultLogger(),
+		l:    core.WrapLogger(nil),
 	}
 }
 
