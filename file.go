@@ -107,10 +107,18 @@ type FileInfo struct {
 	IsFile bool
 	// True means a directory.
 	IsDirectory bool
-	// Parent directory ID list.
-	ParentIds []string
+	// File name.
+	Name string
+	// Sha1 hash value of the file, empty for directory.
+	Sha1 string
 	// Pick code for downloading.
 	PickCode string
+	// Create time of the file.
+	CreateTime *time.Time
+	// Update time of the file.
+	UpdateTime *time.Time
+	// Parent directory ID list.
+	ParentIds []string
 }
 
 // Get storage size information.
@@ -349,7 +357,11 @@ func (a *Agent) FileStat(fileId string) (info *FileInfo, err error) {
 		info = &FileInfo{
 			IsFile:      data.FileType == "1",
 			IsDirectory: data.FileType == "0",
+			Name:        data.Name,
+			Sha1:        data.Sha1,
 			PickCode:    data.PickCode,
+			CreateTime:  internal.ParseUnixTime(data.CreateTime),
+			UpdateTime:  internal.ParseUnixTime(data.UpdateTime),
 		}
 		info.ParentIds = make([]string, len(data.Paths))
 		for i, p := range data.Paths {
