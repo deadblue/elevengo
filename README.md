@@ -1,8 +1,8 @@
-# ElevenGo ![](https://img.shields.io/badge/status-WIP-green.svg)
+# ElevenGo
 
 An API wrapper for 115 NetDisk Service in Golang.
 
-# Example
+## Example
 
 Since the API has a lot of changes, example code may be changed in future.
 
@@ -27,7 +27,7 @@ for cursor := elevengo.FileCursor(); cursor.HasMore(); cursor.Next() {
     if files, err := agent.FileList("0", cursor); err != nil {
         panic(err)
     } else {
-        // TODO: handle the files
+        // TODO: deal with the files
     }
 }
 
@@ -36,13 +36,13 @@ for cursor := elevengo.OfflineCursor(); cursor.HasMore(); cursor.Next() {
     if tasks, err := agent.OfflineList(cursor); err != nil {
         panic(err)
     } else {
-        // TODO: handle the tasks
+        // TODO: deal with the tasks
     }
 }
 
 ```
 
-# Features
+## Features
 
 * Login
   * [x] Import credentials from cookies
@@ -56,7 +56,8 @@ for cursor := elevengo.OfflineCursor(); cursor.HasMore(); cursor.Next() {
   * [x] Copy
   * [x] Delete
   * [x] Mkdir
-  * [ ] Stat (W.I.P.)
+  * [x] Stat
+  * [x] Storage Stat
   * [x] Download
   * [x] Upload
 * Offline API
@@ -65,17 +66,17 @@ for cursor := elevengo.OfflineCursor(); cursor.HasMore(); cursor.Next() {
   * [x] Delete tasks
   * [x] Clear tasks
 * Other
-  * [X] Captcha
+  * [x] Captcha
 
-# Following works to do:
+## TODO list
 
 * ~~Play games.(NO!)~~
 * Handle more upstream errors.
 * Re-design error system, merge all errors into one type.
 * Implement download/upload method, with progress echo.
-* Print logging throuhg Logger interface.
+* Print some logs via Logger interface.
 * Add more docs and example codes.
 
-# License
+## License
 
 MIT
