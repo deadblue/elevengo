@@ -23,7 +23,12 @@ type CaptchaSession struct {
 		from them which matches with this image, the indexes of the 4 characters is
 		the CAPTCHA code. (Index bases on zero.)
 	*/
-	Image []byte
+	CodeImage []byte
+
+	/*
+		TODO: Add doc.
+	*/
+	KeysImage []byte
 
 	// The callback function name, hide for caller.
 	callback string
@@ -60,19 +65,30 @@ func (a *Agent) CaptchaStart() (session *CaptchaSession, err error) {
 	if _, err = a.hc.Get(apiCaptcha, qs); err != nil {
 		return
 	}
-	// Fetch captcha value image
+	// Fetch CAPTCHA code image
 	qs = core.NewQueryString().
 		WithString("ct", "index").
 		WithString("ac", "code").
 		WithInt64("_t", time.Now().Unix())
-	image, err := a.hc.Get(apiCaptcha, qs)
+	codeImg, err := a.hc.Get(apiCaptcha, qs)
+	if err != nil {
+		return
+	}
+	// Fetch CAPTCHA keys image
+	qs = core.NewQueryString().
+		WithString("ct", "index").
+		WithString("ac", "code").
+		WithString("t", "all").
+		WithInt64("_t", time.Now().Unix())
+	keysImg, err := a.hc.Get(apiCaptcha, qs)
 	if err != nil {
 		return
 	}
 	// Build session
 	session = &CaptchaSession{
-		callback: callback,
-		Image:    image,
+		callback:  callback,
+		CodeImage: codeImg,
+		KeysImage: keysImg,
 	}
 	return
 }
@@ -84,14 +100,14 @@ There are 10 Chinese characters on the image, 5 in column and 2 in row.
 You can call this method multiple times, it will return the same 10
 characters in different font on every calling.
 */
-func (a *Agent) CaptchaKeysImage(session *CaptchaSession) ([]byte, error) {
-	qs := core.NewQueryString().
-		WithString("ct", "index").
-		WithString("ac", "code").
-		WithString("t", "all").
-		WithInt64("_t", time.Now().Unix())
-	return a.hc.Get(apiCaptcha, qs)
-}
+//func (a *Agent) CaptchaKeysImage(session *CaptchaSession) ([]byte, error) {
+//	qs := core.NewQueryString().
+//		WithString("ct", "index").
+//		WithString("ac", "code").
+//		WithString("t", "all").
+//		WithInt64("_t", time.Now().Unix())
+//	return a.hc.Get(apiCaptcha, qs)
+//}
 
 /*
 Get one CAPTCHA key image data.

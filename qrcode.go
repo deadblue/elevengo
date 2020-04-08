@@ -87,7 +87,7 @@ Example:
 	if err != nil {
 		panic(error)
 	}
-	// TODO: Show QRcode and prompt user to scan it in mobile app.
+	// TODO: Show QRcode and prompt user to scan it on mobile app.
 	for {
 		if status, err := agent.QrcodeStatus(session); err != nil {
 			panic(err)
@@ -96,7 +96,7 @@ Example:
 				err = agent.QrcodeLogin(session)
 				break
 			} else status.IsCanceled() {
-				fmt.Println("User canceled ")
+				fmt.Println("User canceled this login!")
 				break
 			}
 		}
