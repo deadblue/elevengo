@@ -107,9 +107,9 @@ type FileInfo struct {
 	IsFile bool
 	// True means a directory.
 	IsDirectory bool
-	// Path
+	// Parent directory ID list.
 	ParentIds []string
-	// Donwload code
+	// Pick code for downloading.
 	PickCode string
 }
 
