@@ -1,7 +1,6 @@
 package elevengo
 
 import (
-	"fmt"
 	"github.com/deadblue/elevengo/core"
 	"github.com/deadblue/elevengo/internal"
 	"time"
@@ -21,20 +20,8 @@ const (
 
 	fileDefaultLimit = 100
 
-	errListRetry = 20130827
-
-	errDirectoryExisting = 20004
+	codeListRetry = 20130827
 )
-
-type FileError int
-
-func (e FileError) Error() string {
-	return fmt.Sprintf("remote error: %d", e)
-}
-
-func (e FileError) IsAlreadyExisting() bool {
-	return e == errDirectoryExisting
-}
 
 type fileCursor struct {
 	used   bool
@@ -55,7 +42,7 @@ func (c *fileCursor) Total() int {
 	return c.total
 }
 
-// Create a file cursor which is used in FileList and FileSearch.
+// Create a file cursor for "Agent.FileList()" and "Agent.FileSearch()".
 func FileCursor() Cursor {
 	return &fileCursor{
 		used:   false,
@@ -125,6 +112,9 @@ type FileInfo struct {
 func (a *Agent) StorageStat() (info *StorageInfo, err error) {
 	result := new(internal.FileIndexResult)
 	err = a.hc.JsonApi(apiFileIndex, nil, nil, result)
+	if err == nil && result.IsFailed() {
+		err = internal.MakeFileError(result.Code, result.Error)
+	}
 	if err != nil {
 		return
 	}
@@ -163,8 +153,8 @@ func (a *Agent) FileList(parentId string, cursor Cursor) (files []*File, err err
 		WithInt("asc", fc.asc).
 		WithInt("offset", fc.offset).
 		WithInt("limit", fc.limit)
-	retry, result := true, &internal.FileListResult{}
-	for retry {
+	result := &internal.FileListResult{}
+	for retry := true; retry; {
 		// Select API URL
 		apiUrl := apiFileList
 		if fc.order == "file_name" {
@@ -172,10 +162,10 @@ func (a *Agent) FileList(parentId string, cursor Cursor) (files []*File, err err
 		}
 		// Call API
 		err = a.hc.JsonApi(apiUrl, qs, nil, result)
-		// Handle error
 		retry = false
+		// Handle error
 		if err == nil && result.IsFailed() {
-			if result.ErrorCode == errListRetry {
+			if result.ErrorCode == codeListRetry {
 				// Update query string
 				qs.WithString("o", fc.order).WithInt("asc", fc.asc)
 				// Update order flag
@@ -184,9 +174,14 @@ func (a *Agent) FileList(parentId string, cursor Cursor) (files []*File, err err
 				// Try to call API again
 				retry = true
 			} else {
-				err = FileError(result.ErrorCode)
+				err = internal.MakeFileError(result.ErrorCode, result.Error)
 			}
 		}
+	}
+	// Upstream will return file list under root when parentId is invalid, but this API should
+	// return an error.
+	if parentId != string(result.CategoryId) {
+		err = errFileNotExist
 	}
 	if err != nil {
 		return
@@ -236,7 +231,7 @@ func (a *Agent) FileSearch(rootId, keyword string, cursor Cursor) (files []*File
 	result := &internal.FileSearchResult{}
 	err = a.hc.JsonApi(apiFileSearch, qs, nil, result)
 	if err == nil && result.IsFailed() {
-		err = FileError(result.ErrorCode)
+		err = internal.MakeFileError(result.ErrorCode, result.Error)
 	}
 	if err != nil {
 		return
@@ -278,7 +273,7 @@ func (a *Agent) FileCopy(parentId string, fileIds ...string) (err error) {
 	result := &internal.FileOperateResult{}
 	err = a.hc.JsonApi(apiFileCopy, nil, form, result)
 	if err == nil && result.IsFailed() {
-		err = FileError(result.ErrorCode)
+		err = internal.MakeFileError(int(result.ErrorCode), result.Error)
 	}
 	return
 }
@@ -291,7 +286,7 @@ func (a *Agent) FileMove(parentId string, fileIds ...string) (err error) {
 	result := &internal.FileOperateResult{}
 	err = a.hc.JsonApi(apiFileMove, nil, form, result)
 	if err == nil && result.IsFailed() {
-		err = FileError(result.ErrorCode)
+		err = internal.MakeFileError(int(result.ErrorCode), result.Error)
 	}
 	return
 }
@@ -305,7 +300,7 @@ func (a *Agent) FileRename(fileId, name string) (err error) {
 	result := &internal.FileOperateResult{}
 	err = a.hc.JsonApi(apiFileRename, nil, form, result)
 	if err == nil && !result.State {
-		err = FileError(result.ErrorCode)
+		err = internal.MakeFileError(int(result.ErrorCode), result.Error)
 	}
 	return
 }
@@ -318,7 +313,7 @@ func (a *Agent) FileDelete(parentId string, fileIds ...string) (err error) {
 	result := &internal.FileOperateResult{}
 	err = a.hc.JsonApi(apiFileDelete, nil, form, result)
 	if err == nil && result.IsFailed() {
-		err = FileError(result.ErrorCode)
+		err = internal.MakeFileError(int(result.ErrorCode), result.Error)
 	}
 	return
 }
@@ -331,7 +326,7 @@ func (a *Agent) FileMkdir(parentId, name string) (directoryId string, err error)
 	result := &internal.FileAddResult{}
 	err = a.hc.JsonApi(apiFileAdd, nil, form, result)
 	if err == nil && result.IsFailed() {
-		err = FileError(result.ErrorCode)
+		err = internal.MakeFileError(int(result.ErrorCode), result.Error)
 	}
 	if err == nil {
 		directoryId = result.CategoryId
@@ -350,7 +345,7 @@ func (a *Agent) FileStat(fileId string) (info *FileInfo, err error) {
 	result := &internal.FileStatResult{}
 	err = a.hc.JsonApi(apiFileStat, qs, nil, result)
 	if err == nil && result.IsFailed() {
-		err = errFileStatFailed
+		err = errFileNotExist
 	}
 	if err == nil {
 		data := result.Data

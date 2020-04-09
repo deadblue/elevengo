@@ -25,7 +25,14 @@ type DownloadTicket struct {
 	FileSize int64
 }
 
-// Create a download ticket.
+/*
+Create a download ticket.
+
+Now the Agent does not support downloading file, you need using a thirdparty tool to
+do that, such as wget/curl/aria2.
+
+TODO: Add curl exmaple.
+*/
 func (a *Agent) CreateDownloadTicket(pickcode string) (ticket *DownloadTicket, err error) {
 	// Get download information
 	qs := core.NewQueryString().
@@ -34,7 +41,7 @@ func (a *Agent) CreateDownloadTicket(pickcode string) (ticket *DownloadTicket, e
 	result := &internal.DownloadInfoResult{}
 	err = a.hc.JsonApi(apiFileDownload, qs, nil, result)
 	if err == nil && result.IsFailed() {
-		err = errUpstreamError
+		err = internal.MakeFileError(result.MessageCode, result.Message)
 	}
 	// Create download ticket
 	ticket = &DownloadTicket{
@@ -57,5 +64,3 @@ func (a *Agent) CreateDownloadTicket(pickcode string) (ticket *DownloadTicket, e
 	ticket.Headers["Cookie"] = sb.String()
 	return
 }
-
-// TODO: Implement a download method with progress listener.

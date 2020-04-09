@@ -2,7 +2,6 @@ package elevengo
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/deadblue/elevengo/core"
 	"github.com/deadblue/elevengo/internal"
 	"time"
@@ -12,8 +11,6 @@ const (
 	apiQrcodeToken  = "https://qrcodeapi.115.com/api/1.0/web/1.0/token"
 	apiQrcodeStatus = "https://qrcodeapi.115.com/get/status/"
 	apiQrcodeLogin  = "https://passportapi.115.com/app/1.0/web/1.0/login/qrcode"
-
-	codeQrcodeExpired = 40199002
 )
 
 // QrcodeSession holds the information during a QRcode login process.
@@ -52,28 +49,13 @@ func (qs QrcodeStatus) IsCanceled() bool {
 	return qs == -2
 }
 
-// Return true if the QRcode is expired.
-func (qs QrcodeStatus) IsExpired() bool {
-	return qs == codeQrcodeExpired
-}
-
-type qrcodeError struct {
-	code int
-}
-
-func (qe *qrcodeError) Error() string {
-	return fmt.Sprintf("upstream qrcode API error: %d", qe.code)
-}
-
 func (a *Agent) callQrcodeApi(url string, qs core.QueryString, form core.Form, data interface{}) error {
 	result := &internal.QrcodeApiResult{}
 	if err := a.hc.JsonApi(url, qs, form, result); err != nil {
 		return err
 	}
 	if result.IsFailed() {
-		return &qrcodeError{
-			code: result.Code,
-		}
+		return internal.MakeQrcodeError(result.Code, result.Message)
 	}
 	return json.Unmarshal(result.Data, data)
 }
@@ -116,9 +98,21 @@ func (a *Agent) QrcodeStart() (session *QrcodeSession, err error) {
 	return
 }
 
-// Get QRcode login process status.
-// The remote API uses a long-pull request for 30 seconds, so this API
-// will also block at most 30 seconds, be careful to use it in main goroutine.
+/*
+Get QRcode status.
+
+The upstream API uses a long-pull request for 30 seconds, so this API will
+also block at most 30 seconds, be careful to use it in main goroutine.
+
+The QRcode has 4 status:
+- Waiting
+- Scanned
+- Allowed
+- Canceled
+
+The QRcode will expire in 5 mimutes, when it expired, an error will be return, caller
+can use IsQrcodeExipre() to check that.
+*/
 func (a *Agent) QrcodeStatus(session *QrcodeSession) (status QrcodeStatus, err error) {
 	qs := core.NewQueryString().
 		WithString("uid", session.uid).
@@ -128,10 +122,6 @@ func (a *Agent) QrcodeStatus(session *QrcodeSession) (status QrcodeStatus, err e
 	data := &internal.QrcodeStatusData{}
 	if err = a.callQrcodeApi(apiQrcodeStatus, qs, nil, data); err == nil {
 		status = QrcodeStatus(data.Status)
-	} else {
-		if qerr, ok := err.(*qrcodeError); ok && qerr.code == codeQrcodeExpired {
-			status, err = QrcodeStatus(codeQrcodeExpired), nil
-		}
 	}
 	return
 }
@@ -147,7 +137,8 @@ func (a *Agent) QrcodeLogin(session *QrcodeSession) error {
 		return err
 	} else {
 		a.ui = &internal.UserInfo{
-			UserId: data.UserId,
+			UserId:   data.UserId,
+			UserName: data.UserName,
 		}
 		return nil
 	}

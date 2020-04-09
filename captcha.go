@@ -63,7 +63,6 @@ Example:
 	if err = agent.CaptchaSubmit(session, code); err != nil {
 		panic(err)
 	}
-
 */
 func (a *Agent) CaptchaStart() (session *CaptchaSession, err error) {
 	// Fetch captcha page
@@ -149,7 +148,7 @@ func (a *Agent) CaptchaSubmit(session *CaptchaSession, code string) (err error) 
 	submitResult := &internal.CaptchaSubmitResult{}
 	err = a.hc.JsonApi(apiCaptchaSubmit, nil, form, submitResult)
 	if err == nil && submitResult.IsFailed() {
-		err = errCaptchaCodeIncorrect
+		err = errCaptchaFailed
 	}
 	return
 }

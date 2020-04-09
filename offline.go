@@ -1,7 +1,6 @@
 package elevengo
 
 import (
-	"errors"
 	"github.com/deadblue/elevengo/core"
 	"github.com/deadblue/elevengo/internal"
 	"time"
@@ -14,9 +13,6 @@ const (
 	apiOfflineAddUrls = "https://115.com/web/lixian/?ct=lixian&ac=add_task_urls"
 	apiOfflineDelete  = "https://115.com/web/lixian/?ct=lixian&ac=task_del"
 	apiOfflineClear   = "https://115.com/web/lixian/?ct=lixian&ac=task_clear"
-
-	errOfflineCaptcha      = 911
-	errOfflineTaskExisting = 10008
 )
 
 type offlineCursor struct {
@@ -48,40 +44,40 @@ func OfflineCursor() Cursor {
 
 // Parameter for "Agent.OfflineClear()" method.
 // Default value is to clear all done tasks without deleteing downloaded files.
-type OfflineClearParam struct {
+type OfflineClearFlag struct {
 	flag int
 }
 
 // Clear all tasks, delete the downloaded files if "delete" is true.
-func (p *OfflineClearParam) All(delete bool) *OfflineClearParam {
+func (f *OfflineClearFlag) All(delete bool) *OfflineClearFlag {
 	if delete {
-		p.flag = 5
+		f.flag = 5
 	} else {
-		p.flag = 1
+		f.flag = 1
 	}
-	return p
+	return f
 }
 
 // Clear done tasks, delete the downloaded files if "delete" is true.
-func (p *OfflineClearParam) Done(delete bool) *OfflineClearParam {
+func (f *OfflineClearFlag) Done(delete bool) *OfflineClearFlag {
 	if delete {
-		p.flag = 4
+		f.flag = 4
 	} else {
-		p.flag = 0
+		f.flag = 0
 	}
-	return p
+	return f
 }
 
 // Clear failed tasks.
-func (p *OfflineClearParam) Failed() *OfflineClearParam {
-	p.flag = 2
-	return p
+func (f *OfflineClearFlag) Failed() *OfflineClearFlag {
+	f.flag = 2
+	return f
 }
 
 // Clean running tasks.
-func (p *OfflineClearParam) Running() *OfflineClearParam {
-	p.flag = 3
-	return p
+func (f *OfflineClearFlag) Running() *OfflineClearFlag {
+	f.flag = 3
+	return f
 }
 
 // Describe status of an offline task.
@@ -163,8 +159,8 @@ func (a *Agent) OfflineList(cursor Cursor) (tasks []*OfflineTask, err error) {
 	form := core.NewForm().WithInt("page", oc.page)
 	result := &internal.OfflineListResult{}
 	err = a.callOfflineApi(apiOfflineList, form, result)
-	if err == nil && !result.State {
-		err = errors.New(result.ErrorMsg)
+	if err == nil && result.IsFailed() {
+		err = internal.MakeOfflineError(result.ErrorCode, result.ErrorMsg)
 	}
 	if err != nil {
 		return
@@ -186,7 +182,7 @@ func (a *Agent) OfflineList(cursor Cursor) (tasks []*OfflineTask, err error) {
 	return
 }
 
-// Add one or more offline task by URL.
+// Add one or more offline tasks by URL.
 func (a *Agent) OfflineAdd(url ...string) (err error) {
 	form, isSingle := core.NewForm(), len(url) == 1
 	if isSingle {
@@ -212,25 +208,27 @@ func (a *Agent) OfflineDelete(deleteFile bool, hash ...string) (err error) {
 	result := &internal.OfflineBasicResult{}
 	err = a.callOfflineApi(apiOfflineDelete, form, result)
 	if err == nil && !result.State {
-		err = errors.New(result.ErrorMsg)
+		err = internal.MakeOfflineError(result.ErrorCode, result.ErrorMsg)
 	}
 	return
 }
 
 /*
-Clear offline specific type of tasks.
-You can pass param as nil to clear the done tasks but keep the downloaded files.
+Clear specific type of offline tasks.
+
+The "flag" parameter indicates which type of tasks will be clear, you can pass nil to
+clear the done tasks but keep the downloaded files.
 */
-func (a *Agent) OfflineClear(param *OfflineClearParam) (err error) {
-	if param == nil {
-		param = (&OfflineClearParam{}).Done(false)
+func (a *Agent) OfflineClear(flag *OfflineClearFlag) (err error) {
+	if flag == nil {
+		flag = (&OfflineClearFlag{}).Done(false)
 	}
 	form := core.NewForm().
-		WithInt("flag", param.flag)
+		WithInt("flag", flag.flag)
 	result := &internal.OfflineBasicResult{}
 	err = a.callOfflineApi(apiOfflineClear, form, result)
 	if err == nil && !result.State {
-		err = errors.New(result.ErrorMsg)
+		err = internal.MakeOfflineError(result.ErrorCode, result.ErrorMsg)
 	}
 	return
 }
