@@ -149,8 +149,14 @@ func (a *Agent) callOfflineApi(url string, form core.Form, result interface{}) (
 	return
 }
 
-// Get some of offline tasks.
-// TODO: update docs.
+/*
+Get some of offline tasks.
+
+The upstream API returns at most 30 tasks for one request, caller need pass a cursor to
+receive the cursor information, and use it to get remain tasks.
+
+The cursor should be created by OfflineCursor(), DO NOT pass it as nil.
+*/
 func (a *Agent) OfflineList(cursor Cursor) (tasks []*OfflineTask, err error) {
 	oc, ok := cursor.(*offlineCursor)
 	if !ok {
