@@ -1,10 +1,8 @@
 # ElevenGo
 
-An API wrapper for 115 NetDisk Service in Golang.
+An API wrapper for 115 NetDisk Service.
 
 ## Example
-
-Since the API has a lot of changes, example code may be changed in future.
 
 ```go
 import "github.com/deadblue/elevengo"
@@ -70,12 +68,11 @@ for cursor := elevengo.OfflineCursor(); cursor.HasMore(); cursor.Next() {
 
 ## TODO list
 
-* ~~Play games.(NO!)~~
-* Handle more upstream errors.
-* Re-design error system, merge all errors into one type.
-* Implement download/upload method, with progress echo.
-* Print some logs via Logger interface.
-* Add more docs and example codes.
+* Current version:
+  * Print some logs via Logger interface.
+* Next version
+  * Handle more upstream errors.
+  * Implement download/upload method, with progress echo.
 
 ## License
 
