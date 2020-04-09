@@ -9,6 +9,7 @@ type StorageSizeInfo struct {
 
 type FileIndexResult struct {
 	BaseApiResult
+	Code  int    `json:"code"`
 	Error string `json:"error"`
 	Data  struct {
 		SpaceInfo struct {
@@ -41,17 +42,19 @@ type FileData struct {
 
 type FileListResult struct {
 	BaseApiResult
-	Error     string      `json:"error"`
-	ErrorCode int         `json:"errNo"`
-	Count     int         `json:"count"`
-	SysCount  int         `json:"sys_count"`
-	Path      []*FilePath `json:"path"`
-	Data      []*FileData `json:"data"`
-	Order     string      `json:"order"`
-	IsAsc     int         `json:"is_asc"`
-	Offset    int         `json:"offset"`
-	Limit     int         `json:"limit"`
-	PageSize  int         `json:"page_size"`
+	Error      string      `json:"error"`
+	ErrorCode  int         `json:"errNo"`
+	AreaId     string      `json:"aid"`
+	CategoryId IntString   `json:"cid"`
+	Count      int         `json:"count"`
+	SysCount   int         `json:"sys_count"`
+	Path       []*FilePath `json:"path"`
+	Data       []*FileData `json:"data"`
+	Order      string      `json:"order"`
+	IsAsc      int         `json:"is_asc"`
+	Offset     int         `json:"offset"`
+	Limit      int         `json:"limit"`
+	PageSize   int         `json:"page_size"`
 }
 
 type FileSearchResult struct {
