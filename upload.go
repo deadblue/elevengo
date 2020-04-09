@@ -11,8 +11,14 @@ const (
 	apiUploadInit = "https://uplb.115.com/3.0/sampleinitupload.php"
 )
 
-// "UploadInfo" contains all required information to create an upload ticket.
-// You need not to implement it, a well-known implementation is "os.FileInfo".
+/*
+UploadInfo contains all required information to create an upload ticket.
+
+If you want to upload a generic file, you can use os.FileInfo as UploadInfo, see
+"Agent.CreateUploadTicket" doc for detail.
+
+If you want to upload a memory data as file, you need implement it.
+*/
 type UploadInfo interface {
 	// Name of the upload file.
 	Name() string
@@ -30,7 +36,34 @@ type UploadTicket struct {
 	Values map[string]string
 }
 
-// Create an upload ticket.
+/*
+Create an upload ticket.
+
+When uploading a large file, it is recommended to use a thirdparty tool, such as "curl".
+
+Example:
+
+	filename := "/path/to/file"
+	// Get file info
+	info, err := os.Stat(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Create upload ticket
+	ticket, err := agent.CreateUploadTicket(parentId, info)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Upload file via curl
+	cmd := exec.Command("/usr/bin/curl", ticket.Endpoint)
+	for name, value := range ticket.Values {
+		cmd.Args = append(cmd.Args, "-F", fmt.Sprintf("%s=%s", name, value))
+	}
+	cmd.Args = append(cmd.Args, "-F", fmt.Sprintf("%s=@%s", ticket.FileField, filename))
+	if err = cmd.Run(); err != nil {
+		log.Fatal(err)
+	}
+*/
 func (a *Agent) CreateUploadTicket(parentId string, info UploadInfo) (ticket *UploadTicket, err error) {
 	// Request upload token
 	form := core.NewForm().
@@ -57,8 +90,6 @@ func (a *Agent) CreateUploadTicket(parentId string, info UploadInfo) (ticket *Up
 	}
 	return
 }
-
-// TODO: Implement a upload method with progress listener.
 
 // A simple upload implementation without progress echo.
 func (a *Agent) UploadFile(parentId, localFile string) (err error) {

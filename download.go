@@ -28,10 +28,25 @@ type DownloadTicket struct {
 /*
 Create a download ticket.
 
-Now the Agent does not support downloading file, you need using a thirdparty tool to
+Now Agent does not support downloading file, you need using a thirdparty tool to
 do that, such as wget/curl/aria2.
 
-TODO: Add curl exmaple.
+Example:
+
+	// Create download ticket
+	ticket, err := agent.CreateDownloadTicket("pickcode")
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Download file via "curl"
+	cmd := exec.Command("/usr/bin/curl", ticket.Url)
+	for name, value := range ticket.Headers {
+		cmd.Args = append(cmd.Args, "-H", fmt.Sprintf("%s: %s", name, value))
+	}
+	cmd.Args = append(cmd.Args, "-o", ticket.FileName)
+	if err = cmd.Run(); err != nil {
+		log.Fatal(err)
+	}
 */
 func (a *Agent) CreateDownloadTicket(pickcode string) (ticket *DownloadTicket, err error) {
 	// Get download information
