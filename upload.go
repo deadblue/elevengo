@@ -55,7 +55,7 @@ Example:
 		log.Fatal(err)
 	}
 	// Upload file via curl
-	cmd := exec.Command("/usr/bin/curl", ticket.Endpoint)
+	cmd := exec.Command("/usr/bin/curl", "-o", "/dev/null", "-#", ticket.Endpoint)
 	for name, value := range ticket.Values {
 		cmd.Args = append(cmd.Args, "-F", fmt.Sprintf("%s=%s", name, value))
 	}
