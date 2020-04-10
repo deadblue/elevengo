@@ -7,13 +7,17 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	neturl "net/url"
 	"strings"
 )
 
 type implHttpClient struct {
-	hc         *http.Client
-	beforeSend func(req *http.Request)
-	afterRecv  func(resp *http.Response)
+	// Underlying HTTP transport client.
+	hc *http.Client
+	// Cookie storage.
+	jar http.CookieJar
+	// Additional request headers that will be sent in every request.
+	hdrs http.Header
 }
 
 // Internal method to send request
@@ -38,16 +42,16 @@ func (i *implHttpClient) send(url string, qs QueryString, form Form) (body io.Re
 	if form != nil {
 		req.Header.Set("Content-Type", form.ContentType())
 	}
-	if i.beforeSend != nil {
-		i.beforeSend(req)
+	// Add additional request headers
+	if i.hdrs != nil {
+		for key := range i.hdrs {
+			req.Header.Set(key, i.hdrs.Get(key))
+		}
 	}
 	// send request
 	if resp, err := i.hc.Do(req); err != nil {
 		return nil, err
 	} else {
-		if i.afterRecv != nil {
-			i.afterRecv(resp)
-		}
 		return resp.Body, nil
 	}
 }
@@ -87,4 +91,35 @@ func (i *implHttpClient) JsonpApi(url string, qs QueryString, result interface{}
 		return &json.SyntaxError{Offset: 0}
 	}
 	return json.Unmarshal(content[left+1:right], result)
+}
+
+func (i *implHttpClient) SetCookies(url, domain string, cookies map[string]string) {
+	if u, err := neturl.Parse(url); err != nil {
+		return
+	} else {
+		cks, index := make([]*http.Cookie, len(cookies)), 0
+		for name, value := range cookies {
+			cks[index] = &http.Cookie{
+				Name:     name,
+				Value:    value,
+				Domain:   domain,
+				Path:     "/",
+				HttpOnly: true,
+			}
+			index += 1
+		}
+		i.jar.SetCookies(u, cks)
+	}
+}
+
+func (i *implHttpClient) Cookies(url string) (cookies map[string]string) {
+	cookies = make(map[string]string)
+	if u, err := neturl.Parse(url); err != nil {
+		return
+	} else {
+		for _, ck := range i.jar.Cookies(u) {
+			cookies[ck.Name] = ck.Value
+		}
+	}
+	return
 }

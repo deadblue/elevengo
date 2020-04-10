@@ -3,6 +3,7 @@ package core
 import (
 	"net"
 	"net/http"
+	"net/http/cookiejar"
 	"time"
 )
 
@@ -14,18 +15,13 @@ type HttpClient interface {
 	JsonApi(url string, qs QueryString, form Form, result interface{}) (err error)
 	// Call a JSON-P API with parameters
 	JsonpApi(url string, qs QueryString, result interface{}) (err error)
+	// Get cookies for URL.
+	Cookies(url string) (cookies map[string]string)
+	// Set cookies for URL.
+	SetCookies(url, domain string, cookies map[string]string)
 }
 
-type HttpOpts struct {
-	// Cookie jar
-	Jar http.CookieJar
-	// Hook function before send a request
-	BeforeSend func(req *http.Request)
-	// Hook function when receive a response
-	AfterRecv func(resp *http.Response)
-}
-
-func NewHttpClient(opts *HttpOpts) HttpClient {
+func NewHttpClient(headers http.Header) HttpClient {
 	// Make a copy of the default tranport
 	tp := http.DefaultTransport.(*http.Transport).Clone()
 	// Adjust some parameters
@@ -39,14 +35,15 @@ func NewHttpClient(opts *HttpOpts) HttpClient {
 		KeepAlive: 30 * time.Second,
 	}).DialContext
 	// Make http.Client
+	jar, _ := cookiejar.New(nil)
 	hc := &http.Client{
+		Jar:       jar,
 		Transport: tp,
-		Jar:       opts.Jar,
 		Timeout:   0,
 	}
 	return &implHttpClient{
-		hc:         hc,
-		beforeSend: opts.BeforeSend,
-		afterRecv:  opts.AfterRecv,
+		hc:   hc,
+		jar:  jar,
+		hdrs: headers,
 	}
 }

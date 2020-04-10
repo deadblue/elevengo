@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/deadblue/elevengo/core"
 	"github.com/deadblue/elevengo/internal"
-	"net/url"
 	"strings"
 	"time"
 )
@@ -69,12 +68,8 @@ func (a *Agent) CreateDownloadTicket(pickcode string) (ticket *DownloadTicket, e
 	ticket.Headers["User-Agent"] = a.name
 	// Add cookie header
 	sb := &strings.Builder{}
-	downUrl, _ := url.Parse(result.FileUrl)
-	for i, ck := range a.cj.Cookies(downUrl) {
-		if i > 0 {
-			sb.WriteString("; ")
-		}
-		fmt.Fprintf(sb, "%s=%s", ck.Name, ck.Value)
+	for name, value := range a.hc.Cookies(result.FileUrl) {
+		fmt.Fprintf(sb, "%s=%s;", name, value)
 	}
 	ticket.Headers["Cookie"] = sb.String()
 	return
