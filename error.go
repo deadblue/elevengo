@@ -7,6 +7,8 @@ import (
 
 // Special errors
 var (
+	errCredentialsNotExist = errors.New("credentials not exist")
+
 	errFileNotExist      = errors.New("file not exist")
 	errFileCursorInvalid = errors.New("cursor must be created by FileCursor()")
 

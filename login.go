@@ -5,8 +5,6 @@ import (
 	"github.com/deadblue/elevengo/core"
 	"github.com/deadblue/elevengo/internal"
 	"math/rand"
-	"net/http"
-	"net/url"
 	"time"
 )
 
@@ -17,24 +15,46 @@ const (
 	apiUserInfo = "https://my.115.com/"
 )
 
-// Credentials contains required data to make remote server considers as
-// you have signed in. You can get these from you browser cookies.
+/*
+Credentials contains required information that the upstream server uses to
+authenticate a signed-in user.
+
+In detail, three cookies are required: "UID", "CID", "SEID", you can find
+them from your browser cookie storage.
+*/
 type Credentials struct {
 	UID  string
 	CID  string
 	SEID string
 }
 
-// Import the credentials into client.
-func (a *Agent) ImportCredentials(cr *Credentials) (err error) {
-	cks := []*http.Cookie{
-		{Name: "UID", Value: cr.UID, Domain: cookieDomain, Path: "/", HttpOnly: true},
-		{Name: "CID", Value: cr.CID, Domain: cookieDomain, Path: "/", HttpOnly: true},
-		{Name: "SEID", Value: cr.SEID, Domain: cookieDomain, Path: "/", HttpOnly: true},
+/*
+Import credentials into agent.
+*/
+func (a *Agent) CredentialsImport(cr *Credentials) (err error) {
+	cookies := map[string]string{
+		"UID":  cr.UID,
+		"CID":  cr.CID,
+		"SEID": cr.SEID,
 	}
-	u, _ := url.Parse(cookieUrl)
-	a.cj.SetCookies(u, cks)
+	a.hc.SetCookies(cookieUrl, cookieDomain, cookies)
 	return a.getUserInfo()
+}
+
+/*
+Export credentials from agent, you can store it for future use.
+*/
+func (a *Agent) CredentialsExport() (cr *Credentials, err error) {
+	if cookies := a.hc.Cookies(cookieUrl); cookies == nil || len(cookies) == 0 {
+		err = errCredentialsNotExist
+	} else {
+		cr = &Credentials{
+			UID:  cookies["UID"],
+			CID:  cookies["CID"],
+			SEID: cookies["SEID"],
+		}
+	}
+	return
 }
 
 // A new and graceful way to get user information.
