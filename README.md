@@ -1,8 +1,12 @@
 # ElevenGo
 
-An API wrapper for 115 NetDisk Service.
+[![GoDoc](https://godoc.org/github.com/deadblue/elevengo?status.svg)](https://godoc.org/github.com/deadblue/elevengo)
+
+A Golang API wrapper for 115 NetDisk Service.
 
 ## Example
+
+> You can found more example codes godoc: [https://godoc.org/github.com/deadblue/elevengo](https://godoc.org/github.com/deadblue/elevengo).
 
 ```go
 import "github.com/deadblue/elevengo"
@@ -28,16 +32,6 @@ for cursor := elevengo.FileCursor(); cursor.HasMore(); cursor.Next() {
         // TODO: deal with the files
     }
 }
-
-// List offline tasks.
-for cursor := elevengo.OfflineCursor(); cursor.HasMore(); cursor.Next() {
-    if tasks, err := agent.OfflineList(cursor); err != nil {
-        panic(err)
-    } else {
-        // TODO: deal with the tasks
-    }
-}
-
 ```
 
 ## Features
@@ -70,7 +64,7 @@ for cursor := elevengo.OfflineCursor(); cursor.HasMore(); cursor.Next() {
 
 * Current version:
   * Print some logs via Logger interface.
-* Next version
+* Next version:
   * Handle more upstream errors.
   * Implement download/upload method, with progress echo.
 
