@@ -109,7 +109,7 @@ type OfflineTask struct {
 	// Task status.
 	Status OfflineTaskStatus
 	// Download percent of the task, 0 to 100.
-	Percent int
+	Percent float64
 	// File ID of the downloaded file on remote server.
 	FileId string
 }

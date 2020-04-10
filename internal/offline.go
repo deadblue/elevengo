@@ -30,19 +30,19 @@ type OfflineListResult struct {
 }
 
 type OfflineTaskData struct {
-	InfoHash     string `json:"info_hash"`
-	Name         string `json:"name"`
-	Size         int64  `json:"size"`
-	Url          string `json:"url"`
-	Status       int    `json:"status"`
-	AddTime      int64  `json:"add_time"`
-	LeftTime     int64  `json:"left_time"`
-	UpdateTime   int64  `json:"last_update"`
-	Precent      int    `json:"percentDone"`
-	Move         int    `json:"move"`
-	FileId       string `json:"file_id"`
-	DeleteFileId string `json:"delete_file_id"`
-	DeletePath   string `json:"del_path"`
+	InfoHash     string  `json:"info_hash"`
+	Name         string  `json:"name"`
+	Size         int64   `json:"size"`
+	Url          string  `json:"url"`
+	Status       int     `json:"status"`
+	AddTime      int64   `json:"add_time"`
+	LeftTime     int64   `json:"left_time"`
+	UpdateTime   int64   `json:"last_update"`
+	Precent      float64 `json:"percentDone"`
+	Move         int     `json:"move"`
+	FileId       string  `json:"file_id"`
+	DeleteFileId string  `json:"delete_file_id"`
+	DeletePath   string  `json:"del_path"`
 }
 
 type OfflineAddUrlResult struct {
