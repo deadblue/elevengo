@@ -6,8 +6,6 @@ A Golang API wrapper for 115 NetDisk Service.
 
 ## Example
 
-> You can found more example codes godoc: [https://godoc.org/github.com/deadblue/elevengo](https://godoc.org/github.com/deadblue/elevengo).
-
 ```go
 import "github.com/deadblue/elevengo"
 
@@ -33,6 +31,8 @@ for cursor := elevengo.FileCursor(); cursor.HasMore(); cursor.Next() {
     }
 }
 ```
+
+You can find more example on [GoDoc](https://godoc.org/github.com/deadblue/elevengo).
 
 ## Features
 

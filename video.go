@@ -10,11 +10,10 @@ const (
 )
 
 /*
-Get HLS data for a video.
+Get HLS content of a video.
 
-For video file, the upstream server support playing online via HLS protocol.
-Caller can use this API to get the HLS content, and play it by thirdparty
-tools, such as "mpv".
+For video file, the upstream server support HLS streaming. Caller can use this
+method to get the HLS content, and play it through thirdparty tools, such as "mpv".
 
 Example:
 
