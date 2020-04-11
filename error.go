@@ -15,6 +15,8 @@ var (
 	errOfflineCursorInvalid = errors.New("cursor must be created by OfflineCursor()")
 
 	errCaptchaFailed = errors.New("captcha code incorrect")
+
+	errVideoNotReady = errors.New("video not ready")
 )
 
 const (
@@ -39,7 +41,7 @@ func IsFileNotExist(err error) bool {
 
 func IsOfflineExist(err error) bool {
 	if ae, ok := err.(*internal.ApiError); ok {
-		return ae.Category == internal.OfflineError && ae.Code == codeFileExist
+		return ae.Category == internal.OfflineError && ae.Code == codeOfflineExist
 	}
 	return false
 }
