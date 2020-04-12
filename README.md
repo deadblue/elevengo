@@ -2,6 +2,8 @@
 
 [![GoDoc](https://godoc.org/github.com/deadblue/elevengo?status.svg)](https://godoc.org/github.com/deadblue/elevengo)
 
+[![](https://img.shields.io/badge/latest-v0.1.1-brightgreen)](https://github.com/deadblue/elevengo/releases/tag/v0.1.1)
+
 A Golang API wrapper for 115 NetDisk Service.
 
 ## Example
@@ -39,8 +41,9 @@ You can find more example on [GoDoc](https://godoc.org/github.com/deadblue/eleve
 * Login
   * [x] Import credentials from cookies
   * [x] Login via QRCode
+  * [x] Get signed in user information
   * [ ] ~~Login via Account/Password~~ (No idea)
-* File API
+* File
   * [x] List
   * [x] Search
   * [x] Rename
@@ -52,7 +55,8 @@ You can find more example on [GoDoc](https://godoc.org/github.com/deadblue/eleve
   * [x] Storage Stat
   * [x] Download
   * [x] Upload
-* Offline API
+  * [x] Video HLS
+* Offline
   * [x] List tasks
   * [x] Create URL task(s)
   * [x] Delete tasks
@@ -66,6 +70,7 @@ You can find more example on [GoDoc](https://godoc.org/github.com/deadblue/eleve
   * Print some logs via Logger interface.
 * Next version:
   * Handle more upstream errors.
+  * Caller can swtich upstream API between HTTP/HTTPS.
   * Implement download/upload method, with progress echo.
 
 ## License

@@ -8,11 +8,13 @@ import (
 
 const (
 	defaultName = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:75.0) Gecko/20100101 Firefox/75.0"
-	version     = "0.1.1"
+	version     = "0.1.2"
 )
 
-// Agent holds an user's credentials, and provides methods to access upstream
-// server's features, such as file management, offline download, etc.
+/*
+Agent holds signed-in user's credentials, and provides methods to access upstream
+server's features, such as file management, offline download, etc.
+*/
 type Agent struct {
 	name string
 
