@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	defaultName = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36"
+	defaultName = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:75.0) Gecko/20100101 Firefox/75.0"
 	version     = "0.1.1"
 )
 
@@ -19,7 +19,7 @@ type Agent struct {
 	hc core.HttpClient
 	l  core.LoggerEx
 
-	ui *internal.UserInfo
+	ui *UserInfo
 	ot *internal.OfflineToken
 }
 

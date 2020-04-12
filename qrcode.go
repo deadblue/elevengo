@@ -136,9 +136,9 @@ func (a *Agent) QrcodeLogin(session *QrcodeSession) error {
 	if err := a.callQrcodeApi(apiQrcodeLogin, nil, form, data); err != nil {
 		return err
 	} else {
-		a.ui = &internal.UserInfo{
-			UserId:   data.UserId,
-			UserName: data.UserName,
+		a.ui = &UserInfo{
+			Id:   data.UserId,
+			Name: data.UserName,
 		}
 		return nil
 	}

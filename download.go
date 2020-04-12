@@ -27,8 +27,8 @@ type DownloadTicket struct {
 /*
 Create a download ticket.
 
-Now Agent does not support downloading file, you need using a thirdparty tool to
-do that, such as wget/curl/aria2.
+Agent does not support downloading file, you need use a thirdparty tool to do
+that, such as wget/curl/aria2.
 
 Example:
 
@@ -69,7 +69,7 @@ func (a *Agent) CreateDownloadTicket(pickcode string) (ticket *DownloadTicket, e
 	// Add cookie header
 	sb := &strings.Builder{}
 	for name, value := range a.hc.Cookies(result.FileUrl) {
-		fmt.Fprintf(sb, "%s=%s;", name, value)
+		_, _ = fmt.Fprintf(sb, "%s=%s;", name, value)
 	}
 	ticket.Headers["Cookie"] = sb.String()
 	return

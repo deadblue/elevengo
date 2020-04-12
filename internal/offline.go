@@ -1,5 +1,10 @@
 package internal
 
+type OfflineToken struct {
+	Sign string
+	Time int64
+}
+
 type OfflineSpaceResult struct {
 	BaseApiResult
 	Data  float64 `json:"data"`

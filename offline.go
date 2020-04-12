@@ -141,7 +141,7 @@ func (a *Agent) callOfflineApi(url string, form core.Form, result interface{}) (
 	if form == nil {
 		form = core.NewForm()
 	}
-	form.WithInt("uid", a.ui.UserId).
+	form.WithInt("uid", a.ui.Id).
 		WithString("sign", a.ot.Sign).
 		WithInt64("time", a.ot.Time)
 	err = a.hc.JsonApi(url, nil, form, result)

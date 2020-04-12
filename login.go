@@ -29,6 +29,14 @@ type Credentials struct {
 }
 
 /*
+Basic information of the signed-in user.
+*/
+type UserInfo struct {
+	Id   int
+	Name string
+}
+
+/*
 Import credentials into agent.
 */
 func (a *Agent) CredentialsImport(cr *Credentials) (err error) {
@@ -70,9 +78,22 @@ func (a *Agent) getUserInfo() (err error) {
 		return
 	}
 	if a.ui == nil {
-		a.ui = new(internal.UserInfo)
+		a.ui = &UserInfo{}
 	}
-	a.ui.UserId = result.Data.UserId
-	a.ui.UserName = result.Data.UserName
+	a.ui.Id = result.Data.UserId
+	a.ui.Name = result.Data.UserName
+	return
+}
+
+/*
+Get signed in user information, return nil if none signed in.
+*/
+func (a *Agent) User() (info *UserInfo) {
+	if a.ui != nil {
+		info = &UserInfo{
+			Id:   a.ui.Id,
+			Name: a.ui.Name,
+		}
+	}
 	return
 }

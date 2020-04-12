@@ -67,7 +67,7 @@ Example:
 func (a *Agent) CreateUploadTicket(parentId string, info UploadInfo) (ticket *UploadTicket, err error) {
 	// Request upload token
 	form := core.NewForm().
-		WithInt("userid", a.ui.UserId).
+		WithInt("userid", a.ui.Id).
 		WithString("filename", info.Name()).
 		WithInt64("filesize", info.Size()).
 		WithString("target", fmt.Sprintf("U_1_%s", parentId))
