@@ -1,8 +1,7 @@
 # ElevenGo
 
 [![GoDoc](https://godoc.org/github.com/deadblue/elevengo?status.svg)](https://godoc.org/github.com/deadblue/elevengo)
-
-[![](https://img.shields.io/badge/latest-v0.1.1-brightgreen)](https://github.com/deadblue/elevengo/releases/tag/v0.1.1)
+![](https://img.shields.io/badge/latest-v0.1.1-brightgreen)
 
 A Golang API wrapper for 115 NetDisk Service.
 
@@ -20,7 +19,7 @@ cr = &elevengo.Credentials{
     CID: "",
     SEID: "",
 }
-if err := agent.ImportCredentials(cr); err != nil {
+if err := agent.CredentialsImport(cr); err != nil {
     panic(err)
 }
 
