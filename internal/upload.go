@@ -11,17 +11,17 @@ type UploadInitResult struct {
 }
 
 type UploadData struct {
-	AreaId     int    `json:"aid"`
-	CategoryId string `json:"cid"`
-	FileId     string `json:"file_id"`
-	FileName   string `json:"file_name"`
-	FileSize   string `json:"file_size"`
-	FileTime   int64  `json:"file_ptime"`
-	FileStatus int    `json:"file_status"`
-	FileType   int    `json:"file_type"`
-	IsVideo    int    `json:"is_video"`
-	PickCode   string `json:"pick_code"`
-	Sha1       string `json:"sha1"`
+	AreaId     int         `json:"aid"`
+	CategoryId string      `json:"cid"`
+	FileId     string      `json:"file_id"`
+	FileName   string      `json:"file_name"`
+	FileSize   StringInt64 `json:"file_size"`
+	FileStatus int         `json:"file_status"`
+	FileType   int         `json:"file_type"`
+	CreateTime int64       `json:"file_ptime"`
+	IsVideo    int         `json:"is_video"`
+	PickCode   string      `json:"pick_code"`
+	Sha1       string      `json:"sha1"`
 }
 
 type UploadResult struct {

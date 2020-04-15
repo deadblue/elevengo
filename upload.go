@@ -1,10 +1,12 @@
 package elevengo
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/deadblue/elevengo/core"
 	"github.com/deadblue/elevengo/internal"
 	"os"
+	"time"
 )
 
 const (
@@ -14,10 +16,10 @@ const (
 /*
 UploadInfo contains all required information to create an upload ticket.
 
-If you want to upload a generic file, you can use os.FileInfo as UploadInfo, see
+To upload a regular file, caller can use os.FileInfo as UploadInfo, see
 "Agent.CreateUploadTicket" doc for detail.
 
-If you want to upload a memory data as file, you need implement it.
+To upload a memory data as file, caller should implement it himself.
 */
 type UploadInfo interface {
 	// Name of the upload file.
@@ -37,11 +39,9 @@ type UploadTicket struct {
 }
 
 /*
-Create an upload ticket.
+Create an upload ticket, caller can use thirdparty libraries/tools to process this ticket.
 
-When uploading a large file, it is recommended to use a thirdparty tool, such as "curl".
-
-Example:
+Example with curl:
 
 	filename := "/path/to/file"
 	// Get file info
@@ -54,14 +54,30 @@ Example:
 	if err != nil {
 		log.Fatal(err)
 	}
-	// Upload file via curl
-	cmd := exec.Command("/usr/bin/curl", "-o", "/dev/null", "-#", ticket.Endpoint)
+	// Create temp file to receive upload response
+	tmpFile, err := ioutil.TempFile(os.TempDir(), "115-upload-")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer os.Remove(tmpFile.Name())
+	// Construct curl command
+	cmd := exec.Command("/path/to/curl", ticket.Endpoint, "-o", tmpFile.Name(), "-#")
 	for name, value := range ticket.Values {
 		cmd.Args = append(cmd.Args, "-F", fmt.Sprintf("%s=%s", name, value))
 	}
+	// NOTICE: File field should be at the end of the form.
 	cmd.Args = append(cmd.Args, "-F", fmt.Sprintf("%s=@%s", ticket.FileField, filename))
+	// Run the command
 	if err = cmd.Run(); err != nil {
 		log.Fatal(err)
+	}
+	// Parse upload response
+	response, _ := ioutil.ReadAll(tmpFile)
+	file, err := agent.ParseUploadResult(response)
+	if err != nil {
+		log.Fatel(f)
+	} else {
+		log.Printf("Uploaded file: %#v", file)
 	}
 */
 func (a *Agent) CreateUploadTicket(parentId string, info UploadInfo) (ticket *UploadTicket, err error) {
@@ -87,6 +103,28 @@ func (a *Agent) CreateUploadTicket(parentId string, info UploadInfo) (ticket *Up
 			"signature":      result.Signature,
 			"name":           info.Name(),
 		},
+	}
+	return
+}
+
+// Parse uploading response, see "CreateUploadTicket()" doc for detail.
+func (a *Agent) ParseUploadResult(content []byte) (file *File, err error) {
+	result := &internal.UploadResult{}
+	if err = json.Unmarshal(content, result); err == nil {
+		data := result.Data
+		createTime := time.Unix(data.CreateTime, 0)
+		file = &File{
+			IsFile:      true,
+			IsDirectory: false,
+			FileId:      data.FileId,
+			ParentId:    data.CategoryId,
+			Name:        data.FileName,
+			Size:        int64(data.FileSize),
+			PickCode:    data.PickCode,
+			Sha1:        data.Sha1,
+			CreateTime:  &createTime,
+			UpdateTime:  &createTime,
+		}
 	}
 	return
 }
