@@ -88,6 +88,14 @@ type File struct {
 	UpdateTime *time.Time
 }
 
+// DirectoryInfo only used in FileInfo.
+type DirectoryInfo struct {
+	// Directory ID.
+	Id string
+	// Directory Name.
+	Name string
+}
+
 // FileInfo is returned by FileStat(), contains basic information of a file.
 type FileInfo struct {
 	// True means a file.
@@ -104,8 +112,8 @@ type FileInfo struct {
 	CreateTime *time.Time
 	// Update time of the file.
 	UpdateTime *time.Time
-	// Parent directory ID list.
-	ParentIds []string
+	// Parent directory list.
+	Parents []*DirectoryInfo
 }
 
 // Get storage size information.
@@ -358,9 +366,12 @@ func (a *Agent) FileStat(fileId string) (info *FileInfo, err error) {
 			CreateTime:  internal.ParseUnixTime(data.CreateTime),
 			UpdateTime:  internal.ParseUnixTime(data.UpdateTime),
 		}
-		info.ParentIds = make([]string, len(data.Paths))
+		info.Parents = make([]*DirectoryInfo, len(data.Paths))
 		for i, p := range data.Paths {
-			info.ParentIds[i] = string(p.FileId)
+			info.Parents[i] = &DirectoryInfo{
+				Id:   string(p.FileId),
+				Name: p.FileName,
+			}
 		}
 	}
 	return
