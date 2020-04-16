@@ -1,8 +1,8 @@
 # ElevenGo
 
 [![GoDoc](https://godoc.org/github.com/deadblue/elevengo?status.svg)](https://godoc.org/github.com/deadblue/elevengo)
-![](https://img.shields.io/badge/stable-v0.1.2-brightgreen)
-![](https://img.shields.io/badge/develop-v0.1.3-orange)
+![](https://img.shields.io/badge/release-v0.1.3-brightgreen)
+![](https://img.shields.io/badge/develop-v0.1.4-orange)
 
 A Golang API wrapper for 115 NetDisk Service.
 
@@ -39,7 +39,7 @@ You can find more example on [GoDoc](https://godoc.org/github.com/deadblue/eleve
 ## Features
 
 * Login
-  * [x] Import credentials from cookies
+  * [x] Import credential from cookies
   * [x] Login via QRCode
   * [x] Get signed in user information
   * [ ] ~~Login via Account/Password~~ (No idea)
