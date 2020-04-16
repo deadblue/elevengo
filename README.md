@@ -1,7 +1,8 @@
 # ElevenGo
 
 [![GoDoc](https://godoc.org/github.com/deadblue/elevengo?status.svg)](https://godoc.org/github.com/deadblue/elevengo)
-![](https://img.shields.io/badge/latest-v0.1.2-brightgreen)
+![](https://img.shields.io/badge/stable-v0.1.2-brightgreen)
+![](https://img.shields.io/badge/develop-v0.1.3-orange)
 
 A Golang API wrapper for 115 NetDisk Service.
 
@@ -14,12 +15,12 @@ import "github.com/deadblue/elevengo"
 agent = elevengo.Default()
 
 // Import credentials to login
-cr = &elevengo.Credentials{
+cr = &elevengo.Credential{
     UID: "",
     CID: "",
     SEID: "",
 }
-if err := agent.CredentialsImport(cr); err != nil {
+if err := agent.CredentialImport(cr); err != nil {
     panic(err)
 }
 
@@ -66,7 +67,6 @@ You can find more example on [GoDoc](https://godoc.org/github.com/deadblue/eleve
 ## TODO list
 
 * Handle more upstream errors.
-* Print some logs via Logger interface.
 * Caller can swtich upstream API between HTTP/HTTPS.
 * Implement download/upload method, with progress echo.
 

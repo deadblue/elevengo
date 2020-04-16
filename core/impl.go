@@ -18,6 +18,8 @@ type implHttpClient struct {
 	jar http.CookieJar
 	// Additional request headers that will be sent in every request.
 	hdrs http.Header
+	// logger.
+	l LoggerEx
 }
 
 // Internal method to send request
@@ -37,6 +39,7 @@ func (i *implHttpClient) send(url string, qs QueryString, form Form) (body io.Re
 	if form != nil {
 		method, data = http.MethodPost, form.Archive()
 	}
+	i.l.Printf("Request %s => %s", method, url)
 	// build request
 	req, _ := http.NewRequest(method, url, data)
 	if form != nil {

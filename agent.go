@@ -3,12 +3,13 @@ package elevengo
 import (
 	"github.com/deadblue/elevengo/core"
 	"github.com/deadblue/elevengo/internal"
+	"github.com/deadblue/elevengo/plugin"
 	"net/http"
 )
 
 const (
 	defaultName = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:75.0) Gecko/20100101 Firefox/75.0"
-	version     = "0.1.2"
+	version     = "0.1.3"
 )
 
 /*
@@ -19,7 +20,6 @@ type Agent struct {
 	name string
 
 	hc core.HttpClient
-	l  core.LoggerEx
 
 	ui *UserInfo
 	ot *internal.OfflineToken
@@ -30,11 +30,29 @@ func (a *Agent) Version() string {
 	return version
 }
 
-// Create agent with specific name.
-// The name will be used in User-Agent request header.
-func New(name string) *Agent {
-	if name == "" {
-		name = defaultName
+/*
+Options for customize Agent.
+*/
+type Options struct {
+
+	// Name of the agent, will be used in "User-Agent" request header.
+	// Caller can customize it, while it does not affect any features.
+	Name string
+
+	// Logger for printing debug message.
+	// Set to nil to disable the debug message.
+	// Caller can implement one or simply use plugin.StdLogger.
+	Logger plugin.Logger
+}
+
+// Create a customized Agent.
+func New(opts *Options) *Agent {
+	name, logger := defaultName, plugin.Logger(nil)
+	if opts != nil {
+		if len(opts.Name) > 0 {
+			name = opts.Name
+		}
+		logger = opts.Logger
 	}
 	// additional headers
 	headers := http.Header{}
@@ -43,12 +61,11 @@ func New(name string) *Agent {
 	headers.Set("User-Agent", name)
 	return &Agent{
 		name: name,
-		hc:   core.NewHttpClient(headers),
-		l:    core.WrapLogger(nil),
+		hc:   core.NewHttpClient(headers, logger),
 	}
 }
 
-// Create agent with default settings.
+// Create an Agent in default settings.
 func Default() *Agent {
-	return New(defaultName)
+	return New(nil)
 }

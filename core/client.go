@@ -1,6 +1,7 @@
 package core
 
 import (
+	"github.com/deadblue/elevengo/plugin"
 	"net"
 	"net/http"
 	"net/http/cookiejar"
@@ -21,7 +22,7 @@ type HttpClient interface {
 	SetCookies(url, domain string, cookies map[string]string)
 }
 
-func NewHttpClient(headers http.Header) HttpClient {
+func NewHttpClient(headers http.Header, logger plugin.Logger) HttpClient {
 	// Make a copy of the default tranport
 	tp := http.DefaultTransport.(*http.Transport).Clone()
 	// Adjust some parameters
@@ -45,5 +46,6 @@ func NewHttpClient(headers http.Header) HttpClient {
 		hc:   hc,
 		jar:  jar,
 		hdrs: headers,
+		l:    wrapEx(logger),
 	}
 }

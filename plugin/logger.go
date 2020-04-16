@@ -1,17 +1,14 @@
 package plugin
 
-// Logger interface.
+/*
+Logger interface for printing debug message.
+
+Caller can implement himself, or simply uses log.Logger in stdlib.
+*/
 type Logger interface {
 
-	// Print a debug level log.
-	Debug(message string)
-
-	// Print an information level log.
-	Info(message string)
-
-	// Print a warning level log.
-	Warn(message string)
-
-	// Print an error level log.
-	Error(message string)
+	// Print debug message.
+	// NOTICE: The message does not end with newline character("\n"),
+	// implementation should append one.
+	Println(v ...interface{})
 }
