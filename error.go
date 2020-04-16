@@ -2,7 +2,7 @@ package elevengo
 
 import (
 	"errors"
-	"github.com/deadblue/elevengo/internal"
+	"github.com/deadblue/elevengo/internal/types"
 )
 
 // Special errors
@@ -29,8 +29,8 @@ const (
 )
 
 func IsFileExist(err error) bool {
-	if ae, ok := err.(*internal.ApiError); ok {
-		return ae.Category == internal.FileError && ae.Code == codeFileExist
+	if ae, ok := err.(*types.ApiError); ok {
+		return ae.Category == types.FileError && ae.Code == codeFileExist
 	}
 	return false
 }
@@ -40,22 +40,22 @@ func IsFileNotExist(err error) bool {
 }
 
 func IsOfflineExist(err error) bool {
-	if ae, ok := err.(*internal.ApiError); ok {
-		return ae.Category == internal.OfflineError && ae.Code == codeOfflineExist
+	if ae, ok := err.(*types.ApiError); ok {
+		return ae.Category == types.OfflineError && ae.Code == codeOfflineExist
 	}
 	return false
 }
 
 func IsOfflineCaptcha(err error) bool {
-	if ae, ok := err.(*internal.ApiError); ok {
-		return ae.Category == internal.OfflineError && ae.Code == codeOfflineCaptcha
+	if ae, ok := err.(*types.ApiError); ok {
+		return ae.Category == types.OfflineError && ae.Code == codeOfflineCaptcha
 	}
 	return false
 }
 
 func IsQrcodeExpire(err error) bool {
-	if ae, ok := err.(*internal.ApiError); ok {
-		return ae.Category == internal.QrcodeError && ae.Code == codeQrcodeExpired
+	if ae, ok := err.(*types.ApiError); ok {
+		return ae.Category == types.QrcodeError && ae.Code == codeQrcodeExpired
 	}
 	return false
 }

@@ -2,8 +2,8 @@ package elevengo
 
 import (
 	"fmt"
-	"github.com/deadblue/elevengo/core"
-	"github.com/deadblue/elevengo/internal"
+	"github.com/deadblue/elevengo/internal/core"
+	"github.com/deadblue/elevengo/internal/types"
 	"math/rand"
 	"time"
 )
@@ -77,7 +77,7 @@ func (a *Agent) getUserInfo() (err error) {
 		WithString("ac", "nav").
 		WithString("callback", cb).
 		WithInt64("_", time.Now().Unix())
-	result := &internal.UserInfoResult{}
+	result := &types.UserInfoResult{}
 	if err = a.hc.JsonpApi(apiUserInfo, qs, result); err != nil {
 		return
 	}

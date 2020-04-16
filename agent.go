@@ -1,8 +1,8 @@
 package elevengo
 
 import (
-	"github.com/deadblue/elevengo/core"
-	"github.com/deadblue/elevengo/internal"
+	"github.com/deadblue/elevengo/internal/core"
+	"github.com/deadblue/elevengo/internal/types"
 	"github.com/deadblue/elevengo/plugin"
 	"net/http"
 )
@@ -22,7 +22,7 @@ type Agent struct {
 	hc core.HttpClient
 
 	ui *UserInfo
-	ot *internal.OfflineToken
+	ot *types.OfflineToken
 }
 
 // Get agent version.

@@ -2,8 +2,8 @@ package elevengo
 
 import (
 	"fmt"
-	"github.com/deadblue/elevengo/core"
-	"github.com/deadblue/elevengo/internal"
+	"github.com/deadblue/elevengo/internal/core"
+	"github.com/deadblue/elevengo/internal/types"
 	"math/rand"
 	"time"
 )
@@ -134,7 +134,7 @@ func (a *Agent) CaptchaSubmit(session *CaptchaSession, code string) (err error) 
 		WithString("t", "sign").
 		WithString("callback", cb).
 		WithInt64("_", time.Now().Unix())
-	signResult := &internal.CaptchaSignResult{}
+	signResult := &types.CaptchaSignResult{}
 	if err = a.hc.JsonpApi(apiCaptcha, qs, signResult); err != nil {
 		return
 	}
@@ -145,7 +145,7 @@ func (a *Agent) CaptchaSubmit(session *CaptchaSession, code string) (err error) 
 		WithString("sign", signResult.Sign).
 		WithString("code", code).
 		WithString("cb", session.callback)
-	submitResult := &internal.CaptchaSubmitResult{}
+	submitResult := &types.CaptchaSubmitResult{}
 	err = a.hc.JsonApi(apiCaptchaSubmit, nil, form, submitResult)
 	if err == nil && submitResult.IsFailed() {
 		err = errCaptchaFailed

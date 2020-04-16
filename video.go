@@ -1,8 +1,8 @@
 package elevengo
 
 import (
-	"github.com/deadblue/elevengo/core"
-	"github.com/deadblue/elevengo/internal"
+	"github.com/deadblue/elevengo/internal/core"
+	"github.com/deadblue/elevengo/internal/types"
 )
 
 const (
@@ -33,11 +33,11 @@ func (a *Agent) VideoHlsContent(pickcode string) (content []byte, err error) {
 	// Call video API
 	qs := core.NewQueryString().
 		WithString("pickcode", pickcode)
-	result := &internal.FileVideoResult{}
+	result := &types.FileVideoResult{}
 	err = a.hc.JsonApi(apiFileVideo, qs, nil, result)
 	if err == nil {
 		if result.IsFailed() {
-			err = internal.MakeFileError(result.ErrorCode, result.Error)
+			err = types.MakeFileError(result.ErrorCode, result.Error)
 		} else if result.FileStatus != 1 {
 			err = errVideoNotReady
 		}

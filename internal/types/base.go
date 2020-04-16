@@ -1,4 +1,4 @@
-package internal
+package types
 
 type ApiResult interface {
 	IsFailed() bool

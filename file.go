@@ -1,8 +1,9 @@
 package elevengo
 
 import (
-	"github.com/deadblue/elevengo/core"
-	"github.com/deadblue/elevengo/internal"
+	"github.com/deadblue/elevengo/internal/core"
+	"github.com/deadblue/elevengo/internal/types"
+	"github.com/deadblue/elevengo/internal/util"
 	"time"
 )
 
@@ -118,10 +119,10 @@ type FileInfo struct {
 
 // Get storage size information.
 func (a *Agent) StorageStat() (info *StorageInfo, err error) {
-	result := new(internal.FileIndexResult)
+	result := new(types.FileIndexResult)
 	err = a.hc.JsonApi(apiFileIndex, nil, nil, result)
 	if err == nil && result.IsFailed() {
-		err = internal.MakeFileError(result.Code, result.Error)
+		err = types.MakeFileError(result.Code, result.Error)
 	}
 	if err != nil {
 		return
@@ -161,7 +162,7 @@ func (a *Agent) FileList(parentId string, cursor Cursor) (files []*File, err err
 		WithInt("asc", fc.asc).
 		WithInt("offset", fc.offset).
 		WithInt("limit", fc.limit)
-	result := &internal.FileListResult{}
+	result := &types.FileListResult{}
 	for retry := true; retry; {
 		// Select API URL
 		apiUrl := apiFileList
@@ -182,7 +183,7 @@ func (a *Agent) FileList(parentId string, cursor Cursor) (files []*File, err err
 				// Try to call API again
 				retry = true
 			} else {
-				err = internal.MakeFileError(result.ErrorCode, result.Error)
+				err = types.MakeFileError(result.ErrorCode, result.Error)
 			}
 		}
 	}
@@ -205,8 +206,8 @@ func (a *Agent) FileList(parentId string, cursor Cursor) (files []*File, err err
 			Size:       int64(data.Size),
 			PickCode:   data.PickCode,
 			Sha1:       data.Sha1,
-			CreateTime: internal.ParseUnixTime(data.CreateTime),
-			UpdateTime: internal.ParseUnixTime(data.UpdateTime),
+			CreateTime: util.ParseUnixTime(data.CreateTime),
+			UpdateTime: util.ParseUnixTime(data.UpdateTime),
 		}
 		if data.FileId != "" {
 			files[i].IsFile = true
@@ -236,10 +237,10 @@ func (a *Agent) FileSearch(rootId, keyword string, cursor Cursor) (files []*File
 		WithInt("offset", fc.offset).
 		WithInt("limit", fc.limit).
 		WithString("format", "json")
-	result := &internal.FileSearchResult{}
+	result := &types.FileSearchResult{}
 	err = a.hc.JsonApi(apiFileSearch, qs, nil, result)
 	if err == nil && result.IsFailed() {
-		err = internal.MakeFileError(result.ErrorCode, result.Error)
+		err = types.MakeFileError(result.ErrorCode, result.Error)
 	}
 	if err != nil {
 		return
@@ -255,8 +256,8 @@ func (a *Agent) FileSearch(rootId, keyword string, cursor Cursor) (files []*File
 			Size:       int64(data.Size),
 			PickCode:   data.PickCode,
 			Sha1:       data.Sha1,
-			CreateTime: internal.ParseUnixTime(data.CreateTime),
-			UpdateTime: internal.ParseUnixTime(data.UpdateTime),
+			CreateTime: util.ParseUnixTime(data.CreateTime),
+			UpdateTime: util.ParseUnixTime(data.UpdateTime),
 		}
 		if data.FileId != "" {
 			files[i].IsFile = true
@@ -278,10 +279,10 @@ func (a *Agent) FileCopy(parentId string, fileIds ...string) (err error) {
 	form := core.NewForm().
 		WithString("pid", parentId).
 		WithStrings("fid", fileIds)
-	result := &internal.FileOperateResult{}
+	result := &types.FileOperateResult{}
 	err = a.hc.JsonApi(apiFileCopy, nil, form, result)
 	if err == nil && result.IsFailed() {
-		err = internal.MakeFileError(int(result.ErrorCode), result.Error)
+		err = types.MakeFileError(int(result.ErrorCode), result.Error)
 	}
 	return
 }
@@ -291,10 +292,10 @@ func (a *Agent) FileMove(parentId string, fileIds ...string) (err error) {
 	form := core.NewForm().
 		WithString("pid", parentId).
 		WithStrings("fid", fileIds)
-	result := &internal.FileOperateResult{}
+	result := &types.FileOperateResult{}
 	err = a.hc.JsonApi(apiFileMove, nil, form, result)
 	if err == nil && result.IsFailed() {
-		err = internal.MakeFileError(int(result.ErrorCode), result.Error)
+		err = types.MakeFileError(int(result.ErrorCode), result.Error)
 	}
 	return
 }
@@ -305,10 +306,10 @@ func (a *Agent) FileRename(fileId, name string) (err error) {
 		WithString("fid", fileId).
 		WithString("file_name", name).
 		WithStringMap("files_new_name", map[string]string{fileId: name})
-	result := &internal.FileOperateResult{}
+	result := &types.FileOperateResult{}
 	err = a.hc.JsonApi(apiFileRename, nil, form, result)
 	if err == nil && !result.State {
-		err = internal.MakeFileError(int(result.ErrorCode), result.Error)
+		err = types.MakeFileError(int(result.ErrorCode), result.Error)
 	}
 	return
 }
@@ -318,10 +319,10 @@ func (a *Agent) FileDelete(parentId string, fileIds ...string) (err error) {
 	form := core.NewForm().
 		WithString("pid", parentId).
 		WithStrings("fid", fileIds)
-	result := &internal.FileOperateResult{}
+	result := &types.FileOperateResult{}
 	err = a.hc.JsonApi(apiFileDelete, nil, form, result)
 	if err == nil && result.IsFailed() {
-		err = internal.MakeFileError(int(result.ErrorCode), result.Error)
+		err = types.MakeFileError(int(result.ErrorCode), result.Error)
 	}
 	return
 }
@@ -331,10 +332,10 @@ func (a *Agent) FileMkdir(parentId, name string) (directoryId string, err error)
 	form := core.NewForm().
 		WithString("pid", parentId).
 		WithString("cname", name)
-	result := &internal.FileAddResult{}
+	result := &types.FileAddResult{}
 	err = a.hc.JsonApi(apiFileAdd, nil, form, result)
 	if err == nil && result.IsFailed() {
-		err = internal.MakeFileError(int(result.ErrorCode), result.Error)
+		err = types.MakeFileError(int(result.ErrorCode), result.Error)
 	}
 	if err == nil {
 		directoryId = result.CategoryId
@@ -350,7 +351,7 @@ func (a *Agent) FileStat(fileId string) (info *FileInfo, err error) {
 	qs := core.NewQueryString().
 		WithString("aid", "1").
 		WithString("cid", fileId)
-	result := &internal.FileStatResult{}
+	result := &types.FileStatResult{}
 	err = a.hc.JsonApi(apiFileStat, qs, nil, result)
 	if err == nil && result.IsFailed() {
 		err = errFileNotExist
@@ -363,8 +364,8 @@ func (a *Agent) FileStat(fileId string) (info *FileInfo, err error) {
 			Name:        data.Name,
 			Sha1:        data.Sha1,
 			PickCode:    data.PickCode,
-			CreateTime:  internal.ParseUnixTime(data.CreateTime),
-			UpdateTime:  internal.ParseUnixTime(data.UpdateTime),
+			CreateTime:  util.ParseUnixTime(data.CreateTime),
+			UpdateTime:  util.ParseUnixTime(data.UpdateTime),
 		}
 		info.Parents = make([]*DirectoryInfo, len(data.Paths))
 		for i, p := range data.Paths {

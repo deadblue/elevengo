@@ -2,8 +2,9 @@ package elevengo
 
 import (
 	"fmt"
-	"github.com/deadblue/elevengo/core"
-	"github.com/deadblue/elevengo/internal"
+	"github.com/deadblue/elevengo/internal/core"
+	"github.com/deadblue/elevengo/internal/types"
+	"github.com/deadblue/elevengo/internal/util"
 	"strings"
 	"time"
 )
@@ -52,17 +53,17 @@ func (a *Agent) CreateDownloadTicket(pickcode string) (ticket *DownloadTicket, e
 	qs := core.NewQueryString().
 		WithString("pickcode", pickcode).
 		WithInt64("_", time.Now().Unix())
-	result := &internal.DownloadInfoResult{}
+	result := &types.DownloadInfoResult{}
 	err = a.hc.JsonApi(apiFileDownload, qs, nil, result)
 	if err == nil && result.IsFailed() {
-		err = internal.MakeFileError(result.MessageCode, result.Message)
+		err = types.MakeFileError(result.MessageCode, result.Message)
 	}
 	// Create download ticket
 	ticket = &DownloadTicket{
 		Url:      result.FileUrl,
 		Headers:  make(map[string]string),
 		FileName: result.FileName,
-		FileSize: internal.MustParseInt(result.FileSize),
+		FileSize: util.MustParseInt(result.FileSize),
 	}
 	// Add user-agent header
 	ticket.Headers["User-Agent"] = a.name

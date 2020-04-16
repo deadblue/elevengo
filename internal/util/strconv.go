@@ -1,8 +1,7 @@
-package internal
+package util
 
 import (
 	"strconv"
-	"time"
 )
 
 func MustAtoi(s string) int {
@@ -27,9 +26,4 @@ func MustParseFloat(s string) float64 {
 	} else {
 		return f
 	}
-}
-
-func ParseUnixTime(s string) *time.Time {
-	t := time.Unix(MustParseInt(s), 0)
-	return &t
 }

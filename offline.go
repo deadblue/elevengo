@@ -1,8 +1,8 @@
 package elevengo
 
 import (
-	"github.com/deadblue/elevengo/core"
-	"github.com/deadblue/elevengo/internal"
+	"github.com/deadblue/elevengo/internal/core"
+	"github.com/deadblue/elevengo/internal/types"
 	"time"
 )
 
@@ -119,13 +119,13 @@ func (a *Agent) updateOfflineToken() (err error) {
 		WithString("ct", "offline").
 		WithString("ac", "space").
 		WithInt64("_", time.Now().Unix())
-	result := &internal.OfflineSpaceResult{}
+	result := &types.OfflineSpaceResult{}
 	if err = a.hc.JsonApi(apiOfflineSpace, qs, nil, result); err != nil {
 		return
 	}
 	// store to client
 	if a.ot == nil {
-		a.ot = &internal.OfflineToken{}
+		a.ot = &types.OfflineToken{}
 	}
 	a.ot.Sign = result.Sign
 	a.ot.Time = result.Time
@@ -163,10 +163,10 @@ func (a *Agent) OfflineList(cursor Cursor) (tasks []*OfflineTask, err error) {
 		return nil, errOfflineCursorInvalid
 	}
 	form := core.NewForm().WithInt("page", oc.page)
-	result := &internal.OfflineListResult{}
+	result := &types.OfflineListResult{}
 	err = a.callOfflineApi(apiOfflineList, form, result)
 	if err == nil && result.IsFailed() {
-		err = internal.MakeOfflineError(result.ErrorCode, result.ErrorMsg)
+		err = types.MakeOfflineError(result.ErrorCode, result.ErrorMsg)
 	}
 	if err != nil {
 		return
@@ -193,11 +193,11 @@ func (a *Agent) OfflineAdd(url ...string) (err error) {
 	form, isSingle := core.NewForm(), len(url) == 1
 	if isSingle {
 		form.WithString("url", url[0])
-		result := &internal.OfflineAddUrlResult{}
+		result := &types.OfflineAddUrlResult{}
 		err = a.callOfflineApi(apiOfflineAddUrl, form, result)
 	} else {
 		form.WithStrings("url", url)
-		result := &internal.OfflineAddUrlsResult{}
+		result := &types.OfflineAddUrlsResult{}
 		err = a.callOfflineApi(apiOfflineAddUrls, form, result)
 	}
 	// TODO: return add result
@@ -211,10 +211,10 @@ func (a *Agent) OfflineDelete(deleteFile bool, hash ...string) (err error) {
 	if deleteFile {
 		form.WithInt("flag", 1)
 	}
-	result := &internal.OfflineBasicResult{}
+	result := &types.OfflineBasicResult{}
 	err = a.callOfflineApi(apiOfflineDelete, form, result)
 	if err == nil && !result.State {
-		err = internal.MakeOfflineError(result.ErrorCode, result.ErrorMsg)
+		err = types.MakeOfflineError(result.ErrorCode, result.ErrorMsg)
 	}
 	return
 }
@@ -231,10 +231,10 @@ func (a *Agent) OfflineClear(flag *OfflineClearFlag) (err error) {
 	}
 	form := core.NewForm().
 		WithInt("flag", flag.flag)
-	result := &internal.OfflineBasicResult{}
+	result := &types.OfflineBasicResult{}
 	err = a.callOfflineApi(apiOfflineClear, form, result)
 	if err == nil && !result.State {
-		err = internal.MakeOfflineError(result.ErrorCode, result.ErrorMsg)
+		err = types.MakeOfflineError(result.ErrorCode, result.ErrorMsg)
 	}
 	return
 }

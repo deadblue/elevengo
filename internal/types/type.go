@@ -1,7 +1,8 @@
-package internal
+package types
 
 import (
 	"encoding/json"
+	"github.com/deadblue/elevengo/internal/util"
 	"strconv"
 )
 
@@ -32,7 +33,7 @@ func (v *StringInt) UnmarshalJSON(b []byte) (err error) {
 	if b[0] == '"' {
 		var s string
 		if err = json.Unmarshal(b, &s); err == nil {
-			i = MustAtoi(s)
+			i = util.MustAtoi(s)
 		}
 	} else {
 		err = json.Unmarshal(b, &i)
@@ -51,7 +52,7 @@ func (v *StringInt64) UnmarshalJSON(b []byte) (err error) {
 	if b[0] == '"' {
 		var s string
 		if err = json.Unmarshal(b, &s); err == nil {
-			i = MustParseInt(s)
+			i = util.MustParseInt(s)
 		}
 	} else {
 		err = json.Unmarshal(b, &i)
@@ -69,7 +70,7 @@ func (v *StringFloat64) UnmarshalJSON(b []byte) (err error) {
 	if b[0] == '"' {
 		var s string
 		if err = json.Unmarshal(b, &s); err == nil {
-			f = MustParseFloat(s)
+			f = util.MustParseFloat(s)
 		}
 	} else {
 		err = json.Unmarshal(b, &f)

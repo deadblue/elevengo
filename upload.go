@@ -3,8 +3,8 @@ package elevengo
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/deadblue/elevengo/core"
-	"github.com/deadblue/elevengo/internal"
+	"github.com/deadblue/elevengo/internal/core"
+	"github.com/deadblue/elevengo/internal/types"
 	"os"
 	"time"
 )
@@ -87,7 +87,7 @@ func (a *Agent) CreateUploadTicket(parentId string, info UploadInfo) (ticket *Up
 		WithString("filename", info.Name()).
 		WithInt64("filesize", info.Size()).
 		WithString("target", fmt.Sprintf("U_1_%s", parentId))
-	result := &internal.UploadInitResult{}
+	result := &types.UploadInitResult{}
 	if err = a.hc.JsonApi(apiUploadInit, nil, form, result); err != nil {
 		return
 	}
@@ -109,7 +109,7 @@ func (a *Agent) CreateUploadTicket(parentId string, info UploadInfo) (ticket *Up
 
 // Parse uploading response, see "CreateUploadTicket()" doc for detail.
 func (a *Agent) ParseUploadResult(content []byte) (file *File, err error) {
-	result := &internal.UploadResult{}
+	result := &types.UploadResult{}
 	if err = json.Unmarshal(content, result); err == nil {
 		data := result.Data
 		createTime := time.Unix(data.CreateTime, 0)
@@ -152,6 +152,6 @@ func (a *Agent) UploadFile(parentId, localFile string) (err error) {
 	for name, value := range ticket.Values {
 		form.WithString(name, value)
 	}
-	result := &internal.UploadResult{}
+	result := &types.UploadResult{}
 	return a.hc.JsonApi(ticket.Endpoint, nil, form, result)
 }

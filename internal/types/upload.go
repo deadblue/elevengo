@@ -1,4 +1,4 @@
-package internal
+package types
 
 type UploadInitResult struct {
 	Host        string `json:"host"`

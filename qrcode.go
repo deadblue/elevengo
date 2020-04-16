@@ -2,8 +2,8 @@ package elevengo
 
 import (
 	"encoding/json"
-	"github.com/deadblue/elevengo/core"
-	"github.com/deadblue/elevengo/internal"
+	"github.com/deadblue/elevengo/internal/core"
+	"github.com/deadblue/elevengo/internal/types"
 	"time"
 )
 
@@ -50,12 +50,12 @@ func (qs QrcodeStatus) IsCanceled() bool {
 }
 
 func (a *Agent) callQrcodeApi(url string, qs core.QueryString, form core.Form, data interface{}) error {
-	result := &internal.QrcodeApiResult{}
+	result := &types.QrcodeApiResult{}
 	if err := a.hc.JsonApi(url, qs, form, result); err != nil {
 		return err
 	}
 	if result.IsFailed() {
-		return internal.MakeQrcodeError(result.Code, result.Message)
+		return types.MakeQrcodeError(result.Code, result.Message)
 	}
 	return json.Unmarshal(result.Data, data)
 }
@@ -86,7 +86,7 @@ Example:
 
 */
 func (a *Agent) QrcodeStart() (session *QrcodeSession, err error) {
-	data := &internal.QrcodeTokenData{}
+	data := &types.QrcodeTokenData{}
 	if err = a.callQrcodeApi(apiQrcodeToken, nil, nil, data); err == nil {
 		session = &QrcodeSession{
 			uid:     data.Uid,
@@ -119,7 +119,7 @@ func (a *Agent) QrcodeStatus(session *QrcodeSession) (status QrcodeStatus, err e
 		WithInt64("time", session.time).
 		WithString("sign", session.sign).
 		WithInt64("_", time.Now().Unix())
-	data := &internal.QrcodeStatusData{}
+	data := &types.QrcodeStatusData{}
 	if err = a.callQrcodeApi(apiQrcodeStatus, qs, nil, data); err == nil {
 		status = QrcodeStatus(data.Status)
 	}
@@ -132,7 +132,7 @@ func (a *Agent) QrcodeLogin(session *QrcodeSession) error {
 	form := core.NewForm().
 		WithString("account", session.uid).
 		WithString("app", "web")
-	data := &internal.QrcodeLoginData{}
+	data := &types.QrcodeLoginData{}
 	if err := a.callQrcodeApi(apiQrcodeLogin, nil, form, data); err != nil {
 		return err
 	} else {
