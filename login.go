@@ -9,20 +9,24 @@ import (
 )
 
 const (
-	cookieDomain = ".115.com"
 	cookieUrl    = "https://115.com"
+	cookieDomain = ".115.com"
+
+	cookieUid  = "UID"
+	cookieCid  = "CID"
+	cookieSeid = "SEID"
 
 	apiUserInfo = "https://my.115.com/"
 )
 
 /*
-Credentials contains required information that the upstream server uses to
+Credential contains required information that the upstream server uses to
 authenticate a signed-in user.
 
 In detail, three cookies are required: "UID", "CID", "SEID", you can find
 them from your browser cookie storage.
 */
-type Credentials struct {
+type Credential struct {
 	UID  string
 	CID  string
 	SEID string
@@ -39,11 +43,11 @@ type UserInfo struct {
 /*
 Import credentials into agent.
 */
-func (a *Agent) CredentialsImport(cr *Credentials) (err error) {
+func (a *Agent) CredentialImport(cr *Credential) (err error) {
 	cookies := map[string]string{
-		"UID":  cr.UID,
-		"CID":  cr.CID,
-		"SEID": cr.SEID,
+		cookieUid:  cr.UID,
+		cookieCid:  cr.CID,
+		cookieSeid: cr.SEID,
 	}
 	a.hc.SetCookies(cookieUrl, cookieDomain, cookies)
 	return a.getUserInfo()
@@ -52,14 +56,14 @@ func (a *Agent) CredentialsImport(cr *Credentials) (err error) {
 /*
 Export credentials from agent, you can store it for future use.
 */
-func (a *Agent) CredentialsExport() (cr *Credentials, err error) {
+func (a *Agent) CredentialExport() (cr *Credential, err error) {
 	if cookies := a.hc.Cookies(cookieUrl); cookies == nil || len(cookies) == 0 {
 		err = errCredentialsNotExist
 	} else {
-		cr = &Credentials{
-			UID:  cookies["UID"],
-			CID:  cookies["CID"],
-			SEID: cookies["SEID"],
+		cr = &Credential{
+			UID:  cookies[cookieUid],
+			CID:  cookies[cookieCid],
+			SEID: cookies[cookieSeid],
 		}
 	}
 	return
