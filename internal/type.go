@@ -61,3 +61,21 @@ func (v *StringInt64) UnmarshalJSON(b []byte) (err error) {
 	}
 	return
 }
+
+type StringFloat64 float64
+
+func (v *StringFloat64) UnmarshalJSON(b []byte) (err error) {
+	var f float64
+	if b[0] == '"' {
+		var s string
+		if err = json.Unmarshal(b, &s); err == nil {
+			f = MustParseFloat(s)
+		}
+	} else {
+		err = json.Unmarshal(b, &f)
+	}
+	if err == nil {
+		*v = StringFloat64(f)
+	}
+	return
+}

@@ -40,8 +40,8 @@ type FileData struct {
 	PickCode   string      `json:"pc"`
 	Sha1       string      `json:"sha"`
 	// Special fields for video
-	VideoFlag     int   `json:"iv"`
-	VideoDuration int64 `json:"play_long"`
+	VideoFlag     int     `json:"iv"`
+	VideoDuration float64 `json:"play_long"`
 }
 
 type FileListResult struct {
