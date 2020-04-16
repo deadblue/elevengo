@@ -33,11 +33,15 @@ type FileData struct {
 	CategoryId string      `json:"cid"`
 	ParentId   string      `json:"pid"`
 	Name       string      `json:"n"`
+	Type       string      `json:"ico"`
 	Size       StringInt64 `json:"s"`
 	CreateTime string      `json:"tp"`
 	UpdateTime string      `json:"te"`
 	PickCode   string      `json:"pc"`
 	Sha1       string      `json:"sha"`
+	// Special fields for video
+	VideoFlag     int   `json:"iv"`
+	VideoDuration int64 `json:"play_long"`
 }
 
 type FileListResult struct {
