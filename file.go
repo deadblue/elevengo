@@ -19,7 +19,7 @@ const (
 	apiFileRename     = "https://webapi.115.com/files/batch_rename"
 	apiFileDelete     = "https://webapi.115.com/rb/delete"
 
-	fileDefaultLimit = 100
+	fileDefaultLimit = 115
 
 	codeListRetry = 20130827
 )
@@ -175,11 +175,11 @@ func (a *Agent) FileList(parentId string, cursor Cursor) (files []*File, err err
 		// Handle error
 		if err == nil && result.IsFailed() {
 			if result.ErrorCode == codeListRetry {
-				// Update query string
-				qs.WithString("o", fc.order).WithInt("asc", fc.asc)
 				// Update order flag
 				fc.order = result.Order
 				fc.asc = result.IsAsc
+				// Update query string
+				qs.WithString("o", fc.order).WithInt("asc", fc.asc)
 				// Try to call API again
 				retry = true
 			} else {
