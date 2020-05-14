@@ -43,7 +43,7 @@ type UserInfo struct {
 /*
 Import credentials into agent.
 */
-func (a *Agent) CredentialImport(cr *Credential) (err error) {
+func (a *Agent) CredentialImport(cr Credential) (err error) {
 	cookies := map[string]string{
 		cookieUid:  cr.UID,
 		cookieCid:  cr.CID,
@@ -56,11 +56,11 @@ func (a *Agent) CredentialImport(cr *Credential) (err error) {
 /*
 Export credentials from agent, you can store it for future use.
 */
-func (a *Agent) CredentialExport() (cr *Credential, err error) {
+func (a *Agent) CredentialExport() (cr Credential, err error) {
 	if cookies := a.hc.Cookies(cookieUrl); cookies == nil || len(cookies) == 0 {
 		err = errCredentialsNotExist
 	} else {
-		cr = &Credential{
+		cr = Credential{
 			UID:  cookies[cookieUid],
 			CID:  cookies[cookieCid],
 			SEID: cookies[cookieSeid],
@@ -92,9 +92,9 @@ func (a *Agent) getUserInfo() (err error) {
 /*
 Get signed in user information, return nil if none signed in.
 */
-func (a *Agent) User() (info *UserInfo) {
+func (a *Agent) User() (info UserInfo) {
 	if a.ui != nil {
-		info = &UserInfo{
+		info = UserInfo{
 			Id:   a.ui.Id,
 			Name: a.ui.Name,
 		}

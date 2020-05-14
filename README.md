@@ -15,7 +15,7 @@ import "github.com/deadblue/elevengo"
 agent = elevengo.Default()
 
 // Import credentials to login
-cr = &elevengo.Credential{
+cr := elevengo.Credential{
     UID: "",
     CID: "",
     SEID: "",
