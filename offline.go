@@ -15,33 +15,6 @@ const (
 	apiOfflineClear   = "https://115.com/web/lixian/?ct=lixian&ac=task_clear"
 )
 
-type offlineCursor struct {
-	used      bool
-	page      int
-	pageCount int
-	total     int
-}
-
-func (c *offlineCursor) HasMore() bool {
-	return !c.used || c.page < c.pageCount
-}
-func (c *offlineCursor) Next() {
-	c.page += 1
-}
-func (c *offlineCursor) Total() int {
-	return c.total
-}
-
-// Create a cursor for "Agent.OfflineList()" method.
-func OfflineCursor() Cursor {
-	return &offlineCursor{
-		used:      false,
-		page:      1,
-		pageCount: 0,
-		total:     0,
-	}
-}
-
 // Parameter for "Agent.OfflineClear()" method.
 // Default value is to clear all done tasks without deleteing downloaded files.
 type OfflineClearFlag struct {

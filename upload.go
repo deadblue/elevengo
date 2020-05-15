@@ -122,8 +122,8 @@ func (a *Agent) ParseUploadResult(content []byte) (file *File, err error) {
 			Size:        int64(data.FileSize),
 			PickCode:    data.PickCode,
 			Sha1:        data.Sha1,
-			CreateTime:  &createTime,
-			UpdateTime:  &createTime,
+			CreateTime:  createTime,
+			UpdateTime:  createTime,
 		}
 	}
 	return
