@@ -80,7 +80,7 @@ Example with curl:
 		log.Printf("Uploaded file: %#v", file)
 	}
 */
-func (a *Agent) CreateUploadTicket(parentId string, info UploadInfo) (ticket *UploadTicket, err error) {
+func (a *Agent) CreateUploadTicket(parentId string, info UploadInfo) (ticket UploadTicket, err error) {
 	// Request upload token
 	form := core.NewForm().
 		WithInt("userid", a.ui.Id).
@@ -92,7 +92,7 @@ func (a *Agent) CreateUploadTicket(parentId string, info UploadInfo) (ticket *Up
 		return
 	}
 	// Create upload ticket
-	ticket = &UploadTicket{
+	ticket = UploadTicket{
 		Endpoint:  result.Host,
 		FileField: "file",
 		Values: map[string]string{

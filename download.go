@@ -48,7 +48,7 @@ Example:
 		log.Fatal(err)
 	}
 */
-func (a *Agent) CreateDownloadTicket(pickcode string) (ticket *DownloadTicket, err error) {
+func (a *Agent) CreateDownloadTicket(pickcode string) (ticket DownloadTicket, err error) {
 	// Get download information
 	qs := core.NewQueryString().
 		WithString("pickcode", pickcode).
@@ -59,7 +59,7 @@ func (a *Agent) CreateDownloadTicket(pickcode string) (ticket *DownloadTicket, e
 		err = types.MakeFileError(result.MessageCode, result.Message)
 	}
 	// Create download ticket
-	ticket = &DownloadTicket{
+	ticket = DownloadTicket{
 		Url:      result.FileUrl,
 		Headers:  make(map[string]string),
 		FileName: result.FileName,
