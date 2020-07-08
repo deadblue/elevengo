@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/deadblue/elevengo/internal/util"
+	"github.com/deadblue/gostream/quietly"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -65,7 +65,7 @@ func (i *implHttpClient) Get(url string, qs QueryString) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer util.QuietlyClose(body)
+	defer quietly.Close(body)
 	return ioutil.ReadAll(body)
 }
 
@@ -74,7 +74,7 @@ func (i *implHttpClient) JsonApi(url string, qs QueryString, form Form, result i
 	if err != nil {
 		return
 	}
-	defer util.QuietlyClose(body)
+	defer quietly.Close(body)
 	// parse response body
 	d := json.NewDecoder(body)
 	return d.Decode(result)
@@ -85,7 +85,7 @@ func (i *implHttpClient) JsonpApi(url string, qs QueryString, result interface{}
 	if err != nil {
 		return
 	}
-	defer util.QuietlyClose(body)
+	defer quietly.Close(body)
 	content, err := ioutil.ReadAll(body)
 	if err != nil {
 		return

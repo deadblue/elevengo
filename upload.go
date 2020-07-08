@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/deadblue/elevengo/internal/core"
 	"github.com/deadblue/elevengo/internal/types"
-	"os"
 	"time"
 )
 
@@ -130,28 +129,28 @@ func (a *Agent) ParseUploadResult(content []byte) (file *File, err error) {
 }
 
 // A simple upload implementation without progress echo.
-func (a *Agent) UploadFile(parentId, localFile string) (err error) {
-	// Open local file
-	file, err := os.Open(localFile)
-	if err != nil {
-		return
-	}
-	// Get file information (should contains name and size)
-	info, err := file.Stat()
-	if err != nil {
-		return nil
-	}
-	// Create upload ticket
-	ticket, err := a.CreateUploadTicket(parentId, info)
-	if err != nil {
-		return nil
-	}
-	// Upload file
-	form := core.NewMultipartForm().
-		WithFile(ticket.FileField, info.Name(), file)
-	for name, value := range ticket.Values {
-		form.WithString(name, value)
-	}
-	result := &types.UploadResult{}
-	return a.hc.JsonApi(ticket.Endpoint, nil, form, result)
-}
+//func (a *Agent) UploadFile(parentId, localFile string) (err error) {
+//	// Open local file
+//	file, err := os.Open(localFile)
+//	if err != nil {
+//		return
+//	}
+//	// Get file information (should contains name and size)
+//	info, err := file.Stat()
+//	if err != nil {
+//		return nil
+//	}
+//	// Create upload ticket
+//	ticket, err := a.CreateUploadTicket(parentId, info)
+//	if err != nil {
+//		return nil
+//	}
+//	// Upload file
+//	form := multipart.New()
+//	form.AddFileData(ticket.FileField, info.Name(), info.Size(), file)
+//	for name, value := range ticket.Values {
+//		form.AddValue(name, value)
+//	}
+//	result := &types.UploadResult{}
+//	return a.hc.JsonApi(ticket.Endpoint, nil, form, result)
+//}
