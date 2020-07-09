@@ -88,13 +88,18 @@ those, use thirdparty tools/libraries instead.
 To monitor the downloading progress, caller can wrap w by
 "github.com/deadblue/gostream/observe".
 */
-func (a *Agent) Download(ticket *DownloadTicket, w io.Writer) (size int64, err error) {
+func (a *Agent) Download(pickcode string, w io.Writer) (size int64, err error) {
 	wc, ok := w.(io.WriteCloser)
 	if !ok {
 		wc = nopWriteCloser{w}
 	}
 	defer quietly.Close(wc)
 
+	// Get download ticket.
+	ticket, err := a.DownloadCreateTicket(pickcode)
+	if err != nil {
+		return
+	}
 	// Make download request
 	req, err := http.NewRequest(http.MethodGet, ticket.Url, nil)
 	if err != nil {
@@ -111,7 +116,11 @@ func (a *Agent) Download(ticket *DownloadTicket, w io.Writer) (size int64, err e
 	defer quietly.Close(resp.Body)
 
 	// Transfer response body to w
-	return io.Copy(w, resp.Body)
+	size, err = io.Copy(w, resp.Body)
+	if err == nil && size != ticket.FileSize {
+		err = errUnexpectedTransferSize
+	}
+	return
 }
 
 type nopWriteCloser struct {

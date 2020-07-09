@@ -17,6 +17,8 @@ var (
 	errCaptchaFailed = errors.New("captcha code incorrect")
 
 	errVideoNotReady = errors.New("video not ready")
+
+	errUnexpectedTransferSize = errors.New("unexpected transfer size")
 )
 
 const (
