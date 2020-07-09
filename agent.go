@@ -8,8 +8,7 @@ import (
 )
 
 const (
-	defaultName = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:75.0) Gecko/20100101 Firefox/75.0"
-	version     = "0.1.3"
+	defaultName = "Mozilla/5.0"
 )
 
 /*
@@ -23,11 +22,6 @@ type Agent struct {
 
 	ui *UserInfo
 	ot *types.OfflineToken
-}
-
-// Get agent version.
-func (a *Agent) Version() string {
-	return version
 }
 
 /*
