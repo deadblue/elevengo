@@ -5,6 +5,9 @@ import (
 	"github.com/deadblue/elevengo/internal/core"
 	"github.com/deadblue/elevengo/internal/types"
 	"github.com/deadblue/elevengo/internal/util"
+	"github.com/deadblue/gostream/quietly"
+	"io"
+	"net/http"
 	"strings"
 	"time"
 )
@@ -26,15 +29,14 @@ type DownloadTicket struct {
 }
 
 /*
-Create a download ticket.
+DownloadCreateTicket creates ticket which contails all necessary information to
+download a file. Caller can use thirdparty tools/libraries to perform downloading,
+such as wget/curl/aria2.
 
-Agent does not support downloading file, you need use a thirdparty tool to do
-that, such as wget/curl/aria2.
-
-Example:
+Example - Downlaod through curl:
 
 	// Create download ticket
-	ticket, err := agent.CreateDownloadTicket("pickcode")
+	ticket, err := agent.DownloadCreateTicket("pickcode")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -48,7 +50,7 @@ Example:
 		log.Fatal(err)
 	}
 */
-func (a *Agent) CreateDownloadTicket(pickcode string) (ticket DownloadTicket, err error) {
+func (a *Agent) DownloadCreateTicket(pickcode string) (ticket DownloadTicket, err error) {
 	// Get download information
 	qs := core.NewQueryString().
 		WithString("pickcode", pickcode).
@@ -74,4 +76,48 @@ func (a *Agent) CreateDownloadTicket(pickcode string) (ticket DownloadTicket, er
 	}
 	ticket.Headers["Cookie"] = sb.String()
 	return
+}
+
+/*
+Download downloads a file from cloud, writes its content into w.
+If w implements io.Closer, it will be closed by method.
+
+This method DOSE NOT support multi-thread/resuming, if caller require
+those, use thirdparty tools/libraries instead.
+
+To monitor the downloading progress, caller can wrap w by
+"github.com/deadblue/gostream/observe".
+*/
+func (a *Agent) Download(ticket *DownloadTicket, w io.Writer) (size int64, err error) {
+	wc, ok := w.(io.WriteCloser)
+	if !ok {
+		wc = nopWriteCloser{w}
+	}
+	defer quietly.Close(wc)
+
+	// Make download request
+	req, err := http.NewRequest(http.MethodGet, ticket.Url, nil)
+	if err != nil {
+		return
+	}
+	for name, value := range ticket.Headers {
+		req.Header.Set(name, value)
+	}
+	// Send download request
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return
+	}
+	defer quietly.Close(resp.Body)
+
+	// Transfer response body to w
+	return io.Copy(w, resp.Body)
+}
+
+type nopWriteCloser struct {
+	io.Writer
+}
+
+func (n nopWriteCloser) Close() error {
+	return nil
 }
