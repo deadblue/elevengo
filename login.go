@@ -23,8 +23,8 @@ const (
 Credential contains required information that the upstream server uses to
 authenticate a signed-in user.
 
-In detail, three cookies are required: "UID", "CID", "SEID", you can find
-them from your browser cookie storage.
+In detail, three cookies are required: "UID", "CID", "SEID", caller can find
+them from browser cookie storage.
 */
 type Credential struct {
 	UID  string
@@ -32,17 +32,13 @@ type Credential struct {
 	SEID string
 }
 
-/*
-Basic information of the signed-in user.
-*/
+// Basic information of the signed-in user.
 type UserInfo struct {
 	Id   int
 	Name string
 }
 
-/*
-Import credentials into agent.
-*/
+// Import credentials into agent.
 func (a *Agent) CredentialImport(cr *Credential) (err error) {
 	cookies := map[string]string{
 		cookieUid:  cr.UID,
@@ -53,14 +49,12 @@ func (a *Agent) CredentialImport(cr *Credential) (err error) {
 	return a.getUserInfo()
 }
 
-/*
-Export credentials from agent, you can store it for future use.
-*/
-func (a *Agent) CredentialExport() (cr *Credential, err error) {
+// Export credentials from agent, caller can store it for future use.
+func (a *Agent) CredentialExport() (cr Credential, err error) {
 	if cookies := a.hc.Cookies(cookieUrl); cookies == nil || len(cookies) == 0 {
 		err = errCredentialsNotExist
 	} else {
-		cr = &Credential{
+		cr = Credential{
 			UID:  cookies[cookieUid],
 			CID:  cookies[cookieCid],
 			SEID: cookies[cookieSeid],
@@ -89,15 +83,10 @@ func (a *Agent) getUserInfo() (err error) {
 	return
 }
 
-/*
-Get signed in user information, return nil if none signed in.
-*/
-func (a *Agent) User() (info *UserInfo) {
+// Get signed in user information.
+func (a *Agent) User() (info UserInfo) {
 	if a.ui != nil {
-		info = &UserInfo{
-			Id:   a.ui.Id,
-			Name: a.ui.Name,
-		}
+		info = *a.ui
 	}
 	return
 }

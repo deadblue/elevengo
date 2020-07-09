@@ -14,3 +14,17 @@ type FileVideoResult struct {
 	Duration   StringFloat64 `json:"play_long"`
 	VideoUrl   string        `json:"video_url"`
 }
+
+type FileImageResult struct {
+	BaseApiResult
+	// Error information
+	ErrorCode int    `json:"errNo"`
+	Error     string `json:"error"`
+	// Data
+	Data struct {
+		Url       string   `json:"url"`
+		AllUrls   []string `json:"all_urls"`
+		OriginUrl string   `json:"origin_url"`
+		SourceUrl string   `json:"source_url"`
+	} `json:"data"`
+}

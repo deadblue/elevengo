@@ -19,41 +19,10 @@ const (
 	apiFileRename     = "https://webapi.115.com/files/batch_rename"
 	apiFileDelete     = "https://webapi.115.com/rb/delete"
 
-	fileDefaultLimit = 100
+	fileDefaultLimit = 115
 
 	codeListRetry = 20130827
 )
-
-type fileCursor struct {
-	used   bool
-	order  string
-	asc    int
-	offset int
-	limit  int
-	total  int
-}
-
-func (c *fileCursor) HasMore() bool {
-	return !c.used || c.offset < c.total
-}
-func (c *fileCursor) Next() {
-	c.offset += c.limit
-}
-func (c *fileCursor) Total() int {
-	return c.total
-}
-
-// Create a file cursor for "Agent.FileList()" and "Agent.FileSearch()".
-func FileCursor() Cursor {
-	return &fileCursor{
-		used:   false,
-		order:  "user_ptime",
-		asc:    0,
-		offset: 0,
-		limit:  fileDefaultLimit,
-		total:  0,
-	}
-}
 
 // Storage information.
 type StorageInfo struct {
@@ -84,9 +53,9 @@ type File struct {
 	// Sha1 hash value of the file, empty for directory.
 	Sha1 string
 	// Create time of the file.
-	CreateTime *time.Time
+	CreateTime time.Time
 	// Update time of the file.
-	UpdateTime *time.Time
+	UpdateTime time.Time
 }
 
 // DirectoryInfo only used in FileInfo.
@@ -105,20 +74,20 @@ type FileInfo struct {
 	IsDirectory bool
 	// File name.
 	Name string
-	// Sha1 hash value of the file, empty for directory.
-	Sha1 string
 	// Pick code for downloading.
 	PickCode string
+	// Sha1 hash value of the file, empty for directory.
+	Sha1 string
 	// Create time of the file.
-	CreateTime *time.Time
+	CreateTime time.Time
 	// Update time of the file.
-	UpdateTime *time.Time
+	UpdateTime time.Time
 	// Parent directory list.
 	Parents []*DirectoryInfo
 }
 
 // Get storage size information.
-func (a *Agent) StorageStat() (info *StorageInfo, err error) {
+func (a *Agent) StorageStat() (info StorageInfo, err error) {
 	result := new(types.FileIndexResult)
 	err = a.hc.JsonApi(apiFileIndex, nil, nil, result)
 	if err == nil && result.IsFailed() {
@@ -127,7 +96,7 @@ func (a *Agent) StorageStat() (info *StorageInfo, err error) {
 	if err != nil {
 		return
 	}
-	info = &StorageInfo{
+	info = StorageInfo{
 		Size:  int64(result.Data.SpaceInfo.AllTotal.Size),
 		Used:  int64(result.Data.SpaceInfo.AllUsed.Size),
 		Avail: int64(result.Data.SpaceInfo.AllRemain.Size),
@@ -175,11 +144,11 @@ func (a *Agent) FileList(parentId string, cursor Cursor) (files []*File, err err
 		// Handle error
 		if err == nil && result.IsFailed() {
 			if result.ErrorCode == codeListRetry {
-				// Update query string
-				qs.WithString("o", fc.order).WithInt("asc", fc.asc)
 				// Update order flag
 				fc.order = result.Order
 				fc.asc = result.IsAsc
+				// Update query string
+				qs.WithString("o", fc.order).WithInt("asc", fc.asc)
 				// Try to call API again
 				retry = true
 			} else {
@@ -347,7 +316,7 @@ func (a *Agent) FileMkdir(parentId, name string) (directoryId string, err error)
 Get file information related to the file ID.
 Since the upstream response is cheap, this method cat not return more information.
 */
-func (a *Agent) FileStat(fileId string) (info *FileInfo, err error) {
+func (a *Agent) FileStat(fileId string) (info FileInfo, err error) {
 	qs := core.NewQueryString().
 		WithString("aid", "1").
 		WithString("cid", fileId)
@@ -358,7 +327,7 @@ func (a *Agent) FileStat(fileId string) (info *FileInfo, err error) {
 	}
 	if err == nil {
 		data := result.Data
-		info = &FileInfo{
+		info = FileInfo{
 			IsFile:      data.FileType == "1",
 			IsDirectory: data.FileType == "0",
 			Name:        data.Name,

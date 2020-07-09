@@ -1,4 +1,5 @@
 .idea
 
-*_test.go
 go.sum
+
+self_test.go

@@ -5,7 +5,11 @@ import (
 	"fmt"
 	"github.com/deadblue/elevengo/internal/core"
 	"github.com/deadblue/elevengo/internal/types"
-	"os"
+	"github.com/deadblue/gostream/multipart"
+	"github.com/deadblue/gostream/quietly"
+	"io"
+	"io/ioutil"
+	"net/http"
 	"time"
 )
 
@@ -17,7 +21,7 @@ const (
 UploadInfo contains all required information to create an upload ticket.
 
 To upload a regular file, caller can use os.FileInfo as UploadInfo, see
-"Agent.CreateUploadTicket" doc for detail.
+"Agent.UploadCreateTicket" doc for detail.
 
 To upload a memory data as file, caller should implement it himself.
 */
@@ -39,9 +43,10 @@ type UploadTicket struct {
 }
 
 /*
-Create an upload ticket, caller can use thirdparty libraries/tools to process this ticket.
+UploadCreateTicket creates a ticket which contails all necessary information to
+upload a file. Caller can use thirdpary tools/libraries to perform the upload.
 
-Example with curl:
+Example - Upload through curl:
 
 	filename := "/path/to/file"
 	// Get file info
@@ -49,8 +54,8 @@ Example with curl:
 	if err != nil {
 		log.Fatal(err)
 	}
-	// Create upload ticket
-	ticket, err := agent.CreateUploadTicket(parentId, info)
+	// Create ticket
+	ticket, err := agent.UploadCreateTicket(parentId, info)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -73,14 +78,14 @@ Example with curl:
 	}
 	// Parse upload response
 	response, _ := ioutil.ReadAll(tmpFile)
-	file, err := agent.ParseUploadResult(response)
+	file, err := agent.UploadParseResult(response)
 	if err != nil {
 		log.Fatel(f)
 	} else {
 		log.Printf("Uploaded file: %#v", file)
 	}
 */
-func (a *Agent) CreateUploadTicket(parentId string, info UploadInfo) (ticket *UploadTicket, err error) {
+func (a *Agent) UploadCreateTicket(parentId string, info UploadInfo) (ticket UploadTicket, err error) {
 	// Request upload token
 	form := core.NewForm().
 		WithInt("userid", a.ui.Id).
@@ -92,7 +97,7 @@ func (a *Agent) CreateUploadTicket(parentId string, info UploadInfo) (ticket *Up
 		return
 	}
 	// Create upload ticket
-	ticket = &UploadTicket{
+	ticket = UploadTicket{
 		Endpoint:  result.Host,
 		FileField: "file",
 		Values: map[string]string{
@@ -107,8 +112,9 @@ func (a *Agent) CreateUploadTicket(parentId string, info UploadInfo) (ticket *Up
 	return
 }
 
-// Parse uploading response, see "CreateUploadTicket()" doc for detail.
-func (a *Agent) ParseUploadResult(content []byte) (file *File, err error) {
+// UploadParseResult parses the raw upload response body. If caller performs upload ticket
+// through thirdpary tools/libraries, he can call the method to parse the upload result.
+func (a *Agent) UploadParseResult(content []byte) (file *File, err error) {
 	result := &types.UploadResult{}
 	if err = json.Unmarshal(content, result); err == nil {
 		data := result.Data
@@ -122,36 +128,70 @@ func (a *Agent) ParseUploadResult(content []byte) (file *File, err error) {
 			Size:        int64(data.FileSize),
 			PickCode:    data.PickCode,
 			Sha1:        data.Sha1,
-			CreateTime:  &createTime,
-			UpdateTime:  &createTime,
+			CreateTime:  createTime,
+			UpdateTime:  createTime,
 		}
 	}
 	return
 }
 
-// A simple upload implementation without progress echo.
-func (a *Agent) UploadFile(parentId, localFile string) (err error) {
-	// Open local file
-	file, err := os.Open(localFile)
+/*
+Upload uploads data as a file to cloud, and returns the file metadata on successful.
+If r implements io.Closer, it will be closed by method.
+
+Example:
+
+	// To upload a regular file
+	file, err := os.Open("/path/to/file")
+	if err != nil {
+		panic(err)
+	}
+	info, err := file.Stat()
+	if err != nil {
+		panic(err)
+	}
+	// Caller can use "github.com/deadblue/gostream/observe" to monitor the
+	// uploading progress, please see the example code in that package.
+	metadata, err := agent.Upload("0", info, file)
+	if err != nil {
+		panic(err)
+	} else {
+		log.Printf("Uploaded file: %#v", metadata)
+	}
+*/
+func (a *Agent) Upload(parentId string, info UploadInfo, r io.Reader) (file *File, err error) {
+	// Try close r before method returns.
+	rc, ok := r.(io.ReadCloser)
+	if !ok {
+		rc = ioutil.NopCloser(r)
+	}
+	defer quietly.Close(rc)
+
+	ticket, err := a.UploadCreateTicket(parentId, info)
 	if err != nil {
 		return
 	}
-	// Get file information (should contains name and size)
-	info, err := file.Stat()
-	if err != nil {
-		return nil
-	}
-	// Create upload ticket
-	ticket, err := a.CreateUploadTicket(parentId, info)
-	if err != nil {
-		return nil
-	}
-	// Upload file
-	form := core.NewMultipartForm().
-		WithFile(ticket.FileField, info.Name(), file)
+	// Create multipart form for uploading
+	form := multipart.New()
 	for name, value := range ticket.Values {
-		form.WithString(name, value)
+		form.AddValue(name, value)
 	}
-	result := &types.UploadResult{}
-	return a.hc.JsonApi(ticket.Endpoint, nil, form, result)
+	form.AddFileData(ticket.FileField, info.Name(), info.Size(), r)
+	// Make request
+	req, err := multipart.NewRequest(ticket.Endpoint, form)
+	if err != nil {
+		return
+	}
+	// Send request through default client
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return
+	}
+	defer quietly.Close(resp.Body)
+	// Parse response body
+	if body, err := ioutil.ReadAll(resp.Body); err != nil {
+		return nil, err
+	} else {
+		return a.UploadParseResult(body)
+	}
 }
