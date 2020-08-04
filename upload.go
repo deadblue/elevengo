@@ -137,7 +137,7 @@ func (a *Agent) UploadParseResult(content []byte) (file *File, err error) {
 
 /*
 Upload uploads data as a file to cloud, and returns the file metadata on successful.
-If r implements io.Closer, it will be closed by method.
+If r implements io.Closer, it will be closed automatically.
 
 Example:
 
@@ -160,12 +160,10 @@ Example:
 	}
 */
 func (a *Agent) Upload(parentId string, info UploadInfo, r io.Reader) (file *File, err error) {
-	// Try close r before method returns.
-	rc, ok := r.(io.ReadCloser)
-	if !ok {
-		rc = ioutil.NopCloser(r)
+	// Register defer function only when r implements io.Closer.
+	if rc, ok := r.(io.ReadCloser); ok {
+		defer quietly.Close(rc)
 	}
-	defer quietly.Close(rc)
 
 	ticket, err := a.UploadCreateTicket(parentId, info)
 	if err != nil {
