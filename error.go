@@ -12,6 +12,8 @@ var (
 	errFileNotExist      = errors.New("file not exist")
 	errFileCursorInvalid = errors.New("cursor must be created by FileCursor()")
 
+	errDirNotExist = errors.New("no such directory")
+
 	errOfflineCursorInvalid = errors.New("cursor must be created by OfflineCursor()")
 
 	errCaptchaFailed = errors.New("captcha code incorrect")

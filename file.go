@@ -13,7 +13,6 @@ const (
 	apiFileListByName = "https://aps.115.com/natsort/files.php"
 	apiFileStat       = "https://webapi.115.com/category/get"
 	apiFileSearch     = "https://webapi.115.com/files/search"
-	apiFileAdd        = "https://webapi.115.com/files/add"
 	apiFileCopy       = "https://webapi.115.com/files/copy"
 	apiFileMove       = "https://webapi.115.com/files/move"
 	apiFileRename     = "https://webapi.115.com/files/batch_rename"
@@ -292,22 +291,6 @@ func (a *Agent) FileDelete(parentId string, fileIds ...string) (err error) {
 	err = a.hc.JsonApi(apiFileDelete, nil, form, result)
 	if err == nil && result.IsFailed() {
 		err = types.MakeFileError(int(result.ErrorCode), result.Error)
-	}
-	return
-}
-
-// Create a directory under a directory with specific name.
-func (a *Agent) FileMkdir(parentId, name string) (directoryId string, err error) {
-	form := core.NewForm().
-		WithString("pid", parentId).
-		WithString("cname", name)
-	result := &types.FileAddResult{}
-	err = a.hc.JsonApi(apiFileAdd, nil, form, result)
-	if err == nil && result.IsFailed() {
-		err = types.MakeFileError(int(result.ErrorCode), result.Error)
-	}
-	if err == nil {
-		directoryId = result.CategoryId
 	}
 	return
 }
