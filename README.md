@@ -1,6 +1,6 @@
 # ElevenGo
 
-![Version](https://img.shields.io/badge/release-v0.1.4-brightgreen?style=flat-square)
+![Version](https://img.shields.io/badge/release-v0.1.5-brightgreen?style=flat-square)
 [![Reference](https://img.shields.io/badge/Go-Reference-blue.svg?style=flat-square)](https://pkg.go.dev/github.com/deadblue/elevengo)
 ![License](https://img.shields.io/:License-MIT-green.svg?style=flat-square)
 
@@ -67,7 +67,7 @@ You can find more examples from [reference](https://pkg.go.dev/github.com/deadbl
 ## TODO list
 
 * ~~Implement download/upload method, with progress echo.~~
-* Move example codes out of comment.
+* ~~Move example codes out of comment.~~
 * Handle more upstream errors.
 * Caller can swtich upstream API between HTTP/HTTPS.
 
