@@ -1,6 +1,7 @@
 package elevengo
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -125,5 +126,41 @@ func ExampleAgent_UploadCreateTicket() {
 		log.Fatalf("Parse upload result error: %s", err)
 	} else {
 		log.Printf("Uploaded file: %#v", file)
+	}
+}
+
+func ExampleAgent_VideoHlsContent() {
+	agent := Default()
+	// TODO: Import your credentials here
+
+	// Get video HLS content
+	hls, err := agent.VideoHlsContent("pickcode")
+	if err != nil {
+		log.Fatalf("Get video HLS error: %s", err)
+	}
+	// Play HLS through mpv
+	cmd := exec.Command("/usr/local/bin/mpv", "-")
+	cmd.Stdin = bytes.NewReader(hls)
+	if err = cmd.Run(); err != nil {
+		log.Fatalf("Execute mpv error: %s", err)
+	}
+}
+
+func ExampleAgent_CaptchaStart() {
+	agent := Default()
+	// TODO: Import your credentials here
+
+	// Start captcha session.
+	session, err := agent.CaptchaStart()
+	if err != nil {
+		log.Fatalf("Start captcha session error: %s", err)
+	}
+	// TODO:
+	//   * Show `session.CodeImage` and `session.KeysImage` to user.
+	//   * Ask user to give the captcha code.
+
+	err = agent.CaptchaSubmit(session, "code")
+	if err != nil {
+		log.Fatalf("Submit captcha code error: %s", err)
 	}
 }
