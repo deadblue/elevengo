@@ -29,26 +29,9 @@ type DownloadTicket struct {
 }
 
 /*
-DownloadCreateTicket creates ticket which contails all necessary information to
-download a file. Caller can use thirdparty tools/libraries to perform downloading,
-such as wget/curl/aria2.
-
-Example - Downlaod through curl:
-
-	// Create download ticket
-	ticket, err := agent.DownloadCreateTicket("pickcode")
-	if err != nil {
-		log.Fatal(err)
-	}
-	// Download file via "curl"
-	cmd := exec.Command("/usr/bin/curl", ticket.Url)
-	for name, value := range ticket.Headers {
-		cmd.Args = append(cmd.Args, "-H", fmt.Sprintf("%s: %s", name, value))
-	}
-	cmd.Args = append(cmd.Args, "-o", ticket.FileName)
-	if err = cmd.Run(); err != nil {
-		log.Fatal(err)
-	}
+DownloadCreateTicket creates ticket which contains all required information to
+download a file. Caller can use third-party tools/libraries to download file, such
+as wget/curl/aria2.
 */
 func (a *Agent) DownloadCreateTicket(pickcode string) (ticket DownloadTicket, err error) {
 	// Get download information
