@@ -60,31 +60,7 @@ func (a *Agent) callQrcodeApi(url string, qs core.QueryString, form core.Form, d
 	return json.Unmarshal(result.Data, data)
 }
 
-/*
-Start a QRcode login process.
-
-Example:
-
-	session, err := agent.QrcodeStart()
-	if err != nil {
-		panic(error)
-	}
-	// TODO: Show QRcode and prompt user to scan it on mobile app.
-	for {
-		if status, err := agent.QrcodeStatus(session); err != nil {
-			panic(err)
-		} else {
-			if status.IsAllowed() {
-				err = agent.QrcodeLogin(session)
-				break
-			} else status.IsCanceled() {
-				fmt.Println("User canceled this login!")
-				break
-			}
-		}
-	}
-
-*/
+// Start a QRcode login session.
 func (a *Agent) QrcodeStart() (session *QrcodeSession, err error) {
 	data := &types.QrcodeTokenData{}
 	if err = a.callQrcodeApi(apiQrcodeToken, nil, nil, data); err == nil {
@@ -105,10 +81,11 @@ The upstream API uses a long-pull request for 30 seconds, so this API will
 also block at most 30 seconds, be careful to use it in main goroutine.
 
 The QRcode has 4 status:
-- Waiting
-- Scanned
-- Allowed
-- Canceled
+
+	- Waiting
+	- Scanned
+	- Allowed
+	- Canceled
 
 The QRcode will expire in 5 mimutes, when it expired, an error will be return, caller
 can use IsQrcodeExipre() to check that.
