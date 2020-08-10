@@ -1,4 +1,2 @@
-/*
-"plugin" package declare some interfaces that developer can implement himself.
-*/
+// Package plugin declares some interfaces that allows developer customizing elevengo agent.
 package plugin

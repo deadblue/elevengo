@@ -29,26 +29,9 @@ type DownloadTicket struct {
 }
 
 /*
-DownloadCreateTicket creates ticket which contails all necessary information to
-download a file. Caller can use thirdparty tools/libraries to perform downloading,
-such as wget/curl/aria2.
-
-Example - Downlaod through curl:
-
-	// Create download ticket
-	ticket, err := agent.DownloadCreateTicket("pickcode")
-	if err != nil {
-		log.Fatal(err)
-	}
-	// Download file via "curl"
-	cmd := exec.Command("/usr/bin/curl", ticket.Url)
-	for name, value := range ticket.Headers {
-		cmd.Args = append(cmd.Args, "-H", fmt.Sprintf("%s: %s", name, value))
-	}
-	cmd.Args = append(cmd.Args, "-o", ticket.FileName)
-	if err = cmd.Run(); err != nil {
-		log.Fatal(err)
-	}
+DownloadCreateTicket creates ticket which contains all required information to
+download a file. Caller can use third-party tools/libraries to download file, such
+as wget/curl/aria2.
 */
 func (a *Agent) DownloadCreateTicket(pickcode string) (ticket DownloadTicket, err error) {
 	// Get download information
@@ -79,21 +62,19 @@ func (a *Agent) DownloadCreateTicket(pickcode string) (ticket DownloadTicket, er
 }
 
 /*
-Download downloads a file from cloud, writes its content into w.
-If w implements io.Closer, it will be closed by method.
+Download downloads a file from cloud, writes its content into w. If w implements
+io.Closer, it will be closed automatically.
 
-This method DOSE NOT support multi-thread/resuming, if caller require
-those, use thirdparty tools/libraries instead.
+This method DOSE NOT support multi-thread/resuming, if caller requires those,
+use thirdparty tools/libraries instead.
 
 To monitor the downloading progress, caller can wrap w by
 "github.com/deadblue/gostream/observe".
 */
 func (a *Agent) Download(pickcode string, w io.Writer) (size int64, err error) {
-	wc, ok := w.(io.WriteCloser)
-	if !ok {
-		wc = nopWriteCloser{w}
+	if wc, ok := w.(io.WriteCloser); ok {
+		defer quietly.Close(wc)
 	}
-	defer quietly.Close(wc)
 
 	// Get download ticket.
 	ticket, err := a.DownloadCreateTicket(pickcode)
@@ -121,12 +102,4 @@ func (a *Agent) Download(pickcode string, w io.Writer) (size int64, err error) {
 		err = errUnexpectedTransferSize
 	}
 	return
-}
-
-type nopWriteCloser struct {
-	io.Writer
-}
-
-func (n nopWriteCloser) Close() error {
-	return nil
 }

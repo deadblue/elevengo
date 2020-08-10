@@ -15,21 +15,7 @@ const (
 Get HLS content of a video.
 
 For video file, the upstream server support HLS streaming. Caller can use this
-method to get the HLS content, and play it through thirdparty tools, such as "mpv".
-
-Example:
-
-	// Get HLS content for a video
-	hls, err := agent.VideoHlsContent("pickcode")
-	if err != nil {
-		log.Fatal(err)
-	}
-	// Start mpv process with reading file from STDIN
-	cmd := exec.Command("/path/to/mpv", "-")
-	cmd.Stdin = bytes.NewReader(hls)
-	if err = cmd.Run(); err != nil {
-		log.Fatal(err)
-	}
+method to get the HLS content, then play it through thirdparty tools, such as "mpv".
 */
 func (a *Agent) VideoHlsContent(pickcode string) (content []byte, err error) {
 	// Call video API

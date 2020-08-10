@@ -7,7 +7,7 @@ import (
 
 const (
 	libName = "elevengo"
-	libVer  = "0.1.4"
+	libVer  = "0.1.5"
 )
 
 var (

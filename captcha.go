@@ -48,22 +48,7 @@ type CaptchaSession struct {
 	callback string
 }
 
-/*
-Start a CAPTCHA session.
-
-Example:
-
-	// Start CAPTCHA session
-	session, err := agent.CaptchaStart()
-	if err != nil {
-		panic(err)
-	}
-	// TODO: Solve the CAPTCHA here.
-	// Submit CAPTCHA code
-	if err = agent.CaptchaSubmit(session, code); err != nil {
-		panic(err)
-	}
-*/
+// Start a CAPTCHA session.
 func (a *Agent) CaptchaStart() (session *CaptchaSession, err error) {
 	// Fetch captcha page
 	callback := fmt.Sprintf("Close911_%d", time.Now().UnixNano())
