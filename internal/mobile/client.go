@@ -5,17 +5,13 @@ import (
 	"net/http"
 )
 
-const (
-	AppVersion = "26.1.0"
-)
-
 type Client struct {
+	// HTTP client
 	hc *http.Client
+	// Cookie jar
 	cj http.CookieJar
-
 	// User ID
-	userId uint32
-
+	uid uint32
 	// EC public key
 	ecPubKey []byte
 	// AES key
@@ -28,8 +24,10 @@ type Client struct {
 
 func New() (client *Client, err error) {
 	client = &Client{}
-	client.initHttpClient()
+	client.httpInit()
 	client.ecInit()
+
+	// TODO: Move rsa keys out of client
 	client.rasInit()
 
 	return

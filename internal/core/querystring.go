@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-// A querystring holder
+// A query-string holder
 type QueryString interface {
 	// Add a string value
 	WithString(name, value string) QueryString
@@ -13,7 +13,9 @@ type QueryString interface {
 	WithInt(name string, value int) QueryString
 	// Add an int64 value
 	WithInt64(name string, value int64) QueryString
-	// Encode to querystring
+	// Add an uint64 value
+	WithUint64(name string, value uint64) QueryString
+	// Encode to query-string
 	Encode() string
 }
 
@@ -32,6 +34,10 @@ func (i *implQueryString) WithInt(name string, value int) QueryString {
 
 func (i *implQueryString) WithInt64(name string, value int64) QueryString {
 	return i.WithString(name, strconv.FormatInt(value, 10))
+}
+
+func (i *implQueryString) WithUint64(name string, value uint64) QueryString {
+	return i.WithString(name, strconv.FormatUint(value, 10))
 }
 
 func (i *implQueryString) Encode() string {

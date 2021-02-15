@@ -1,17 +1,20 @@
 package mobile
 
 import (
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/elliptic"
-	crand "crypto/rand"
+	"crypto/rand"
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"github.com/pierrec/lz4/v4"
 	"hash/crc32"
+	"io"
+	"io/ioutil"
 	"log"
-	"math/rand"
 	"time"
 )
 
@@ -38,7 +41,7 @@ var (
 
 func (c *Client) ecInit() {
 	// Generate EC P224 key pair
-	privKey, x, y, _ := elliptic.GenerateKey(ecCurve, crand.Reader)
+	privKey, x, y, _ := elliptic.GenerateKey(ecCurve, rand.Reader)
 	pubKey := elliptic.MarshalCompressed(ecCurve, x, y)
 	// Store public key
 	keySize := len(pubKey)
@@ -60,11 +63,11 @@ func (c *Client) ecEncodeKey(apiId int) string {
 	buf[15], buf[39] = 0, 0
 	copy(buf[0:15], c.ecPubKey[0:15])
 	copy(buf[24:39], c.ecPubKey[15:30])
-	le.PutUint32(buf[16:20], c.userId)
+	le.PutUint32(buf[16:20], c.uid)
 	le.PutUint32(buf[20:24], timestamp)
 	le.PutUint32(buf[40:44], uint32(apiId))
 	// Xor the data
-	r1, r2 := byte(rand.Intn(0xff)), byte(rand.Intn(0xff))
+	r1, r2 := randByte(), randByte()
 	for i := 0; i < 44; i++ {
 		if i < 24 {
 			buf[i] = buf[i] ^ r1
@@ -81,44 +84,87 @@ func (c *Client) ecEncodeKey(apiId int) string {
 	return base64.StdEncoding.EncodeToString(buf)
 }
 
-func (c *Client) ecDecode(data []byte) (err error) {
+func (c *Client) ecDecode(r io.Reader, result interface{}) (err error) {
+	data, err := ioutil.ReadAll(r)
+	if err != nil {
+		return
+	}
 	dataSize := len(data)
 	if dataSize%16 != 12 {
 		return errMalformedBody
 	}
 	body, tail := data[:dataSize-12], data[dataSize-12:]
-	// Verify checksum
+	bodySize := dataSize - 12
+	// Get information from tail
+	dataSize, encrypted, compressed, err := parseTail(tail)
+	if err != nil {
+		return
+	}
+	// Decrypt
+	if encrypted {
+		block, _ := aes.NewCipher(c.aesKey)
+		dec := cipher.NewCBCDecrypter(block, c.aesIv)
+		plain := make([]byte, bodySize)
+		dec.CryptBlocks(plain, body)
+		// De-padding
+		for j := bodySize - 1; ; j-- {
+			if plain[j] == 0 {
+				plain = plain[:j]
+			} else {
+				break
+			}
+		}
+		body = plain
+	}
+	// Decompress
+	if compressed {
+		buf := make([]byte, dataSize)
+		compSize := le.Uint16(body[:2])
+		if _, err = lz4.UncompressBlock(body[2:compSize+2], buf); err == nil {
+			body = buf
+		} else {
+			return
+		}
+	}
+	log.Printf("Body: %s", body)
+	return json.Unmarshal(body, result)
+}
+
+func parseTail(tail []byte) (size int, encrypted, compressed bool, err error) {
+	// Check CRC32
 	crc := crc32.NewIEEE()
 	_, _ = crc.Write(crcSalt)
 	_, _ = crc.Write(tail[:8])
 	if crc.Sum32() != le.Uint32(tail[8:]) {
-		return errMalformedBody
-	}
-	// Decrypt
-	block, err := aes.NewCipher(c.aesKey)
-	if err != nil {
+		err = errMalformedBody
 		return
 	}
-	dec := cipher.NewCBCDecrypter(block, c.aesIv)
-	plain := make([]byte, dataSize-12)
-	dec.CryptBlocks(plain, body)
-	for j := dataSize - 13; ; j-- {
-		if plain[j] == 0 {
-			plain = plain[:j]
-		} else {
-			break
-		}
+	// Flags
+	compressed = tail[4] == 0x01
+	encrypted = tail[5] == 0x01
+	// Original data size
+	key := tail[7]
+	for i := 0; i < 4; i++ {
+		tail[i] = tail[i] ^ key
 	}
-	// Decompress
-	dataSize = int(le.Uint16(plain[:2]))
-	log.Printf("Compress data size: %d", dataSize)
-
-	body = make([]byte, dataSize*2)
-	dataSize, err = lz4.UncompressBlock(plain[2:dataSize+2], body)
-	if err != nil {
-		return err
-	}
-	log.Printf("Decompress data size: %d", dataSize)
-	log.Printf("Body: %s", body[:dataSize])
+	size = int(le.Uint32(tail[0:4]))
 	return
+}
+
+func (c *Client) ecEncode(data []byte) (r io.Reader) {
+	// Padding
+	plain, size := data, len(data)
+	if m := size % 16; m != 0 {
+		n := 16 - m
+		padding := bytes.Repeat([]byte{0}, n)
+		plain = append(plain, padding...)
+		size += n
+	}
+	// Encrypt
+	block, _ := aes.NewCipher(c.aesKey)
+	enc := cipher.NewCBCEncrypter(block, c.aesIv)
+	buf := make([]byte, size)
+	enc.CryptBlocks(buf, plain)
+	//
+	return bytes.NewReader(buf)
 }
