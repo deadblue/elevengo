@@ -93,13 +93,12 @@ func (c *Client) ecDecode(r io.Reader, result interface{}) (err error) {
 	if dataSize%16 != 12 {
 		return errMalformedBody
 	}
-	body, tail := data[:dataSize-12], data[dataSize-12:]
-	bodySize := dataSize - 12
 	// Get information from tail
-	dataSize, encrypted, compressed, err := parseTail(tail)
+	realSize, encrypted, compressed, err := parseTail(data[dataSize-12:])
 	if err != nil {
 		return
 	}
+	body, bodySize := data[:dataSize-12], dataSize-12
 	// Decrypt
 	if encrypted {
 		block, _ := aes.NewCipher(c.aesKey)
@@ -107,18 +106,14 @@ func (c *Client) ecDecode(r io.Reader, result interface{}) (err error) {
 		plain := make([]byte, bodySize)
 		dec.CryptBlocks(plain, body)
 		// De-padding
-		for j := bodySize - 1; ; j-- {
-			if plain[j] == 0 {
-				plain = plain[:j]
-			} else {
-				break
-			}
+		for j := bodySize - 1; plain[j] == 0; j-- {
+			plain = plain[:j]
 		}
 		body = plain
 	}
 	// Decompress
 	if compressed {
-		buf := make([]byte, dataSize)
+		buf := make([]byte, realSize)
 		compSize := le.Uint16(body[:2])
 		if _, err = lz4.UncompressBlock(body[2:compSize+2], buf); err == nil {
 			body = buf
