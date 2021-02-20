@@ -22,11 +22,16 @@ var (
 	_UserAgent = fmt.Sprintf("Mozilla/5.0 (F5321; 8.0.0; en;) 115disk/%s", AppVersion)
 )
 
-type _MobileResponse struct {
-	State   bool            `json:"state"`
-	Code    int             `json:"code"`
-	Message string          `json:"message"`
-	Data    json.RawMessage `json:"data"`
+type _CommonResponse struct {
+	State bool `json:"state"`
+
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+
+	ErrorCode int    `json:"errno"`
+	ErrorMsg  string `json:"error"`
+
+	Data json.RawMessage `json:"data"`
 }
 
 func (c *Client) httpInit() {
@@ -59,7 +64,7 @@ func (c *Client) ImportCredentials(userId int, credentials map[string]string) {
 func (c *Client) callApi(url string, params map[string]string, data []byte, result interface{}) (err error) {
 	// Make full URL
 	qs := core.NewQueryString().
-		WithString("k_ec", c.ecEncodeKey(0)).
+		WithString("k_ec", c.ec.EncodeKey(c.uid)).
 		WithUint64("user_id", uint64(c.uid)).
 		WithString("app_ver", AppVersion)
 	if params != nil {
@@ -75,7 +80,7 @@ func (c *Client) callApi(url string, params map[string]string, data []byte, resu
 	// Make request
 	method, body := http.MethodGet, io.Reader(nil)
 	if data != nil {
-		method, body = http.MethodPost, c.ecEncode(data)
+		method, body = http.MethodPost, c.ec.EncodeData(data)
 	}
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
@@ -90,7 +95,9 @@ func (c *Client) callApi(url string, params map[string]string, data []byte, resu
 	defer quietly.Close(resp.Body)
 	// Decrypt and parse response
 	if result != nil {
-		err = c.ecDecode(resp.Body, result)
+		if data, err = c.ec.DecodeData(resp.Body); err == nil {
+			err = json.Unmarshal(data, result)
+		}
 	}
 	return
 }

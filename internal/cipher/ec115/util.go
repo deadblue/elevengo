@@ -1,4 +1,4 @@
-package mobile
+package ec115
 
 import "math/rand"
 

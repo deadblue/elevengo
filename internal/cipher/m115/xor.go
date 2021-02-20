@@ -1,4 +1,4 @@
-package mobile
+package m115
 
 var (
 	xorData = []byte{
@@ -45,7 +45,3 @@ var (
 		0x58, 0x07, 0x21, 0x7e, 0x29, 0x23, 0x21, 0x5e,
 	}
 )
-
-func (c *Client) xorInit() {
-	// TODO
-}

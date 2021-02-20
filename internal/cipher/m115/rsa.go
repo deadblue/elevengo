@@ -1,4 +1,4 @@
-package mobile
+package m115
 
 import (
 	"crypto/rsa"
@@ -29,21 +29,13 @@ var (
 		"4E8911215451AFFCF5EBFDE887BC9ADB675C02A835F75CBE77A603AF820683F4" +
 		"39E7CED4289323DF9C9055769E15798B9453E89058B3E2E3F186B07B046A996D"
 
-	//rsaClientDp = "36EC309809D23433857E3790A4F0CBCBAC2D05E7EDE553883915188A8BCA4595" +
-	//	"A66C6170867E8140BF9569A7EB35A7B3A94C1E0518B53D8880176977C8B65B51"
-	//
-	//rsaClientDq = "7FF9CDE07CFFA73626CCB9569C6BA03F9582B671CA9095A829906A3B645F3810" +
-	//	"AAFA1638B31BE7DC11D56D7A867172E764FBE862E68AEED4D7C594A860B13379"
-	//
-	//rsaClientQp = "BF0CB7702417519C8B91CEBA0EA34F8B3867EA830EB517A3D0654F04963FDD2F" +
-	//	"C251C5FA691326929DE5669C79FD2F57EC6E9AA368AEF2E921758AC3135AA073"
+	rsaPrivKey = &rsa.PrivateKey{}
+
+	rsaPubKey = &rsa.PublicKey{}
 )
 
-func (c *Client) rasInit() {
-	// TODO: Change to pem data?
-
-	// RSA private key
-	c.rsaPrivKey = &rsa.PrivateKey{
+func init() {
+	rsaPrivKey = &rsa.PrivateKey{
 		PublicKey: rsa.PublicKey{
 			N: big.NewInt(0),
 			E: rsaE,
@@ -53,16 +45,15 @@ func (c *Client) rasInit() {
 			big.NewInt(0), big.NewInt(0),
 		},
 	}
-	c.rsaPrivKey.N.SetString(rsaClientN, 16)
-	c.rsaPrivKey.D.SetString(rsaClientD, 16)
-	c.rsaPrivKey.Primes[0].SetString(rsaClientP, 16)
-	c.rsaPrivKey.Primes[1].SetString(rsaClientQ, 16)
-	c.rsaPrivKey.Precompute()
+	rsaPrivKey.N.SetString(rsaClientN, 16)
+	rsaPrivKey.D.SetString(rsaClientD, 16)
+	rsaPrivKey.Primes[0].SetString(rsaClientP, 16)
+	rsaPrivKey.Primes[1].SetString(rsaClientQ, 16)
+	rsaPrivKey.Precompute()
 	// RSA public key
-	c.rsaPubKey = &rsa.PublicKey{
+	rsaPubKey = &rsa.PublicKey{
 		N: big.NewInt(0),
 		E: rsaE,
 	}
-	c.rsaPubKey.N.SetString(rsaServerN, 16)
-
+	rsaPubKey.N.SetString(rsaServerN, 16)
 }

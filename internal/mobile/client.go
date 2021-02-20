@@ -1,7 +1,7 @@
 package mobile
 
 import (
-	"crypto/rsa"
+	"github.com/deadblue/elevengo/internal/cipher/ec115"
 	"net/http"
 )
 
@@ -12,23 +12,16 @@ type Client struct {
 	cj http.CookieJar
 	// User ID
 	uid uint32
-	// EC public key
-	ecPubKey []byte
-	// AES key
-	aesKey []byte
-	aesIv  []byte
-	// RSA keys
-	rsaPrivKey *rsa.PrivateKey
-	rsaPubKey  *rsa.PublicKey
+
+	// EC coder
+	ec *ec115.Coder
 }
 
 func New() (client *Client, err error) {
-	client = &Client{}
+	client = &Client{
+		ec: ec115.New(),
+	}
 	client.httpInit()
-	client.ecInit()
-
-	// TODO: Move rsa keys out of client
-	client.rasInit()
 
 	return
 }
