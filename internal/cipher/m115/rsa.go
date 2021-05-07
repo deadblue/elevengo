@@ -1,59 +1,75 @@
 package m115
 
 import (
+	"crypto/rand"
 	"crypto/rsa"
-	"math/big"
+	"crypto/x509"
+	"encoding/pem"
 )
 
 var (
-	rsaE = 0x10001
+	rsaPrivateKey = []byte("-----BEGIN RSA PRIVATE KEY-----\n" +
+		"MIICXAIBAAKBgQCMgUJLwWb0kYdW6feyLvqgNHmwgeYYlocst8UckQ1+waTOKHFC\n" +
+		"TVyRSb1eCKJZWaGa08mB5lEu/asruNo/HjFcKUvRF6n7nYzo5jO0li4IfGKdxso6\n" +
+		"FJIUtAke8rA2PLOubH7nAjd/BV7TzZP2w0IlanZVS76n8gNDe75l8tonQQIDAQAB\n" +
+		"AoGANwTasA2Awl5GT/t4WhbZX2iNClgjgRdYwWMI1aHbVfqADZZ6m0rt55qng63/\n" +
+		"3NsjVByAuNQ2kB8XKxzMoZCyJNvnd78YuW3Zowqs6HgDUHk6T5CmRad0fvaVYi6t\n" +
+		"viOkxtiPIuh4QrQ7NUhsLRtbH6d9s1KLCRDKhO23pGr9vtECQQDpjKYssF+kq9iy\n" +
+		"A9WvXRjbY9+ca27YfarD9WVzWS2rFg8MsCbvCo9ebXcmju44QhCghQFIVXuebQ7Q\n" +
+		"pydvqF0lAkEAmgLnib1XonYOxjVJM2jqy5zEGe6vzg8aSwKCYec14iiJKmEYcP4z\n" +
+		"DSRms43hnQsp8M2ynjnsYCjyiegg+AZ87QJANuwwmAnSNDOFfjeQpPDLy6wtBeft\n" +
+		"5VOIORUYiovKRZWmbGFwhn6BQL+VaafrNaezqUweBRi1PYiAF2l3yLZbUQJAf/nN\n" +
+		"4Hz/pzYmzLlWnGugP5WCtnHKkJWoKZBqO2RfOBCq+hY4sxvn3BHVbXqGcXLnZPvo\n" +
+		"YuaK7tTXxZSoYLEzeQJBAL8Mt3AkF1Gci5HOug6jT4s4Z+qDDrUXo9BlTwSWP90v\n" +
+		"wlHF+mkTJpKd5Wacef0vV+xumqNorvLpIXWKwxNaoHM=\n" +
+		"-----END RSA PRIVATE KEY-----")
+	rsaPublicKey = []byte("-----BEGIN RSA PUBLIC KEY-----\n" +
+		"MIGJAoGBANHetaZ5idEKXAsEHRGrR2Wbwys+ZakvkjbdLMIUCg2klfoOfvh19vrL\n" +
+		"TZgfXl47peZ4Ed1zt6QQUlQiL6zCBqdOiREhVFGv/PXr/eiHvJrbZ1wCqDX3XL53\n" +
+		"pgOvggaD9DnnztQokyPfnJBVdp4VeYuUU+iQWLPi4/GGsHsEapltAgMBAAE=\n" +
+		"-----END RSA PUBLIC KEY-----")
 
-	rsaClientN = "8C81424BC166F4918756E9F7B22EFAA03479B081E61896872CB7C51C910D7EC1" +
-		"A4CE2871424D5C9149BD5E08A25959A19AD3C981E6512EFDAB2BB8DA3F1E315C" +
-		"294BD117A9FB9D8CE8E633B4962E087C629DC6CA3A149214B4091EF2B0363CB3" +
-		"AE6C7EE702377F055ED3CD93F6C342256A76554BBEA7F203437BBE65F2DA2741"
-
-	rsaClientD = "3704DAB00D80C25E464FFB785A16D95F688D0A5823811758C16308D5A1DB55FA" +
-		"800D967A9B4AEDE79AA783ADFFDCDB23541C80B8D436901F172B1CCCA190B224" +
-		"DBE777BF18B96DD9A30AACE8780350793A4F90A645A7747EF695622EADBE23A4" +
-		"C6D88F22E87842B43B35486C2D1B5B1FA77DB3528B0910CA84EDB7A46AFDBED1"
-
-	rsaClientP = "E98CA62CB05FA4ABD8B203D5AF5D18DB63DF9C6B6ED87DAAC3F56573592DAB16" +
-		"0F0CB026EF0A8F5E6D77268EEE384210A0850148557B9E6D0ED0A7276FA85D25"
-
-	rsaClientQ = "9A02E789BD57A2760EC635493368EACB9CC419EEAFCE0F1A4B028261E735E228" +
-		"892A611870FE330D2466B38DE19D0B29F0CDB29E39EC6028F289E820F8067CED"
-
-	rsaServerN = "D1DEB5A67989D10A5C0B041D11AB47659BC32B3E65A92F9236DD2CC2140A0DA4" +
-		"95FA0E7EF875F6FACB4D981F5E5E3BA5E67811DD73B7A4105254222FACC206A7" +
-		"4E8911215451AFFCF5EBFDE887BC9ADB675C02A835F75CBE77A603AF820683F4" +
-		"39E7CED4289323DF9C9055769E15798B9453E89058B3E2E3F186B07B046A996D"
-
-	rsaPrivKey = &rsa.PrivateKey{}
-
-	rsaPubKey = &rsa.PublicKey{}
+	/* Client Key */
+	rsaClientKey *rsa.PrivateKey
+	/* Server Key */
+	rsaServerKey *rsa.PublicKey
 )
 
+func RsaEncrypt(input []byte) []byte {
+	output := make([]byte, 0)
+	plainSize, blockSize := len(input), rsaServerKey.Size()-11
+	for offset := 0; offset < plainSize; offset += blockSize {
+		sliceSize := blockSize
+		if offset+sliceSize > plainSize {
+			sliceSize = plainSize - offset
+		}
+		slice, _ := rsa.EncryptPKCS1v15(
+			rand.Reader, rsaServerKey, input[offset:offset+sliceSize])
+		output = append(output, slice...)
+	}
+	return output
+}
+
+func RsaDecrypt(input []byte) []byte {
+	output := make([]byte, 0)
+	cipherSize, blockSize := len(input), rsaServerKey.Size()
+	for offset := 0; offset < cipherSize; offset += blockSize {
+		sliceSize := blockSize
+		if offset+sliceSize > cipherSize {
+			sliceSize = cipherSize - offset
+		}
+		slice, _ := rsa.DecryptPKCS1v15(
+			rand.Reader, rsaClientKey, input[offset:offset+sliceSize])
+		output = append(output, slice...)
+	}
+	return output
+}
+
 func init() {
-	rsaPrivKey = &rsa.PrivateKey{
-		PublicKey: rsa.PublicKey{
-			N: big.NewInt(0),
-			E: rsaE,
-		},
-		D: big.NewInt(0),
-		Primes: []*big.Int{
-			big.NewInt(0), big.NewInt(0),
-		},
-	}
-	rsaPrivKey.N.SetString(rsaClientN, 16)
-	rsaPrivKey.D.SetString(rsaClientD, 16)
-	rsaPrivKey.Primes[0].SetString(rsaClientP, 16)
-	rsaPrivKey.Primes[1].SetString(rsaClientQ, 16)
-	rsaPrivKey.Precompute()
-	// RSA public key
-	rsaPubKey = &rsa.PublicKey{
-		N: big.NewInt(0),
-		E: rsaE,
-	}
-	rsaPubKey.N.SetString(rsaServerN, 16)
+	// Parse client private key
+	block, _ := pem.Decode(rsaPrivateKey)
+	rsaClientKey, _ = x509.ParsePKCS1PrivateKey(block.Bytes)
+	// Parse server public key
+	block, _ = pem.Decode(rsaPublicKey)
+	rsaServerKey, _ = x509.ParsePKCS1PublicKey(block.Bytes)
 }
