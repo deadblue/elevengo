@@ -8,7 +8,6 @@ import (
 	"github.com/deadblue/elevengo/internal/webapi"
 	"github.com/deadblue/gostream/quietly"
 	"io"
-	"net/http"
 	"strconv"
 	"strings"
 )
@@ -29,11 +28,9 @@ type DownloadTicket struct {
 	FileSize int64
 }
 
-/*
-DownloadCreateTicket creates ticket which contains all required information to
-download a file. Caller can use third-party tools/libraries to download file, such
-as wget/curl/aria2.
-*/
+// DownloadCreateTicket creates ticket which contains all required information
+// to download a file. Caller can use third-party tools/libraries to download
+// file, such as wget/curl/aria2.
 func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (err error) {
 	// Generate key for encrypt/decrypt
 	key := m115.GenerateKey()
@@ -43,16 +40,19 @@ func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (e
 	qs := protocol.Params{}.WithNow("t")
 	form := protocol.Params{}.With("data", m115.Encode(data, key))
 	// Send request
-	resp := webapi.DownloadResponse{}
+	resp := webapi.BasicResponse{}
 	if err = a.pc.CallJsonApi(webapi.ApiDownloadGetUrl, qs, form, &resp); err != nil {
 		return
 	}
-	//
-	if !resp.State {
-		return errors.New(resp.Message)
-	}
 	// Parse response
-	if data, err = m115.Decode(resp.Data, key); err != nil {
+	if !resp.Ok() {
+		return resp.Err()
+	}
+	var resultData string
+	if err = resp.Decode(&resultData); err != nil {
+		return
+	}
+	if data, err = m115.Decode(resultData, key); err != nil {
 		return
 	}
 	result := webapi.DownloadResult{}
@@ -89,45 +89,18 @@ func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (e
 	return
 }
 
-/*
-Download downloads a file from cloud, writes its content into w. If w implements
-io.Closer, it will be closed automatically.
-
-This method DOES NOT support multi-thread/resuming, if caller requires those,
-use third-party tools/libraries instead.
-
-To monitor the downloading progress, caller can wrap w by
-"github.com/deadblue/gostream/observe".
-*/
+// Download downloads a file and write its content to w.
 func (a *Agent) Download(pickcode string, w io.Writer) (size int64, err error) {
-	if wc, ok := w.(io.WriteCloser); ok {
-		defer quietly.Close(wc)
-	}
-
 	// Get download ticket.
 	ticket := &DownloadTicket{}
 	if err = a.DownloadCreateTicket(pickcode, ticket); err != nil {
 		return
 	}
-	// Make download request
-	req, err := http.NewRequest(http.MethodGet, ticket.Url, nil)
-	if err != nil {
+	// Copy data
+	var body io.ReadCloser
+	if body, err = a.pc.Get(ticket.Url, nil); err != nil {
 		return
 	}
-	for name, value := range ticket.Headers {
-		req.Header.Set(name, value)
-	}
-	// Send download request
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return
-	}
-	defer quietly.Close(resp.Body)
-
-	// Transfer response body to w
-	size, err = io.Copy(w, resp.Body)
-	if err == nil && size != ticket.FileSize {
-		err = errUnexpectedTransferSize
-	}
-	return
+	defer quietly.Close(body)
+	return io.Copy(w, body)
 }

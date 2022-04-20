@@ -7,7 +7,7 @@ import (
 )
 
 // CallJsonApi calls remote HTTP API, and parses its result as JSON.
-func (c *Client) CallJsonApi(url string, qs Params, form Params, result interface{}) (err error) {
+func (c *Client) CallJsonApi(url string, qs Params, form Params, resp interface{}) (err error) {
 	// Prepare request
 	var body io.ReadCloser
 	if form != nil {
@@ -20,13 +20,14 @@ func (c *Client) CallJsonApi(url string, qs Params, form Params, result interfac
 	}
 	defer quietly.Close(body)
 	// Parse response
-	if result != nil {
+	if resp != nil {
 		decoder := json.NewDecoder(body)
-		err = decoder.Decode(result)
+		err = decoder.Decode(resp)
 	}
 	return
 }
 
 func (c *Client) JsonPApi(url string, qs Params, result interface{}) (err error) {
+	// TODO
 	return
 }

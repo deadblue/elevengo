@@ -4,13 +4,6 @@ type DownloadRequest struct {
 	Pickcode string `json:"pickcode,omitempty"`
 }
 
-type DownloadResponse struct {
-	State   bool   `json:"state"`
-	Error   int    `json:"errno"`
-	Message string `json:"msg"`
-	Data    string `json:"data"`
-}
-
 type DownloadInfo struct {
 	FileName string `json:"file_name"`
 	FileSize string `json:"file_size"`

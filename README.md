@@ -4,7 +4,7 @@
 [![Reference](https://img.shields.io/badge/Go-Reference-blue.svg?style=flat-square)](https://pkg.go.dev/github.com/deadblue/elevengo)
 ![License](https://img.shields.io/:License-MIT-green.svg?style=flat-square)
 
-A Golang API wrapper for 115 Cloud Storage Service.
+A API client of 115 Cloud Storage Service.
 
 ## Example
 
