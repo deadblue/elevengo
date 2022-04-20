@@ -4,62 +4,48 @@ import (
 	"fmt"
 	"github.com/deadblue/elevengo/internal/core"
 	"github.com/deadblue/elevengo/internal/types"
+	"github.com/deadblue/elevengo/internal/webapi"
 	"math/rand"
 	"time"
 )
 
 const (
-	cookieUrl    = "https://115.com"
-	cookieDomain = ".115.com"
-
-	cookieUid  = "UID"
-	cookieCid  = "CID"
-	cookieSeid = "SEID"
-
 	apiUserInfo = "https://my.115.com/"
 )
 
-/*
-Credential contains required information that the upstream server uses to
-authenticate a signed-in user.
-
-In detail, three cookies are required: "UID", "CID", "SEID", caller can find
-them from browser cookie storage.
-*/
+// Credential contains required information which upstream server uses to
+// authenticate a signed-in user.
+// In detail, three cookies are required: "UID", "CID", "SEID", caller can
+// find them from browser cookie storage.
 type Credential struct {
 	UID  string
 	CID  string
 	SEID string
 }
 
-// Basic information of the signed-in user.
+// UserInfo contains the basic information of a signed-in user.
 type UserInfo struct {
 	Id   int
 	Name string
 }
 
-// Import credentials into agent.
+// CredentialImport imports credentials into agent.
 func (a *Agent) CredentialImport(cr *Credential) (err error) {
 	cookies := map[string]string{
-		cookieUid:  cr.UID,
-		cookieCid:  cr.CID,
-		cookieSeid: cr.SEID,
+		webapi.CookieNameUid:  cr.UID,
+		webapi.CookieNameCid:  cr.CID,
+		webapi.CookieNameSeid: cr.SEID,
 	}
-	a.hc.SetCookies(cookieUrl, cookieDomain, cookies)
-	return a.getUserInfo()
+	a.pc.ImportCookies(cookies, webapi.CookieDomain)
+	return nil
 }
 
-// Export credentials from agent, caller can store it for future use.
-func (a *Agent) CredentialExport() (cr Credential, err error) {
-	if cookies := a.hc.Cookies(cookieUrl); cookies == nil || len(cookies) == 0 {
-		err = errCredentialsNotExist
-	} else {
-		cr = Credential{
-			UID:  cookies[cookieUid],
-			CID:  cookies[cookieCid],
-			SEID: cookies[cookieSeid],
-		}
-	}
+// CredentialExport exports credentials for future-use.
+func (a *Agent) CredentialExport(cr *Credential) (err error) {
+	cookies := a.pc.ExportCookies(webapi.CookieUrl)
+	cr.UID = cookies[webapi.CookieNameUid]
+	cr.CID = cookies[webapi.CookieNameCid]
+	cr.SEID = cookies[webapi.CookieNameSeid]
 	return
 }
 
@@ -83,7 +69,7 @@ func (a *Agent) getUserInfo() (err error) {
 	return
 }
 
-// Get signed in user information.
+// User returns user information.
 func (a *Agent) User() (info UserInfo) {
 	if a.ui != nil {
 		info = *a.ui

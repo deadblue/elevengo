@@ -11,7 +11,7 @@ const (
 	apiDirGetId  = "https://webapi.115.com/files/getid"
 )
 
-// Create a directory under a directory with specific name.
+// DirCreate creates a directory under a directory with specific name.
 func (a *Agent) DirCreate(parentId, name string) (directoryId string, err error) {
 	form := core.NewForm().
 		WithString("pid", parentId).
@@ -27,7 +27,7 @@ func (a *Agent) DirCreate(parentId, name string) (directoryId string, err error)
 	return
 }
 
-// Retrieve directory Id from full path.
+// DirGetId Retrieves directory ID from full path.
 func (a *Agent) DirGetId(path string) (directoryId string, err error) {
 	if strings.HasPrefix(path, "/") {
 		path = path[1:]

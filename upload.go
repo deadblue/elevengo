@@ -36,7 +36,7 @@ type UploadInfo interface {
 type UploadTicket struct {
 	// Remote URL which will receive the file content.
 	Endpoint string
-	// Field name for the upload file.
+	// Field-name for the upload file.
 	FileField string
 	// Other parameters that should be sent with the file.
 	Values map[string]string
@@ -98,10 +98,8 @@ func (a *Agent) UploadParseResult(content []byte) (file *File, err error) {
 	return
 }
 
-/*
-Upload uploads data as a file to cloud, and returns the file metadata on
-success. If r implements io.Closer, it will be closed automatically.
-*/
+// Upload uploads data as a file to cloud, and returns the file metadata on
+// success. If r implements io.Closer, it will be closed automatically.
 func (a *Agent) Upload(parentId string, info UploadInfo, r io.Reader) (file *File, err error) {
 	// Register defer function only when r implements io.Closer.
 	if rc, ok := r.(io.ReadCloser); ok {

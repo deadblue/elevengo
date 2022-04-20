@@ -64,7 +64,8 @@ func ExampleAgent_DownloadCreateTicket() {
 	// TODO: Import your credentials here
 
 	// Create download ticket
-	ticket, err := agent.DownloadCreateTicket("pickcode")
+	ticket := DownloadTicket{}
+	err := agent.DownloadCreateTicket("pickcode", &ticket)
 	if err != nil {
 		log.Fatalf("Get download ticket error: %s", err)
 	}

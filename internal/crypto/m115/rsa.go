@@ -1,6 +1,7 @@
 package m115
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -35,9 +36,9 @@ var (
 	rsaServerKey *rsa.PublicKey
 )
 
-func RsaEncrypt(input []byte) []byte {
-	output := make([]byte, 0)
+func rsaEncrypt(input []byte) []byte {
 	plainSize, blockSize := len(input), rsaServerKey.Size()-11
+	buf := bytes.Buffer{}
 	for offset := 0; offset < plainSize; offset += blockSize {
 		sliceSize := blockSize
 		if offset+sliceSize > plainSize {
@@ -45,12 +46,12 @@ func RsaEncrypt(input []byte) []byte {
 		}
 		slice, _ := rsa.EncryptPKCS1v15(
 			rand.Reader, rsaServerKey, input[offset:offset+sliceSize])
-		output = append(output, slice...)
+		buf.Write(slice)
 	}
-	return output
+	return buf.Bytes()
 }
 
-func RsaDecrypt(input []byte) []byte {
+func rsaDecrypt(input []byte) []byte {
 	output := make([]byte, 0)
 	cipherSize, blockSize := len(input), rsaServerKey.Size()
 	for offset := 0; offset < cipherSize; offset += blockSize {

@@ -48,7 +48,7 @@ type CaptchaSession struct {
 	callback string
 }
 
-// Start a CAPTCHA session.
+// CaptchaStart starts a CAPTCHA session.
 func (a *Agent) CaptchaStart() (session *CaptchaSession, err error) {
 	// Fetch captcha page
 	callback := fmt.Sprintf("Close911_%d", time.Now().UnixNano())
@@ -88,7 +88,7 @@ func (a *Agent) CaptchaStart() (session *CaptchaSession, err error) {
 }
 
 /*
-Get one CAPTCHA key image data.
+CaptchaKeyImage gets one CAPTCHA key image data.
 
 You can call this method multiple times, it will return the same character
 in different font on every calling.
@@ -110,7 +110,7 @@ func (a *Agent) CaptchaKeyImage(session *CaptchaSession, index int) ([]byte, err
 	return a.hc.Get(apiCaptcha, qs)
 }
 
-// Submit the CAPTCHA code.
+// CaptchaSubmit submits the CAPTCHA code to session.
 func (a *Agent) CaptchaSubmit(session *CaptchaSession, code string) (err error) {
 	// Get captcha sign
 	cb := fmt.Sprintf("jQuery%d_%d", rand.Uint64(), time.Now().UnixNano())

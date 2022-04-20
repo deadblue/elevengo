@@ -23,16 +23,6 @@ const (
 	codeListRetry = 20130827
 )
 
-// Storage information.
-type StorageInfo struct {
-	// Total size in bytes.
-	Size int64
-	// Used size in bytes.
-	Used int64
-	// Avail size in bytes.
-	Avail int64
-}
-
 // File describe a remote file or directory.
 type File struct {
 	// True means a file.
@@ -83,24 +73,6 @@ type FileInfo struct {
 	UpdateTime time.Time
 	// Parent directory list.
 	Parents []*DirectoryInfo
-}
-
-// Get storage size information.
-func (a *Agent) StorageStat() (info StorageInfo, err error) {
-	result := new(types.FileIndexResult)
-	err = a.hc.JsonApi(apiFileIndex, nil, nil, result)
-	if err == nil && result.IsFailed() {
-		err = types.MakeFileError(result.Code, result.Error)
-	}
-	if err != nil {
-		return
-	}
-	info = StorageInfo{
-		Size:  int64(result.Data.SpaceInfo.AllTotal.Size),
-		Used:  int64(result.Data.SpaceInfo.AllUsed.Size),
-		Avail: int64(result.Data.SpaceInfo.AllRemain.Size),
-	}
-	return
 }
 
 /*

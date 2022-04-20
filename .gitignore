@@ -3,3 +3,4 @@
 go.sum
 
 self_test.go
+*_self_test.go

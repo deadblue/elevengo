@@ -23,28 +23,25 @@ var (
 		0x7b, 0xd2, 0x12, 0x66, 0xcc, 0x77, 0x09, 0xa6,
 	}
 
-	xorKey = []byte{
+	xorClientKey = []byte{
 		0x42, 0xda, 0x13, 0xba, 0x78, 0x76, 0x8d, 0x37,
 		0xe8, 0xee, 0x04, 0x91,
 	}
 )
 
-func XorGetKey(key []byte, size int) []byte {
-	result := make([]byte, size)
-	if key == nil {
-		copy(result, xorKey)
-	} else {
-		for i := 0; i < size; i++ {
-			result[i] = ((key[i] + xorKeySeed[size*i]) & 0xff) ^ xorKeySeed[size-i-i]
-		}
+func xorDeriveKey(seed []byte, size int) []byte {
+	key := make([]byte, size)
+	for i := 0; i < size; i++ {
+		key[i] = (seed[i] + xorKeySeed[size*i]) & 0xff
+		key[i] ^= xorKeySeed[size*(size-i-1)]
 	}
-	return result
+	return key
 }
 
-func XorTransform(data []byte, key []byte) {
+func xorTransform(data []byte, key []byte) {
 	dataSize, keySize := len(data), len(key)
 	mod := dataSize % 4
-	if mod != 0 {
+	if mod > 0 {
 		for i := 0; i < mod; i++ {
 			data[i] ^= key[i%keySize]
 		}
