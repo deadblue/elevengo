@@ -5,7 +5,13 @@ import (
 	neturl "net/url"
 )
 
-func (c *Client) ImportCookies(cookies map[string]string, domain string) {
+func (c *Client) ImportCookies(cookies map[string]string, domains ...string) {
+	for _, domain := range domains {
+		c.importCookies(cookies, domain, "/")
+	}
+}
+
+func (c *Client) importCookies(cookies map[string]string, domain string, path string) {
 	// Make a dummy URL for saving cookie
 	url := &neturl.URL{
 		Scheme: "https",
@@ -16,19 +22,19 @@ func (c *Client) ImportCookies(cookies map[string]string, domain string) {
 	} else {
 		url.Host = domain
 	}
-	// Make cookie slice
+	// Prepare cookies
 	cks := make([]*http.Cookie, 0, len(cookies))
 	for name, value := range cookies {
 		cookie := &http.Cookie{
 			Name:     name,
 			Value:    value,
-			Path:     "/",
 			Domain:   domain,
+			Path:     path,
 			HttpOnly: true,
 		}
 		cks = append(cks, cookie)
 	}
-	// Save cookie
+	// Save cookies
 	c.cj.SetCookies(url, cks)
 }
 

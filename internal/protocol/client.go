@@ -11,6 +11,9 @@ type Client struct {
 	hc plugin.HttpClient
 	// Cookie jar
 	cj http.CookieJar
+	// Should Client manage cookie
+	mc bool
+
 	// User agent
 	ua string
 }
@@ -20,6 +23,7 @@ func NewClient(hc plugin.HttpClient) *Client {
 	if hc == nil {
 		client.cj, _ = cookiejar.New(nil)
 		client.hc = defaultHttpClient(client.cj)
+		client.mc = false
 	} else {
 		switch hc.(type) {
 		case *http.Client:
@@ -27,7 +31,10 @@ func NewClient(hc plugin.HttpClient) *Client {
 		case plugin.HttpClientWithJar:
 			client.cj = hc.(plugin.HttpClientWithJar).Jar()
 		}
-		if client.cj == nil {
+		if client.cj != nil {
+			client.mc = false
+		} else {
+			client.mc = true
 			client.cj, _ = cookiejar.New(nil)
 		}
 	}

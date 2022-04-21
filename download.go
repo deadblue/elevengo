@@ -6,9 +6,7 @@ import (
 	"github.com/deadblue/elevengo/internal/crypto/m115"
 	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/webapi"
-	"github.com/deadblue/gostream/quietly"
 	"io"
-	"strconv"
 	"strings"
 )
 
@@ -44,10 +42,10 @@ func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (e
 	if err = a.pc.CallJsonApi(webapi.ApiDownloadGetUrl, qs, form, &resp); err != nil {
 		return
 	}
-	// Parse response
-	if !resp.Ok() {
-		return resp.Err()
+	if err = resp.Err(); err != nil {
+		return
 	}
+	// Parse response
 	var resultData string
 	if err = resp.Decode(&resultData); err != nil {
 		return
@@ -62,45 +60,38 @@ func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (e
 	if len(result) == 0 {
 		return errDownloadNotResult
 	}
-	for _, v := range result {
-		ticket.FileName = v.FileName
-		ticket.FileSize, _ = strconv.ParseInt(v.FileSize, 10, 64)
-		ticket.Url = v.Url.Url
-		ticket.Headers = map[string]string{
-			"User-Agent": a.name,
-		}
-		// Serialize cookie
-		cookies := a.pc.ExportCookies(v.Url.Url)
-		if len(cookies) > 0 {
-			buf, isFirst := strings.Builder{}, true
-			for ck, cv := range cookies {
-				if !isFirst {
-					buf.WriteString("; ")
-				}
-				buf.WriteString(ck)
-				buf.WriteRune('=')
-				buf.WriteString(cv)
-				isFirst = false
-			}
-			ticket.Headers["Cookie"] = buf.String()
-		}
+	for _, info := range result {
+		a.convertDownloadTicket(info, ticket)
 		break
 	}
 	return
 }
 
-// Download downloads a file and write its content to w.
-func (a *Agent) Download(pickcode string, w io.Writer) (size int64, err error) {
-	// Get download ticket.
-	ticket := &DownloadTicket{}
-	if err = a.DownloadCreateTicket(pickcode, ticket); err != nil {
-		return
+func (a *Agent) convertDownloadTicket(info *webapi.DownloadInfo, ticket *DownloadTicket) {
+	ticket.FileName = info.FileName
+	ticket.FileSize = int64(info.FileSize)
+	ticket.Url = info.Url.Url
+	ticket.Headers = map[string]string{
+		"User-Agent": a.name,
 	}
-	// Copy data
-	var body io.ReadCloser
-	if body, err = a.pc.Get(ticket.Url, nil); err != nil {
-		return
+	// Serialize cookie
+	cookies := a.pc.ExportCookies(ticket.Url)
+	if len(cookies) > 0 {
+		buf, isFirst := strings.Builder{}, true
+		for ck, cv := range cookies {
+			if !isFirst {
+				buf.WriteString("; ")
+			}
+			buf.WriteString(ck)
+			buf.WriteRune('=')
+			buf.WriteString(cv)
+			isFirst = false
+		}
+		ticket.Headers["Cookie"] = buf.String()
 	}
-	defer quietly.Close(body)
-	return io.Copy(w, body)
+}
+
+// Get gets content from url using agent underlying HTTP client.
+func (a *Agent) Get(url string) (body io.ReadCloser, err error) {
+	return a.pc.Get(url, nil)
 }

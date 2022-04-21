@@ -6,6 +6,11 @@ import (
 	"strings"
 )
 
+const (
+	headerContentType  = "Content-Type"
+	contentTypeWwwForm = "application/x-www-form-urlencoded"
+)
+
 func appendQueryString(url string, qs Params) string {
 	if strings.IndexRune(url, '?') < 0 {
 		url = url + "?" + qs.Encode()
@@ -42,7 +47,7 @@ func (c *Client) PostForm(url string, qs Params, form Params) (body io.ReadClose
 		return
 	}
 	if reqBody != nil {
-		req.Header.Set(headerContentType, "application/x-www-form-urlencoded")
+		req.Header.Set(headerContentType, contentTypeWwwForm)
 	}
 	var resp *http.Response
 	if resp, err = c.do(req); err == nil {

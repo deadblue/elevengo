@@ -2,28 +2,29 @@ package webapi
 
 import (
 	"encoding/json"
-	"fmt"
 )
 
 type BasicResponse struct {
 	// Response state
 	State bool `json:"state"`
 	// Error code
-	ErrorCode int `json:"errno,omitempty"`
+	ErrorCode  int `json:"errno,omitempty"`
+	ErrorCode2 int `json:"errNo,omitempty"`
+	// Error message
+	ErrorMessage string `json:"error,omitempty"`
 	// Response data
 	Data json.RawMessage `json:"data,omitempty"`
 }
 
-func (r *BasicResponse) Ok() bool {
-	return r.State
-}
-
 func (r *BasicResponse) Err() error {
 	if !r.State {
-		return fmt.Errorf("api error: %d", r.ErrorCode)
-	} else {
-		return nil
+		code := r.ErrorCode
+		if code == 0 {
+			code = r.ErrorCode2
+		}
+		return getError(code)
 	}
+	return nil
 }
 
 func (r *BasicResponse) Decode(result interface{}) error {

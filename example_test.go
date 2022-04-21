@@ -1,7 +1,6 @@
 package elevengo
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -130,18 +129,27 @@ func ExampleAgent_UploadCreateTicket() {
 	}
 }
 
-func ExampleAgent_VideoHlsContent() {
+func ExampleAgent_VideoGetInfo() {
 	agent := Default()
 	// TODO: Import your credentials here
 
-	// Get video HLS content
-	hls, err := agent.VideoHlsContent("pickcode")
+	// Get video information
+	info := VideoInfo{}
+	err := agent.VideoGetInfo("pickcode", &info)
 	if err != nil {
-		log.Fatalf("Get video HLS error: %s", err)
+		log.Fatalf("Get video info failed: %s", err)
 	}
+	// Get HLS content
+	hls, err := agent.Get(info.PlayUrl)
+	if err != nil {
+		log.Fatalf("Get HLS content failed: %s", err.Error())
+	}
+	defer func() {
+		_ = hls.Close()
+	}()
 	// Play HLS through mpv
 	cmd := exec.Command("/usr/local/bin/mpv", "-")
-	cmd.Stdin = bytes.NewReader(hls)
+	cmd.Stdin = hls
 	if err = cmd.Run(); err != nil {
 		log.Fatalf("Execute mpv error: %s", err)
 	}

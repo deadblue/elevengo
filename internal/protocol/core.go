@@ -5,8 +5,6 @@ import (
 )
 
 const (
-	headerContentType = "Content-Type"
-
 	headerUserAgent = "User-Agent"
 )
 
@@ -19,9 +17,17 @@ func (c *Client) do(req *http.Request) (resp *http.Response, err error) {
 	if c.ua != "" {
 		req.Header.Set(headerUserAgent, c.ua)
 	}
-	// Add cookie
-	for _, cookie := range c.cj.Cookies(req.URL) {
-		req.AddCookie(cookie)
+	if c.mc {
+		// Add cookie
+		for _, cookie := range c.cj.Cookies(req.URL) {
+			req.AddCookie(cookie)
+		}
 	}
-	return c.hc.Do(req)
+	if resp, err = c.hc.Do(req); err == nil {
+		if c.mc {
+			// Save cookie
+			c.cj.SetCookies(req.URL, resp.Cookies())
+		}
+	}
+	return
 }

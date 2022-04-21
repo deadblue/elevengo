@@ -11,9 +11,9 @@ func defaultHttpClient(jar http.CookieJar) *http.Client {
 	// Make a copy of the default transport
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	// Change some settings
-	transport.ExpectContinueTimeout = 5 * time.Second
 	transport.MaxIdleConnsPerHost = 10
-	transport.MaxIdleConns = 50
+	transport.MaxConnsPerHost = 0
+	transport.MaxIdleConns = 100
 	transport.IdleConnTimeout = 30 * time.Second
 	transport.DialContext = (&net.Dialer{
 		Timeout:   0,
@@ -28,7 +28,7 @@ func defaultHttpClient(jar http.CookieJar) *http.Client {
 	}
 	// Make http.Client
 	return &http.Client{
-		Jar:       jar,
 		Transport: transport,
+		Jar:       jar,
 	}
 }

@@ -36,7 +36,7 @@ func (a *Agent) CredentialImport(cr *Credential) (err error) {
 		webapi.CookieNameCid:  cr.CID,
 		webapi.CookieNameSeid: cr.SEID,
 	}
-	a.pc.ImportCookies(cookies, webapi.CookieDomain)
+	a.pc.ImportCookies(cookies, webapi.CookieDomain115, webapi.CookieDomainAnxia)
 	return nil
 }
 

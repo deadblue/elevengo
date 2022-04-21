@@ -11,9 +11,12 @@ type HttpClient interface {
 	Do(req *http.Request) (resp *http.Response, err error)
 }
 
+// HttpClientWithJar declares interface for developer, who uses
+// self-implemented HttpClient instead of `http.Client`, and
+// manages cookie himself.
 type HttpClientWithJar interface {
 	HttpClient
 
-	// Jar returns cookie jar
+	// Jar returns client managed cookie jar.
 	Jar() http.CookieJar
 }

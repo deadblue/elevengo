@@ -76,7 +76,7 @@ type FileInfo struct {
 }
 
 /*
-Get file list from specific directory.
+FileList gets file list under specific directory.
 
 The upstream API restricts the data count in response, so for a directory which contains
 a lot of files. you need pass a cursor to receive the cursor information, and use it to
