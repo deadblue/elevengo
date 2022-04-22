@@ -2,7 +2,7 @@ package elevengo
 
 import (
 	"fmt"
-	"github.com/deadblue/elevengo/internal/protocol"
+	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
 )
 
@@ -51,7 +51,7 @@ func (t *OfflineTask) IsFailed() bool {
 }
 
 func (a *Agent) offlineUpdateToken() (err error) {
-	qs := protocol.Params{}.WithNow("_")
+	qs := web.Params{}.WithNow("_")
 	resp := &webapi.OfflineSpaceResponse{}
 	if err = a.wc.CallJsonApi(webapi.ApiOfflineSpace, qs, nil, resp); err != nil {
 		return
@@ -64,14 +64,14 @@ func (a *Agent) offlineUpdateToken() (err error) {
 	return nil
 }
 
-func (a *Agent) offlineCallApi(url string, form protocol.Params, resp interface{}) (err error) {
+func (a *Agent) offlineCallApi(url string, form web.Params, resp interface{}) (err error) {
 	if a.ot.Time == 0 {
 		if err = a.offlineUpdateToken(); err != nil {
 			return
 		}
 	}
 	if form == nil {
-		form = protocol.Params{}
+		form = web.Params{}
 	}
 	form.WithInt("uid", a.user.Id).
 		WithInt64("time", a.ot.Time).
@@ -81,7 +81,7 @@ func (a *Agent) offlineCallApi(url string, form protocol.Params, resp interface{
 
 // OfflineList lists offline tasks
 func (a *Agent) OfflineList() (err error) {
-	form := protocol.Params{}.
+	form := web.Params{}.
 		WithInt("page", 1)
 	resp := &webapi.OfflineListResponse{}
 	if err = a.offlineCallApi(webapi.ApiOfflineList, form, resp); err != nil {
@@ -96,7 +96,7 @@ func (a *Agent) OfflineList() (err error) {
 
 // OfflineAdd adds an offline task with url.
 func (a *Agent) OfflineAdd(url string, dirId string) (err error) {
-	form := protocol.Params{}.
+	form := web.Params{}.
 		With("url", url)
 	if dirId != "" {
 		form.With("wp_path_id", dirId)
@@ -113,7 +113,7 @@ func (a *Agent) OfflineDelete(deleteFiles bool, hashes ...string) (err error) {
 	if len(hashes) == 0 {
 		return
 	}
-	form := protocol.Params{}
+	form := web.Params{}
 	for i, hash := range hashes {
 		key := fmt.Sprintf("hash[%d]", i)
 		form.With(key, hash)
@@ -130,7 +130,7 @@ func (a *Agent) OfflineDelete(deleteFiles bool, hashes ...string) (err error) {
 
 // OfflineClear clears tasks which is in specific status.
 func (a *Agent) OfflineClear(flag OfflineClearFlag) (err error) {
-	form := protocol.Params{}.
+	form := web.Params{}.
 		WithInt("flag", int(flag))
 	resp := &webapi.OfflineBasicResponse{}
 	if err = a.offlineCallApi(webapi.ApiOfflineClear, form, resp); err != nil {

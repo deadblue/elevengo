@@ -5,7 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
-	"github.com/deadblue/elevengo/internal/protocol"
+	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
 	"github.com/deadblue/gostream/quietly"
 	"io"
@@ -76,14 +76,14 @@ func (a *Agent) Import(dirId string, ticket *ImportTicket) (err error) {
 	}
 	// Prepare request
 	targetId := fmt.Sprintf("U_1_%s", dirId)
-	qs := protocol.Params{}.
+	qs := web.Params{}.
 		With("appid", a.ut.AppId).
 		With("appversion", a.ut.AppVer).
 		WithInt("isp", a.ut.IspType).
 		With("sig", a.updateCalculateSignature(targetId, ticket.QuickId)).
 		With("format", "json").
 		WithNow("t")
-	form := protocol.Params{}.
+	form := web.Params{}.
 		With("app_ver", a.ut.AppVer).
 		With("preid", ticket.PreId).
 		With("quickid", ticket.QuickId).

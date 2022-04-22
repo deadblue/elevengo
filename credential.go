@@ -2,7 +2,7 @@ package elevengo
 
 import (
 	"fmt"
-	"github.com/deadblue/elevengo/internal/protocol"
+	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
 	"math/rand"
 	"time"
@@ -51,7 +51,7 @@ func (a *Agent) CredentialExport(cr *Credential) (err error) {
 // syncUserInfo syncs user information from cloud to agent.
 func (a *Agent) syncUserInfo() (err error) {
 	cb := fmt.Sprintf("jQuery%d_%d", rand.Uint64(), time.Now().Unix())
-	qs := protocol.Params{}.
+	qs := web.Params{}.
 		With("callback", cb).
 		WithNow("_")
 	resp := webapi.BasicResponse{}

@@ -1,8 +1,8 @@
 package elevengo
 
 import (
-	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/util"
+	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
 )
 
@@ -24,7 +24,7 @@ type VideoInfo struct {
 
 func (a *Agent) VideoGetInfo(pickcode string, info *VideoInfo) (err error) {
 	// Call video API
-	qs := (protocol.Params{}).
+	qs := (web.Params{}).
 		With("pickcode", pickcode).
 		With("share_id", "0")
 	resp := webapi.VideoResponse{}

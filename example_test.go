@@ -25,37 +25,37 @@ func ExampleAgent_CredentialImport() {
 }
 
 func ExampleAgent_FileList() {
-	agent := Default()
+	//agent := Default()
 	// TODO: Import your credentials here
 
 	// Get files under root directory
-	for cursor := FileCursor(); cursor.HasMore(); cursor.Next() {
-		files, err := agent.FileList("0", cursor)
-		if err != nil {
-			log.Fatalf("Get file list error: %s", err)
-		} else {
-			for _, file := range files {
-				log.Printf("Remote file: %#v", file)
-			}
-		}
-	}
+	//for cursor := FileCursor(); cursor.HasMore(); cursor.Next() {
+	//	files, err := agent.FileList("0", cursor)
+	//	if err != nil {
+	//		log.Fatalf("Get file list error: %s", err)
+	//	} else {
+	//		for _, file := range files {
+	//			log.Printf("Remote file: %#v", file)
+	//		}
+	//	}
+	//}
 }
 
 func ExampleAgent_OfflineList() {
-	agent := Default()
+	//agent := Default()
 	// TODO: Import your credentials here
 
 	// Get offline tasks
-	for cursor := OfflineCursor(); cursor.HasMore(); cursor.Next() {
-		tasks, err := agent.OfflineList(cursor)
-		if err != nil {
-			log.Fatalf("Get offline task list error: %s", err)
-		} else {
-			for _, task := range tasks {
-				log.Printf("Offline task: %#v", task)
-			}
-		}
-	}
+	//for cursor := OfflineCursor(); cursor.HasMore(); cursor.Next() {
+	//	tasks, err := agent.OfflineList(cursor)
+	//	if err != nil {
+	//		log.Fatalf("Get offline task list error: %s", err)
+	//	} else {
+	//		for _, task := range tasks {
+	//			log.Printf("Offline task: %#v", task)
+	//		}
+	//	}
+	//}
 }
 
 func ExampleAgent_DownloadCreateTicket() {

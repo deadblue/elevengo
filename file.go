@@ -2,8 +2,8 @@ package elevengo
 
 import (
 	"github.com/deadblue/elevengo/internal/core"
-	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/types"
+	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
 	"time"
 )
@@ -134,7 +134,7 @@ func (a *Agent) FileList(parentId string, cursor *FileCursor, files []*File) (n 
 		cursor.init = true
 	}
 	// Prepare request
-	qs := protocol.Params{}.
+	qs := web.Params{}.
 		With("aid", "1").
 		With("show_dir", "1").
 		With("snap", "0").
@@ -203,7 +203,7 @@ func (a *Agent) FileSearch(rootId, keyword string, cursor *FileCursor, files []*
 		cursor.init = true
 	}
 	// Prepare request
-	qs := protocol.Params{}.
+	qs := web.Params{}.
 		With("aid", "1").
 		With("cid", rootId).
 		With("search_value", keyword).
@@ -237,7 +237,7 @@ func (a *Agent) FileSearch(rootId, keyword string, cursor *FileCursor, files []*
 
 // FileStat gets information of a file/directory.
 func (a *Agent) FileStat(fileId string, info *FileInfo) (err error) {
-	qs := (protocol.Params{}).With("cid", fileId)
+	qs := (web.Params{}).With("cid", fileId)
 	resp := &webapi.FileStatResponse{}
 	if err = a.wc.CallJsonApi(webapi.ApiFileStat, qs, nil, resp); err != nil {
 		return

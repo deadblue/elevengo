@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/deadblue/elevengo/internal/crypto/m115"
-	"github.com/deadblue/elevengo/internal/protocol"
+	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
 	"io"
 	"strings"
@@ -35,8 +35,8 @@ func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (e
 
 	// Prepare request
 	data, _ := json.Marshal(&webapi.DownloadRequest{Pickcode: pickcode})
-	qs := protocol.Params{}.WithNow("t")
-	form := protocol.Params{}.With("data", m115.Encode(data, key))
+	qs := web.Params{}.WithNow("t")
+	form := web.Params{}.With("data", m115.Encode(data, key))
 	// Send request
 	resp := webapi.BasicResponse{}
 	if err = a.wc.CallJsonApi(webapi.ApiDownloadGetUrl, qs, form, &resp); err != nil {

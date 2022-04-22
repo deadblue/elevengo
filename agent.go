@@ -2,7 +2,7 @@ package elevengo
 
 import (
 	"github.com/deadblue/elevengo/internal/core"
-	"github.com/deadblue/elevengo/internal/protocol"
+	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
 	"github.com/deadblue/elevengo/option"
 )
@@ -17,7 +17,7 @@ type Agent struct {
 	name string
 
 	// wc is the underlying web client
-	wc *protocol.Client
+	wc *web.Client
 
 	// User info
 	user UserInfo
@@ -43,11 +43,11 @@ func New(options ...option.Option) *Agent {
 		case option.NameOption:
 			agent.name = string(opt.(option.NameOption))
 		case *option.HttpOption:
-			agent.wc = protocol.NewClient(opt.(*option.HttpOption).Client)
+			agent.wc = web.NewClient(opt.(*option.HttpOption).Client)
 		}
 	}
 	if agent.wc == nil {
-		agent.wc = protocol.NewClient(nil)
+		agent.wc = web.NewClient(nil)
 	}
 	agent.wc.SetUserAgent(agent.name)
 	return agent
