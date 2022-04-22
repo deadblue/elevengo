@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/deadblue/elevengo/internal/core"
 	"github.com/deadblue/elevengo/internal/types"
+	"github.com/deadblue/elevengo/internal/webapi"
 	"github.com/deadblue/gostream/multipart"
 	"github.com/deadblue/gostream/quietly"
 	"io"
@@ -49,7 +50,7 @@ to upload a file. Caller can use third-party tools/libraries to upload file.
 func (a *Agent) UploadCreateTicket(parentId string, info UploadInfo) (ticket UploadTicket, err error) {
 	// Request upload token
 	form := core.NewForm().
-		WithInt("userid", a.ui.Id).
+		WithInt("userid", a.user.Id).
 		WithString("filename", info.Name()).
 		WithInt64("filesize", info.Size()).
 		WithString("target", fmt.Sprintf("U_1_%s", parentId))
@@ -83,7 +84,6 @@ func (a *Agent) UploadParseResult(content []byte) (file *File, err error) {
 		data := result.Data
 		createTime := time.Unix(data.CreateTime, 0)
 		file = &File{
-			IsFile:      true,
 			IsDirectory: false,
 			FileId:      data.FileId,
 			ParentId:    data.CategoryId,
@@ -133,4 +133,18 @@ func (a *Agent) Upload(parentId string, info UploadInfo, r io.Reader) (file *Fil
 	} else {
 		return a.UploadParseResult(body)
 	}
+}
+
+// ---------
+
+func (a *Agent) uploadInit() (err error) {
+	resp := &webapi.UploadInfoResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiUploadInfo, nil, nil, resp); err != nil {
+		return
+	}
+	a.ut.AppId = string(resp.AppId)
+	a.ut.AppVer = string(resp.AppVersion)
+	a.ut.IspType = resp.IspType
+	a.ut.UserKey = resp.UserKey
+	return
 }

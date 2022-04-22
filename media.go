@@ -28,7 +28,7 @@ func (a *Agent) VideoGetInfo(pickcode string, info *VideoInfo) (err error) {
 		With("pickcode", pickcode).
 		With("share_id", "0")
 	resp := webapi.VideoResponse{}
-	if err = a.pc.CallJsonApi(webapi.ApiFileVideo, qs, nil, &resp); err != nil {
+	if err = a.wc.CallJsonApi(webapi.ApiFileVideo, qs, nil, &resp); err != nil {
 		return
 	}
 	if err = resp.Err(); err != nil {

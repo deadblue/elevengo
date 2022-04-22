@@ -39,7 +39,7 @@ func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (e
 	form := protocol.Params{}.With("data", m115.Encode(data, key))
 	// Send request
 	resp := webapi.BasicResponse{}
-	if err = a.pc.CallJsonApi(webapi.ApiDownloadGetUrl, qs, form, &resp); err != nil {
+	if err = a.wc.CallJsonApi(webapi.ApiDownloadGetUrl, qs, form, &resp); err != nil {
 		return
 	}
 	if err = resp.Err(); err != nil {
@@ -53,7 +53,7 @@ func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (e
 	if data, err = m115.Decode(resultData, key); err != nil {
 		return
 	}
-	result := webapi.DownloadResult{}
+	result := webapi.DownloadData{}
 	if err = json.Unmarshal(data, &result); err != nil {
 		return
 	}
@@ -75,7 +75,7 @@ func (a *Agent) convertDownloadTicket(info *webapi.DownloadInfo, ticket *Downloa
 		"User-Agent": a.name,
 	}
 	// Serialize cookie
-	cookies := a.pc.ExportCookies(ticket.Url)
+	cookies := a.wc.ExportCookies(ticket.Url)
 	if len(cookies) > 0 {
 		buf, isFirst := strings.Builder{}, true
 		for ck, cv := range cookies {
@@ -93,5 +93,5 @@ func (a *Agent) convertDownloadTicket(info *webapi.DownloadInfo, ticket *Downloa
 
 // Get gets content from url using agent underlying HTTP client.
 func (a *Agent) Get(url string) (body io.ReadCloser, err error) {
-	return a.pc.Get(url, nil)
+	return a.wc.Get(url, nil)
 }

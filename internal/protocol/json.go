@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"bytes"
 	"encoding/json"
 	"github.com/deadblue/gostream/quietly"
 	"io"
@@ -27,7 +28,21 @@ func (c *Client) CallJsonApi(url string, qs Params, form Params, resp interface{
 	return
 }
 
-func (c *Client) JsonPApi(url string, qs Params, result interface{}) (err error) {
-	// TODO
+func (c *Client) CallJsonpApi(url string, qs Params, resp interface{}) (err error) {
+	body, err := c.Get(url, qs)
+	if err != nil {
+		return
+	}
+	defer quietly.Close(body)
+	data, err := io.ReadAll(body)
+	if err != nil {
+		return
+	}
+	left, right := bytes.IndexByte(data, '('), bytes.LastIndexByte(data, ')')
+	if left < 0 || right < 0 {
+		err = &json.SyntaxError{Offset: 0}
+	} else {
+		err = json.Unmarshal(data[left+1:right], resp)
+	}
 	return
 }

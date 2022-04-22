@@ -2,49 +2,70 @@ package elevengo
 
 import (
 	"github.com/deadblue/elevengo/internal/core"
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/types"
-	"github.com/deadblue/elevengo/internal/util"
+	"github.com/deadblue/elevengo/internal/webapi"
 	"time"
 )
 
 const (
-	apiFileIndex      = "https://webapi.115.com/files/index_info"
-	apiFileList       = "https://webapi.115.com/files"
-	apiFileListByName = "https://aps.115.com/natsort/files.php"
-	apiFileStat       = "https://webapi.115.com/category/get"
-	apiFileSearch     = "https://webapi.115.com/files/search"
-	apiFileCopy       = "https://webapi.115.com/files/copy"
-	apiFileMove       = "https://webapi.115.com/files/move"
-	apiFileRename     = "https://webapi.115.com/files/batch_rename"
-	apiFileDelete     = "https://webapi.115.com/rb/delete"
+	apiFileCopy   = "https://webapi.115.com/files/copy"
+	apiFileMove   = "https://webapi.115.com/files/move"
+	apiFileRename = "https://webapi.115.com/files/batch_rename"
+	apiFileDelete = "https://webapi.115.com/rb/delete"
 
 	fileDefaultLimit = 115
-
-	codeListRetry = 20130827
 )
 
-// File describe a remote file or directory.
+// File describe a file or directory on cloud storage.
 type File struct {
-	// True means a file.
-	IsFile bool
-	// True means a directory.
+
+	// IsDirectory marks is the file a directory.
 	IsDirectory bool
-	// Unique ID for the file.
+
+	// FileId is the unique identifier on the cloud storage.
 	FileId string
-	// Parent directory ID.
+
+	// ParentID is the FileId of the parent directory.
 	ParentId string
-	// File name.
+
+	// Name is name of the file.
 	Name string
-	// File size in bytes, 0 for directory.
+
+	// Size is bytes size of the file.
 	Size int64
-	// Pick code, you can use this to create a download ticket.
+
+	// PickCode is used for downloading or playing the file.
 	PickCode string
-	// Sha1 hash value of the file, empty for directory.
+
+	// Sha1 is SHA1 hash value of the file, in HEX format.
 	Sha1 string
+
 	// Create time of the file.
 	CreateTime time.Time
+
 	// Update time of the file.
 	UpdateTime time.Time
+}
+
+func (f *File) from(info *webapi.FileInfo) *File {
+	if info.FileId != "" {
+		f.FileId = info.FileId
+		f.ParentId = info.CategoryId
+		f.IsDirectory = false
+	} else {
+		f.FileId = info.CategoryId
+		f.ParentId = info.ParentId
+		f.IsDirectory = true
+	}
+	f.Name = info.Name
+	f.Size = int64(info.Size)
+	f.PickCode = info.PickCode
+	f.Sha1 = info.Sha1
+	f.CreateTime = time.Unix(int64(info.CreateTime), 0)
+	f.UpdateTime = time.Unix(int64(info.UpdateTime), 0)
+
+	return f
 }
 
 // DirectoryInfo only used in FileInfo.
@@ -57,164 +78,179 @@ type DirectoryInfo struct {
 
 // FileInfo is returned by FileStat(), contains basic information of a file.
 type FileInfo struct {
+
 	// True means a file.
 	IsFile bool
+
 	// True means a directory.
 	IsDirectory bool
+
 	// File name.
 	Name string
-	// Pick code for downloading.
+
+	// PickCode for downloading or playing.
 	PickCode string
+
 	// Sha1 hash value of the file, empty for directory.
 	Sha1 string
+
 	// Create time of the file.
 	CreateTime time.Time
+
 	// Update time of the file.
 	UpdateTime time.Time
+
 	// Parent directory list.
 	Parents []*DirectoryInfo
 }
 
-/*
-FileList gets file list under specific directory.
+type FileCursor struct {
+	init   bool
+	offset int
+	total  int
+	order  string
+	asc    int
+}
 
-The upstream API restricts the data count in response, so for a directory which contains
-a lot of files. you need pass a cursor to receive the cursor information, and use it to
-fetch remain files.
+func (c *FileCursor) HasMore() bool {
+	return !c.init || c.offset < c.total
+}
+func (c *FileCursor) Total() int {
+	return c.total
+}
+func (c *FileCursor) Remain() int {
+	return c.total - c.offset
+}
 
-The cursor should be created by FileCursor(), and DO NOT pass it as nil even you try to
-get file list from a empty directory.
-*/
-func (a *Agent) FileList(parentId string, cursor Cursor) (files []*File, err error) {
-	fc, ok := cursor.(*fileCursor)
-	if !ok {
-		return nil, errFileCursorInvalid
+// FileList lists files list under a directory whose id is parentId.
+func (a *Agent) FileList(parentId string, cursor *FileCursor, files []*File) (n int, err error) {
+	if n = len(files); n == 0 {
+		return
 	}
-	// Prepare parameters
-	qs := core.NewQueryString().
-		WithString("aid", "1").
-		WithString("cid", parentId).
-		WithString("show_dir", "1").
-		WithString("snap", "0").
-		WithString("natsort", "1").
-		WithString("format", "json").
-		WithString("o", fc.order).
-		WithInt("asc", fc.asc).
-		WithInt("offset", fc.offset).
-		WithInt("limit", fc.limit)
-	result := &types.FileListResult{}
+	// Initialize cursor
+	if !cursor.init {
+		cursor.order = "user_ptime"
+		cursor.asc = 0
+		cursor.init = true
+	}
+	// Prepare request
+	qs := protocol.Params{}.
+		With("aid", "1").
+		With("show_dir", "1").
+		With("snap", "0").
+		With("natsort", "1").
+		With("fc_mix", "1").
+		With("format", "json").
+		With("cid", parentId).
+		With("o", cursor.order).
+		WithInt("asc", cursor.asc).
+		WithInt("offset", cursor.offset).
+		WithInt("limit", n)
+	resp := &webapi.FileListResponse{}
 	for retry := true; retry; {
 		// Select API URL
-		apiUrl := apiFileList
-		if fc.order == "file_name" {
-			apiUrl = apiFileListByName
+		apiUrl := webapi.ApiFileList
+		if cursor.order == "file_name" {
+			apiUrl = webapi.ApiFileListByName
 		}
 		// Call API
-		err = a.hc.JsonApi(apiUrl, qs, nil, result)
-		retry = false
-		// Handle error
-		if err == nil && result.IsFailed() {
-			if result.ErrorCode == codeListRetry {
-				// Update order flag
-				fc.order = result.Order
-				fc.asc = result.IsAsc
-				// Update query string
-				qs.WithString("o", fc.order).WithInt("asc", fc.asc)
-				// Try to call API again
+		err, retry = a.wc.CallJsonApi(apiUrl, qs, nil, resp), false
+		if err != nil {
+			break
+		}
+		// Parse response
+		if err = resp.Err(); err != nil {
+			if resp.ErrorCode2 == 20130827 {
+				// Change order and retry
+				cursor.order, cursor.asc = resp.Order, resp.IsAsc
+				qs.With("o", cursor.order).WithInt("asc", cursor.asc)
 				retry = true
-			} else {
-				err = types.MakeFileError(result.ErrorCode, result.Error)
 			}
 		}
 	}
+	if err != nil {
+		return
+	}
 	// Upstream will return file list under root when parentId is invalid, but this API should
 	// return an error.
-	if parentId != string(result.CategoryId) {
-		err = errFileNotExist
-	}
-	if err != nil {
+	//if parentId != string(resp.CategoryId) {
+	//	return 0, errFileNotExist
+	//}
+	result := make([]*webapi.FileInfo, 0, n)
+	if err = resp.Decode(&result); err != nil {
 		return
 	}
-	// Update cursor
-	fc.used, fc.total = true, result.Count
-	fc.offset, fc.limit = result.Offset, result.PageSize
-	// Fill files array
-	files = make([]*File, len(result.Data))
-	for i, data := range result.Data {
-		files[i] = &File{
-			Name:       data.Name,
-			Size:       int64(data.Size),
-			PickCode:   data.PickCode,
-			Sha1:       data.Sha1,
-			CreateTime: util.ParseUnixTime(data.CreateTime),
-			UpdateTime: util.ParseUnixTime(data.UpdateTime),
-		}
-		if data.FileId != "" {
-			files[i].IsFile = true
-			files[i].IsDirectory = false
-			files[i].FileId = data.FileId
-			files[i].ParentId = data.CategoryId
-		} else {
-			files[i].IsFile = false
-			files[i].IsDirectory = true
-			files[i].FileId = data.CategoryId
-			files[i].ParentId = data.ParentId
-		}
+	if rn := len(result); rn < n {
+		n = rn
 	}
+	for i := 0; i < n; i++ {
+		files[i] = (&File{}).from(result[i])
+	}
+	// Update cursor
+	cursor.offset += n
+	cursor.total = resp.Count
 	return
 }
 
-// Recursively search files which's name contains the keyword and under the directory.
-func (a *Agent) FileSearch(rootId, keyword string, cursor Cursor) (files []*File, err error) {
-	fc, ok := cursor.(*fileCursor)
-	if !ok {
-		return nil, errFileCursorInvalid
-	}
-	qs := core.NewQueryString().
-		WithString("aid", "1").
-		WithString("cid", rootId).
-		WithString("search_value", keyword).
-		WithInt("offset", fc.offset).
-		WithInt("limit", fc.limit).
-		WithString("format", "json")
-	result := &types.FileSearchResult{}
-	err = a.hc.JsonApi(apiFileSearch, qs, nil, result)
-	if err == nil && result.IsFailed() {
-		err = types.MakeFileError(result.ErrorCode, result.Error)
-	}
-	if err != nil {
+// FileSearch recursively searches files, whose name contains the keyword and under the directory.
+func (a *Agent) FileSearch(rootId, keyword string, cursor *FileCursor, files []*File) (n int, err error) {
+	if n = len(files); n == 0 {
 		return
 	}
-	// Update cursor
-	fc.used, fc.total = true, result.Count
-	fc.offset, fc.limit = result.Offset, result.PageSize
-	// Fill result files
-	files = make([]*File, len(result.Data))
-	for i, data := range result.Data {
-		files[i] = &File{
-			Name:       data.Name,
-			Size:       int64(data.Size),
-			PickCode:   data.PickCode,
-			Sha1:       data.Sha1,
-			CreateTime: util.ParseUnixTime(data.CreateTime),
-			UpdateTime: util.ParseUnixTime(data.UpdateTime),
-		}
-		if data.FileId != "" {
-			files[i].IsFile = true
-			files[i].IsDirectory = false
-			files[i].FileId = data.FileId
-			files[i].ParentId = data.CategoryId
-		} else {
-			files[i].IsFile = false
-			files[i].IsDirectory = true
-			files[i].FileId = data.CategoryId
-			files[i].ParentId = data.ParentId
-		}
+	// Initialize cursor
+	if !cursor.init {
+		cursor.offset = 0
+		cursor.init = true
 	}
+	// Prepare request
+	qs := protocol.Params{}.
+		With("aid", "1").
+		With("cid", rootId).
+		With("search_value", keyword).
+		WithInt("offset", cursor.offset).
+		WithInt("limit", n).
+		With("format", "json")
+	resp := webapi.FileSearchResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiFileSearch, qs, nil, &resp); err != nil {
+		return
+	}
+	if err = resp.Err(); err != nil {
+		return
+	}
+	// Parse response
+	result := make([]*webapi.FileInfo, 0, n)
+	if err = resp.Decode(&result); err != nil {
+		return
+	}
+	// Fill to files
+	if rn := len(result); rn < n {
+		n = rn
+	}
+	for i := 0; i < n; i++ {
+		files[i] = (&File{}).from(result[i])
+	}
+	// Update cursor
+	cursor.offset += n
+	cursor.total = resp.Count
 	return
 }
 
-// Copy files into specific directory.
+// FileStat gets information of a file/directory.
+func (a *Agent) FileStat(fileId string, info *FileInfo) (err error) {
+	qs := (protocol.Params{}).With("cid", fileId)
+	resp := &webapi.FileStatResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiFileStat, qs, nil, resp); err != nil {
+		return
+	}
+	if err = resp.Err(); err != nil {
+		return
+	}
+
+	// TODO: Fill info.
+	return
+}
+
+// FileCopy copies files into target directory.
 func (a *Agent) FileCopy(parentId string, fileIds ...string) (err error) {
 	form := core.NewForm().
 		WithString("pid", parentId).
@@ -227,7 +263,7 @@ func (a *Agent) FileCopy(parentId string, fileIds ...string) (err error) {
 	return
 }
 
-// Move files into specific directory.
+// FileMove moves files into target directory.
 func (a *Agent) FileMove(parentId string, fileIds ...string) (err error) {
 	form := core.NewForm().
 		WithString("pid", parentId).
@@ -263,41 +299,6 @@ func (a *Agent) FileDelete(parentId string, fileIds ...string) (err error) {
 	err = a.hc.JsonApi(apiFileDelete, nil, form, result)
 	if err == nil && result.IsFailed() {
 		err = types.MakeFileError(int(result.ErrorCode), result.Error)
-	}
-	return
-}
-
-/*
-Get file information related to the file ID.
-Since the upstream response is cheap, this method cat not return more information.
-*/
-func (a *Agent) FileStat(fileId string) (info FileInfo, err error) {
-	qs := core.NewQueryString().
-		WithString("aid", "1").
-		WithString("cid", fileId)
-	result := &types.FileStatResult{}
-	err = a.hc.JsonApi(apiFileStat, qs, nil, result)
-	if err == nil && result.IsFailed() {
-		err = errFileNotExist
-	}
-	if err == nil {
-		data := result.Data
-		info = FileInfo{
-			IsFile:      data.FileType == "1",
-			IsDirectory: data.FileType == "0",
-			Name:        data.Name,
-			Sha1:        data.Sha1,
-			PickCode:    data.PickCode,
-			CreateTime:  util.ParseUnixTime(data.CreateTime),
-			UpdateTime:  util.ParseUnixTime(data.UpdateTime),
-		}
-		info.Parents = make([]*DirectoryInfo, len(data.Paths))
-		for i, p := range data.Paths {
-			info.Parents[i] = &DirectoryInfo{
-				Id:   string(p.FileId),
-				Name: p.FileName,
-			}
-		}
 	}
 	return
 }

@@ -3,13 +3,8 @@ package elevengo
 import (
 	"github.com/deadblue/elevengo/internal/core"
 	"github.com/deadblue/elevengo/internal/protocol"
-	"github.com/deadblue/elevengo/internal/types"
 	"github.com/deadblue/elevengo/internal/webapi"
 	"github.com/deadblue/elevengo/option"
-)
-
-const (
-	defaultName = "Mozilla/5.0"
 )
 
 /*
@@ -17,15 +12,25 @@ Agent holds signed-in user's credentials, and provides methods to access upstrea
 server's features, such as file management, offline download, etc.
 */
 type Agent struct {
+
+	// Agent name, used info "User-Agent" header.
 	name string
 
-	pc *protocol.Client
+	// wc is the underlying web client
+	wc *protocol.Client
 
-	// hc is replaced by pc
+	// User info
+	user UserInfo
+
+	// Offline token
+	ot webapi.OfflineToken
+
+	// Upload token
+	ut webapi.UploadToken
+
+	// hc is the old underlying http client
+	// Deprecated: use wc instead.
 	hc core.HttpClient
-
-	ui *UserInfo
-	ot *types.OfflineToken
 }
 
 // New creates Agent with customized options.
@@ -38,13 +43,13 @@ func New(options ...option.Option) *Agent {
 		case option.NameOption:
 			agent.name = string(opt.(option.NameOption))
 		case *option.HttpOption:
-			agent.pc = protocol.NewClient(opt.(*option.HttpOption).Client)
+			agent.wc = protocol.NewClient(opt.(*option.HttpOption).Client)
 		}
 	}
-	if agent.pc == nil {
-		agent.pc = protocol.NewClient(nil)
+	if agent.wc == nil {
+		agent.wc = protocol.NewClient(nil)
 	}
-	agent.pc.SetUserAgent(agent.name)
+	agent.wc.SetUserAgent(agent.name)
 	return agent
 }
 

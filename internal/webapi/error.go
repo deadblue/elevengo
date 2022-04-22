@@ -7,8 +7,15 @@ var (
 	ErrUnexpected    = errors.New("unexpected error")
 	ErrVideoNotReady = errors.New("video is not ready")
 
+	ErrOfflineInvalidLink = errors.New("invalid download link")
+	ErrOfflineTaskExisted = errors.New("offline task existed")
+
 	errMap = map[int]error{
+		// Normal error
 		990001: ErrNotLogin,
+		// Offline error
+		10004: ErrOfflineInvalidLink,
+		10008: ErrOfflineTaskExisted,
 	}
 )
 

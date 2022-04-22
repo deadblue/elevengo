@@ -15,4 +15,4 @@ type DownloadInfo struct {
 	} `json:"url"`
 }
 
-type DownloadResult map[string]*DownloadInfo
+type DownloadData map[string]*DownloadInfo

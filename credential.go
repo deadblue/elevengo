@@ -2,15 +2,10 @@ package elevengo
 
 import (
 	"fmt"
-	"github.com/deadblue/elevengo/internal/core"
-	"github.com/deadblue/elevengo/internal/types"
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/webapi"
 	"math/rand"
 	"time"
-)
-
-const (
-	apiUserInfo = "https://my.115.com/"
 )
 
 // Credential contains required information which upstream server uses to
@@ -29,6 +24,10 @@ type UserInfo struct {
 	Name string
 }
 
+func (u *UserInfo) IsLogin() bool {
+	return u.Id != 0
+}
+
 // CredentialImport imports credentials into agent.
 func (a *Agent) CredentialImport(cr *Credential) (err error) {
 	cookies := map[string]string{
@@ -36,43 +35,42 @@ func (a *Agent) CredentialImport(cr *Credential) (err error) {
 		webapi.CookieNameCid:  cr.CID,
 		webapi.CookieNameSeid: cr.SEID,
 	}
-	a.pc.ImportCookies(cookies, webapi.CookieDomain115, webapi.CookieDomainAnxia)
-	return nil
+	a.wc.ImportCookies(cookies, webapi.CookieDomain115, webapi.CookieDomainAnxia)
+	return a.syncUserInfo()
 }
 
 // CredentialExport exports credentials for future-use.
 func (a *Agent) CredentialExport(cr *Credential) (err error) {
-	cookies := a.pc.ExportCookies(webapi.CookieUrl)
+	cookies := a.wc.ExportCookies(webapi.CookieUrl)
 	cr.UID = cookies[webapi.CookieNameUid]
 	cr.CID = cookies[webapi.CookieNameCid]
 	cr.SEID = cookies[webapi.CookieNameSeid]
 	return
 }
 
-// A new and graceful way to get user information.
-func (a *Agent) getUserInfo() (err error) {
+// syncUserInfo syncs user information from cloud to agent.
+func (a *Agent) syncUserInfo() (err error) {
 	cb := fmt.Sprintf("jQuery%d_%d", rand.Uint64(), time.Now().Unix())
-	qs := core.NewQueryString().
-		WithString("ct", "ajax").
-		WithString("ac", "nav").
-		WithString("callback", cb).
-		WithInt64("_", time.Now().Unix())
-	result := &types.UserInfoResult{}
-	if err = a.hc.JsonpApi(apiUserInfo, qs, result); err != nil {
+	qs := protocol.Params{}.
+		With("callback", cb).
+		WithNow("_")
+	resp := webapi.BasicResponse{}
+	if err = a.wc.CallJsonpApi(webapi.ApiUserInfo, qs, &resp); err != nil {
 		return
 	}
-	if a.ui == nil {
-		a.ui = &UserInfo{}
+	if err = resp.Err(); err != nil {
+		return err
 	}
-	a.ui.Id = result.Data.UserId
-	a.ui.Name = result.Data.UserName
+	result := webapi.UserInfoData{}
+	if err = resp.Decode(&result); err != nil {
+		return
+	}
+	a.user.Id = result.UserId
+	a.user.Name = result.UserName
 	return
 }
 
 // User returns user information.
-func (a *Agent) User() (info UserInfo) {
-	if a.ui != nil {
-		info = *a.ui
-	}
-	return
+func (a *Agent) User() *UserInfo {
+	return &a.user
 }

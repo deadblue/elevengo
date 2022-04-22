@@ -61,3 +61,21 @@ func (v *StringFloat64) UnmarshalJSON(b []byte) (err error) {
 	}
 	return
 }
+
+type IntString string
+
+func (v *IntString) UnmarshalJSON(b []byte) (err error) {
+	var s string
+	if b[0] == '"' {
+		err = json.Unmarshal(b, &s)
+	} else {
+		var i int
+		if err = json.Unmarshal(b, &i); err == nil {
+			s = strconv.Itoa(i)
+		}
+	}
+	if err == nil {
+		*v = IntString(s)
+	}
+	return
+}

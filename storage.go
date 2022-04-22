@@ -1,8 +1,10 @@
 package elevengo
 
-import "github.com/deadblue/elevengo/internal/types"
+import (
+	"github.com/deadblue/elevengo/internal/webapi"
+)
 
-// StorageInfo describes storage usage.
+// StorageInfo describes storage space usage.
 type StorageInfo struct {
 	// Total size in bytes.
 	Size int64
@@ -14,16 +16,20 @@ type StorageInfo struct {
 
 // StorageStat gets storage size information.
 func (a *Agent) StorageStat(info *StorageInfo) (err error) {
-	result := &types.FileIndexResult{}
-	err = a.hc.JsonApi(apiFileIndex, nil, nil, result)
-	if err == nil && result.IsFailed() {
-		err = types.MakeFileError(result.Code, result.Error)
-	}
+	resp := webapi.BasicResponse{}
+	err = a.wc.CallJsonApi(webapi.ApiIndexInfo, nil, nil, &resp)
 	if err != nil {
+		return err
+	}
+	if err = resp.Err(); err != nil {
 		return
 	}
-	info.Size = int64(result.Data.SpaceInfo.AllTotal.Size)
-	info.Used = int64(result.Data.SpaceInfo.AllUsed.Size)
-	info.Avail = int64(result.Data.SpaceInfo.AllRemain.Size)
+	result := webapi.IndexData{}
+	if err = resp.Decode(&result); err != nil {
+		return
+	}
+	info.Size = int64(result.Space.Total.Size)
+	info.Used = int64(result.Space.Used.Size)
+	info.Avail = int64(result.Space.Remain.Size)
 	return
 }
