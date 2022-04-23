@@ -1,6 +1,7 @@
 package web
 
 import (
+	"fmt"
 	"io"
 	"net/url"
 	"strconv"
@@ -26,6 +27,22 @@ func (p Params) WithInt64(name string, value int64) Params {
 
 func (p Params) WithNow(name string) Params {
 	return p.WithInt64(name, time.Now().Unix())
+}
+
+func (p Params) WithArray(name string, values []string) Params {
+	for i, value := range values {
+		key := fmt.Sprintf("%s[%d]", name, i)
+		p.With(key, value)
+	}
+	return p
+}
+
+func (p Params) WithMap(name string, value map[string]string) Params {
+	for ik, iv := range value {
+		ik = fmt.Sprintf("%s[%s]", name, ik)
+		p.With(iv, iv)
+	}
+	return p
 }
 
 // Encode encodes params into query-string format.

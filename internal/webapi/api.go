@@ -8,6 +8,10 @@ const (
 	ApiFileListByName = "https://aps.115.com/natsort/files.php"
 	ApiFileSearch     = "https://webapi.115.com/files/search"
 	ApiFileStat       = "https://webapi.115.com/category/get"
+	ApiFileMove       = "https://webapi.115.com/files/move"
+	ApiFileCopy       = "https://webapi.115.com/files/copy"
+	ApiFileRename     = "https://webapi.115.com/files/batch_rename"
+	ApiFileDelete     = "https://webapi.115.com/rb/delete"
 	ApiFileAddDir     = "https://webapi.115.com/files/add"
 	ApiFileVideo      = "https://v.anxia.com/webapi/files/video"
 

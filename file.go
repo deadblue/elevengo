@@ -1,44 +1,33 @@
 package elevengo
 
 import (
-	"github.com/deadblue/elevengo/internal/core"
-	"github.com/deadblue/elevengo/internal/types"
 	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
 	"time"
 )
 
-const (
-	apiFileCopy   = "https://webapi.115.com/files/copy"
-	apiFileMove   = "https://webapi.115.com/files/move"
-	apiFileRename = "https://webapi.115.com/files/batch_rename"
-	apiFileDelete = "https://webapi.115.com/rb/delete"
-
-	fileDefaultLimit = 115
-)
-
 // File describe a file or directory on cloud storage.
 type File struct {
 
-	// IsDirectory marks is the file a directory.
+	// Marks is the file a directory.
 	IsDirectory bool
 
-	// FileId is the unique identifier on the cloud storage.
+	// Unique identifier of the file on the cloud storage.
 	FileId string
 
-	// ParentID is the FileId of the parent directory.
+	// FileId of the parent directory.
 	ParentId string
 
-	// Name is name of the file.
+	// Base name of the file.
 	Name string
 
-	// Size is bytes size of the file.
+	// Size in bytes of the file.
 	Size int64
 
-	// PickCode is used for downloading or playing the file.
+	// Identifier used for downloading or playing the file.
 	PickCode string
 
-	// Sha1 is SHA1 hash value of the file, in HEX format.
+	// SHA1 hash of file content, in HEX format.
 	Sha1 string
 
 	// Create time of the file.
@@ -68,8 +57,8 @@ func (f *File) from(info *webapi.FileInfo) *File {
 	return f
 }
 
-// DirectoryInfo only used in FileInfo.
-type DirectoryInfo struct {
+// DirInfo only used in FileInfo.
+type DirInfo struct {
 	// Directory ID.
 	Id string
 	// Directory Name.
@@ -79,29 +68,35 @@ type DirectoryInfo struct {
 // FileInfo is returned by FileStat(), contains basic information of a file.
 type FileInfo struct {
 
-	// True means a file.
-	IsFile bool
-
-	// True means a directory.
-	IsDirectory bool
-
-	// File name.
+	// Base name of the file.
 	Name string
 
-	// PickCode for downloading or playing.
+	// Identifier used for downloading or playing the file.
 	PickCode string
 
-	// Sha1 hash value of the file, empty for directory.
+	// SHA1 hash of file content, in HEX format.
 	Sha1 string
+
+	// Marks is file a directory.
+	IsDirectory bool
+
+	// Files count under this directory.
+	FileCount int
+
+	// Subdirectories count under this directory.
+	DirCount int
 
 	// Create time of the file.
 	CreateTime time.Time
 
-	// Update time of the file.
+	// Last update time of the file.
 	UpdateTime time.Time
 
+	// Last access time of the file.
+	AccessTime time.Time
+
 	// Parent directory list.
-	Parents []*DirectoryInfo
+	Parents []*DirInfo
 }
 
 type FileCursor struct {
@@ -123,7 +118,7 @@ func (c *FileCursor) Remain() int {
 }
 
 // FileList lists files list under a directory whose id is parentId.
-func (a *Agent) FileList(parentId string, cursor *FileCursor, files []*File) (n int, err error) {
+func (a *Agent) FileList(dirId string, cursor *FileCursor, files []*File) (n int, err error) {
 	if n = len(files); n == 0 {
 		return
 	}
@@ -141,7 +136,7 @@ func (a *Agent) FileList(parentId string, cursor *FileCursor, files []*File) (n 
 		With("natsort", "1").
 		With("fc_mix", "1").
 		With("format", "json").
-		With("cid", parentId).
+		With("cid", dirId).
 		With("o", cursor.order).
 		WithInt("asc", cursor.asc).
 		WithInt("offset", cursor.offset).
@@ -193,7 +188,7 @@ func (a *Agent) FileList(parentId string, cursor *FileCursor, files []*File) (n 
 }
 
 // FileSearch recursively searches files, whose name contains the keyword and under the directory.
-func (a *Agent) FileSearch(rootId, keyword string, cursor *FileCursor, files []*File) (n int, err error) {
+func (a *Agent) FileSearch(dirId, keyword string, cursor *FileCursor, files []*File) (n int, err error) {
 	if n = len(files); n == 0 {
 		return
 	}
@@ -205,7 +200,7 @@ func (a *Agent) FileSearch(rootId, keyword string, cursor *FileCursor, files []*
 	// Prepare request
 	qs := web.Params{}.
 		With("aid", "1").
-		With("cid", rootId).
+		With("cid", dirId).
 		With("search_value", keyword).
 		WithInt("offset", cursor.offset).
 		WithInt("limit", n).
@@ -239,66 +234,78 @@ func (a *Agent) FileSearch(rootId, keyword string, cursor *FileCursor, files []*
 func (a *Agent) FileStat(fileId string, info *FileInfo) (err error) {
 	qs := (web.Params{}).With("cid", fileId)
 	resp := &webapi.FileStatResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiFileStat, qs, nil, resp); err != nil {
+	if err = a.wc.CallJsonApi(webapi.ApiFileStat, qs, nil, resp); err == nil {
+		err = resp.Err()
+	}
+	if err != nil {
 		return
 	}
-	if err = resp.Err(); err != nil {
-		return
+	info.Name = resp.FileName
+	info.PickCode = resp.PickCode
+	info.Sha1 = resp.Sha1
+	info.CreateTime = time.Unix(int64(resp.CreateTime), 0)
+	info.UpdateTime = time.Unix(int64(resp.UpdateTime), 0)
+	info.AccessTime = time.Unix(resp.AccessTime, 0)
+	// Fill parents
+	info.Parents = make([]*DirInfo, len(resp.Paths))
+	for i, path := range resp.Paths {
+		info.Parents[i] = &DirInfo{
+			Id:   string(path.FileId),
+			Name: path.FileName,
+		}
 	}
-
-	// TODO: Fill info.
-	return
-}
-
-// FileCopy copies files into target directory.
-func (a *Agent) FileCopy(parentId string, fileIds ...string) (err error) {
-	form := core.NewForm().
-		WithString("pid", parentId).
-		WithStrings("fid", fileIds)
-	result := &types.FileOperateResult{}
-	err = a.hc.JsonApi(apiFileCopy, nil, form, result)
-	if err == nil && result.IsFailed() {
-		err = types.MakeFileError(int(result.ErrorCode), result.Error)
-	}
-	return
-}
-
-// FileMove moves files into target directory.
-func (a *Agent) FileMove(parentId string, fileIds ...string) (err error) {
-	form := core.NewForm().
-		WithString("pid", parentId).
-		WithStrings("fid", fileIds)
-	result := &types.FileOperateResult{}
-	err = a.hc.JsonApi(apiFileMove, nil, form, result)
-	if err == nil && result.IsFailed() {
-		err = types.MakeFileError(int(result.ErrorCode), result.Error)
+	// Directory info
+	info.IsDirectory = resp.IsFile == 0
+	if info.IsDirectory {
+		info.FileCount = int(resp.FileCount)
+		info.DirCount = int(resp.DirCount)
 	}
 	return
 }
 
-// Rename file.
-func (a *Agent) FileRename(fileId, name string) (err error) {
-	form := core.NewForm().
-		WithString("fid", fileId).
-		WithString("file_name", name).
-		WithStringMap("files_new_name", map[string]string{fileId: name})
-	result := &types.FileOperateResult{}
-	err = a.hc.JsonApi(apiFileRename, nil, form, result)
-	if err == nil && !result.State {
-		err = types.MakeFileError(int(result.ErrorCode), result.Error)
+// FileMove moves files into target directory whose id is dirId.
+func (a *Agent) FileMove(dirId string, fileIds ...string) (err error) {
+	form := web.Params{}.
+		With("pid", dirId).
+		WithArray("fid", fileIds)
+	resp := &webapi.BasicResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiFileMove, nil, form, resp); err == nil {
+		err = resp.Err()
 	}
 	return
 }
 
-// Delete files from a directory.
-func (a *Agent) FileDelete(parentId string, fileIds ...string) (err error) {
-	form := core.NewForm().
-		WithString("pid", parentId).
-		WithStrings("fid", fileIds)
-	result := &types.FileOperateResult{}
-	err = a.hc.JsonApi(apiFileDelete, nil, form, result)
-	if err == nil && result.IsFailed() {
-		err = types.MakeFileError(int(result.ErrorCode), result.Error)
+// FileCopy copies files into target directory whose id is dirId.
+func (a *Agent) FileCopy(dirId string, fileIds ...string) (err error) {
+	form := web.Params{}.
+		With("pid", dirId).
+		WithArray("fid", fileIds)
+	resp := &webapi.BasicResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiFileCopy, nil, form, resp); err == nil {
+		err = resp.Err()
+	}
+	return
+}
+
+// FileRename renames file to new name.
+func (a *Agent) FileRename(fileId, newName string) (err error) {
+	form := web.Params{}.
+		WithMap("files_new_name", map[string]string{
+			fileId: newName,
+		})
+	resp := &webapi.BasicResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiFileRename, nil, form, resp); err == nil {
+		err = resp.Err()
+	}
+	return
+}
+
+// FileDelete deletes files.
+func (a *Agent) FileDelete(fileIds ...string) (err error) {
+	form := web.Params{}.WithArray("fid", fileIds)
+	resp := &webapi.BasicResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiFileDelete, nil, form, resp); err == nil {
+		err = resp.Err()
 	}
 	return
 }
