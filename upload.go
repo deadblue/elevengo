@@ -1,143 +1,81 @@
 package elevengo
 
 import (
+	"crypto/sha1"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/deadblue/elevengo/internal/core"
-	"github.com/deadblue/elevengo/internal/types"
+	"github.com/deadblue/elevengo/internal/crypto/hash"
+	"github.com/deadblue/elevengo/internal/oss"
+	"github.com/deadblue/elevengo/internal/util"
+	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
-	"github.com/deadblue/gostream/multipart"
-	"github.com/deadblue/gostream/quietly"
 	"io"
-	"io/ioutil"
 	"net/http"
-	"time"
+	"strconv"
+	"strings"
 )
-
-const (
-	apiUploadInit = "https://uplb.115.com/3.0/sampleinitupload.php"
-)
-
-/*
-UploadInfo contains all required information to create an upload ticket.
-
-To upload a regular file, caller can use os.FileInfo as UploadInfo, see
-"Agent.UploadCreateTicket" doc for detail.
-
-To upload a memory data as file, caller should implement it himself.
-*/
-type UploadInfo interface {
-	// Name of the upload file.
-	Name() string
-	// Size in bytes of the upload file.
-	Size() int64
-}
 
 // UploadTicket contains all required information to upload a file.
 type UploadTicket struct {
+	// Request method
+	Verb string
 	// Remote URL which will receive the file content.
-	Endpoint string
-	// Field-name for the upload file.
-	FileField string
-	// Other parameters that should be sent with the file.
-	Values map[string]string
+	Url string
+	// Request header
+	Header map[string]string
 }
 
-/*
-UploadCreateTicket creates a ticket which contains all required information
-to upload a file. Caller can use third-party tools/libraries to upload file.
-*/
-func (a *Agent) UploadCreateTicket(parentId string, info UploadInfo) (ticket UploadTicket, err error) {
-	// Request upload token
-	form := core.NewForm().
-		WithInt("userid", a.user.Id).
-		WithString("filename", info.Name()).
-		WithInt64("filesize", info.Size()).
-		WithString("target", fmt.Sprintf("U_1_%s", parentId))
-	result := &types.UploadInitResult{}
-	if err = a.hc.JsonApi(apiUploadInit, nil, form, result); err != nil {
-		return
-	}
-	// Create upload ticket
-	ticket = UploadTicket{
-		Endpoint:  result.Host,
-		FileField: "file",
-		Values: map[string]string{
-			"OSSAccessKeyId": result.AccessKeyId,
-			"key":            result.ObjectKey,
-			"policy":         result.Policy,
-			"callback":       result.Callback,
-			"signature":      result.Signature,
-			"name":           info.Name(),
-		},
-	}
-	return
+func (t *UploadTicket) setHeader(name, value string) {
+	t.Header[name] = value
 }
 
-/*
-UploadParseResult parses the raw upload response body to file metadata. It
-is useful when caller process upload ticket through thirdpary tools/libraries.
-*/
-func (a *Agent) UploadParseResult(content []byte) (file *File, err error) {
-	result := &types.UploadResult{}
-	if err = json.Unmarshal(content, result); err == nil {
-		data := result.Data
-		createTime := time.Unix(data.CreateTime, 0)
-		file = &File{
-			IsDirectory: false,
-			FileId:      data.FileId,
-			ParentId:    data.CategoryId,
-			Name:        data.FileName,
-			Size:        int64(data.FileSize),
-			PickCode:    data.PickCode,
-			Sha1:        data.Sha1,
-			CreateTime:  createTime,
-			UpdateTime:  createTime,
+func (a *Agent) uploadInit(dirId string, name string, size int64,
+	preId string, quickId string, params *webapi.UploadOssParams) (exist bool, err error) {
+	if !a.ut.Available() {
+		if err = a.uploadInitToken(); err != nil {
+			return
 		}
 	}
+	// Prepare request
+	targetId := fmt.Sprintf("U_1_%s", dirId)
+	qs := web.Params{}.
+		With("appid", a.ut.AppId).
+		With("appversion", a.ut.AppVer).
+		WithInt("isp", a.ut.IspType).
+		With("sig", a.uploadCalculateSignature(targetId, quickId)).
+		With("format", "json").
+		WithNow("t")
+	form := web.Params{}.
+		With("app_ver", a.ut.AppVer).
+		With("preid", preId).
+		With("quickid", quickId).
+		With("target", targetId).
+		With("fileid", quickId).
+		With("filename", name).
+		WithInt64("filesize", size).
+		WithInt("userid", a.user.Id)
+	// Send request
+	resp := &webapi.UploadInitResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiUploadInit, qs, form, resp); err != nil {
+		return
+	}
+	// Parse response
+	if err = resp.Err(); err != nil {
+		return
+	}
+	exist = resp.Status == 2
+	if !exist && params != nil {
+		params.Bucket = resp.Bucket
+		params.Object = resp.Object
+		params.Callback = resp.Callback.Callback
+		params.CallbackVar = resp.Callback.CallbackVar
+	}
 	return
 }
 
-// Upload uploads data as a file to cloud, and returns the file metadata on
-// success. If r implements io.Closer, it will be closed automatically.
-func (a *Agent) Upload(parentId string, info UploadInfo, r io.Reader) (file *File, err error) {
-	// Register defer function only when r implements io.Closer.
-	if rc, ok := r.(io.ReadCloser); ok {
-		defer quietly.Close(rc)
-	}
-
-	ticket, err := a.UploadCreateTicket(parentId, info)
-	if err != nil {
-		return
-	}
-	// Create multipart form for uploading
-	form := multipart.New()
-	for name, value := range ticket.Values {
-		form.AddValue(name, value)
-	}
-	form.AddFileData(ticket.FileField, info.Name(), info.Size(), r)
-	// Make request
-	req, err := multipart.NewRequest(ticket.Endpoint, form)
-	if err != nil {
-		return
-	}
-	// Send request through default client
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return
-	}
-	defer quietly.Close(resp.Body)
-	// Parse response body
-	if body, err := ioutil.ReadAll(resp.Body); err != nil {
-		return nil, err
-	} else {
-		return a.UploadParseResult(body)
-	}
-}
-
-// ---------
-
-func (a *Agent) uploadInit() (err error) {
+func (a *Agent) uploadInitToken() (err error) {
 	resp := &webapi.UploadInfoResponse{}
 	if err = a.wc.CallJsonApi(webapi.ApiUploadInfo, nil, nil, resp); err != nil {
 		return
@@ -146,5 +84,86 @@ func (a *Agent) uploadInit() (err error) {
 	a.ut.AppVer = string(resp.AppVersion)
 	a.ut.IspType = resp.IspType
 	a.ut.UserKey = resp.UserKey
+	return
+}
+
+func (a *Agent) uploadCalculateSignature(targetId, fileId string) string {
+	digester := sha1.New()
+	wx := util.UpgradeWriter(digester)
+	wx.MustWriteString(strconv.Itoa(a.user.Id), fileId, fileId, targetId, "0")
+	h := hex.EncodeToString(digester.Sum(nil))
+	// Second pass
+	digester.Reset()
+	wx.MustWriteString(a.ut.UserKey, h, "000000")
+	return strings.ToUpper(hex.EncodeToString(digester.Sum(nil)))
+}
+
+// UploadCreateTicket creates a ticket with all required information to upload a
+// file. Caller can use third-party tools/libraries to process it.
+func (a *Agent) UploadCreateTicket(dirId, name string, r io.Reader, ticket *UploadTicket) (exist bool, err error) {
+	// Digest content
+	dr := &hash.DigestResult{}
+	if err = hash.Digest(r, dr); err != nil {
+		return
+	}
+	// Initialize uploading
+	params := &webapi.UploadOssParams{}
+	if exist, err = a.uploadInit(dirId, name, dr.Size, dr.PreId, dr.QuickId, params); exist || err != nil {
+		return
+	}
+	// Get OSS token
+	resp := &webapi.UploadOssTokenResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiUploadOssToken, nil, nil, resp); err != nil {
+		return
+	}
+	if err = resp.Err(); err != nil {
+		return
+	}
+
+	// Fill UploadTicket
+	// TODO: Not test yet.
+	ticket.Verb = http.MethodPut
+	ticket.Url = fmt.Sprintf("https://%s.%s/%s", params.Bucket, oss.Endpoint, params.Object)
+	if ticket.Header == nil {
+		ticket.Header = make(map[string]string)
+	}
+	ticket.setHeader(oss.HeaderDate, oss.Date())
+	ticket.setHeader(oss.HeaderContentLength, strconv.FormatInt(dr.Size, 10))
+	ticket.setHeader(oss.HeaderContentType, util.DetermineMimeType(name))
+	ticket.setHeader(oss.HeaderContentMd5, dr.MD5)
+	ticket.setHeader(oss.HeaderOssCallback, base64.StdEncoding.EncodeToString([]byte(params.Callback)))
+	ticket.setHeader(oss.HeaderOssCallbackVar, base64.StdEncoding.EncodeToString([]byte(params.CallbackVar)))
+	ticket.setHeader(oss.HeaderOssSecurityToken, resp.SecurityToken)
+
+	ticket.Header[oss.HeaderAuthorization] = oss.CalculateAuthorization(&oss.RequestMetadata{
+		Verb:   ticket.Verb,
+		Header: ticket.Header,
+		Bucket: params.Bucket,
+		Object: params.Object,
+	}, resp.AccessKeyId, resp.AccessKeySecret)
+	return
+}
+
+// UploadParseResult parses the raw upload response, and fills it to file.
+func (a *Agent) UploadParseResult(content []byte, file *File) (err error) {
+	resp := &webapi.BasicResponse{}
+	if err = json.Unmarshal(content, resp); err == nil {
+		err = resp.Err()
+	}
+	if err != nil || file == nil {
+		return
+	}
+
+	data := &webapi.UploadResultData{}
+	if err = resp.Decode(data); err != nil {
+		return
+	}
+	// Note: Not all fields of file are filled.
+	file.IsDirectory = false
+	file.FileId = data.FileId
+	file.Name = data.FileName
+	file.Size = data.FileSize
+	file.PickCode = data.PickCode
+	file.Sha1 = data.Sha1
 	return
 }

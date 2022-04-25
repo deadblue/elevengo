@@ -265,6 +265,9 @@ func (a *Agent) FileStat(fileId string, info *FileInfo) (err error) {
 
 // FileMove moves files into target directory whose id is dirId.
 func (a *Agent) FileMove(dirId string, fileIds ...string) (err error) {
+	if len(fileIds) == 0 {
+		return
+	}
 	form := web.Params{}.
 		With("pid", dirId).
 		WithArray("fid", fileIds)
@@ -277,6 +280,9 @@ func (a *Agent) FileMove(dirId string, fileIds ...string) (err error) {
 
 // FileCopy copies files into target directory whose id is dirId.
 func (a *Agent) FileCopy(dirId string, fileIds ...string) (err error) {
+	if len(fileIds) == 0 {
+		return
+	}
 	form := web.Params{}.
 		With("pid", dirId).
 		WithArray("fid", fileIds)
@@ -302,6 +308,9 @@ func (a *Agent) FileRename(fileId, newName string) (err error) {
 
 // FileDelete deletes files.
 func (a *Agent) FileDelete(fileIds ...string) (err error) {
+	if len(fileIds) == 0 {
+		return
+	}
 	form := web.Params{}.WithArray("fid", fileIds)
 	resp := &webapi.BasicResponse{}
 	if err = a.wc.CallJsonApi(webapi.ApiFileDelete, nil, form, resp); err == nil {

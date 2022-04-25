@@ -1,7 +1,6 @@
 package elevengo
 
 import (
-	"fmt"
 	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
 )
@@ -50,6 +49,10 @@ func (t *OfflineTask) IsFailed() bool {
 	return t.Status == -1
 }
 
+type OfflineCursor struct {
+	page int
+}
+
 func (a *Agent) offlineUpdateToken() (err error) {
 	qs := web.Params{}.WithNow("_")
 	resp := &webapi.OfflineSpaceResponse{}
@@ -85,9 +88,9 @@ func (a *Agent) OfflineList() (err error) {
 		WithInt("page", 1)
 	resp := &webapi.OfflineListResponse{}
 	if err = a.offlineCallApi(webapi.ApiOfflineList, form, resp); err != nil {
-		return
+		err = resp.Err()
 	}
-	if err = resp.Err(); err != nil {
+	if err != nil {
 		return
 	}
 	// TODO: How we return
@@ -103,9 +106,9 @@ func (a *Agent) OfflineAdd(url string, dirId string) (err error) {
 	}
 	resp := &webapi.OfflineAddUrlResponse{}
 	if err = a.offlineCallApi(webapi.ApiOfflineAddUrl, form, resp); err != nil {
-		return
+		err = resp.Err()
 	}
-	return resp.Err()
+	return
 }
 
 // OfflineDelete deletes tasks.
@@ -113,19 +116,15 @@ func (a *Agent) OfflineDelete(deleteFiles bool, hashes ...string) (err error) {
 	if len(hashes) == 0 {
 		return
 	}
-	form := web.Params{}
-	for i, hash := range hashes {
-		key := fmt.Sprintf("hash[%d]", i)
-		form.With(key, hash)
-	}
+	form := web.Params{}.WithArray("hash", hashes)
 	if deleteFiles {
 		form.With("flag", "1")
 	}
 	resp := &webapi.OfflineBasicResponse{}
 	if err = a.offlineCallApi(webapi.ApiOfflineDelete, form, resp); err != nil {
-		return
+		err = resp.Err()
 	}
-	return resp.Err()
+	return
 }
 
 // OfflineClear clears tasks which is in specific status.
@@ -134,7 +133,7 @@ func (a *Agent) OfflineClear(flag OfflineClearFlag) (err error) {
 		WithInt("flag", int(flag))
 	resp := &webapi.OfflineBasicResponse{}
 	if err = a.offlineCallApi(webapi.ApiOfflineClear, form, resp); err != nil {
-		return
+		err = resp.Err()
 	}
-	return resp.Err()
+	return
 }

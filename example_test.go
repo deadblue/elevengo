@@ -2,9 +2,7 @@ package elevengo
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
-	"os"
 	"os/exec"
 )
 
@@ -21,6 +19,25 @@ func ExampleAgent_CredentialImport() {
 	} else {
 		user := agent.User()
 		log.Printf("Username: %s", user.Name)
+	}
+}
+
+func ExampleAgent_Import() {
+	var err error
+
+	agent := Default()
+	if err = agent.CredentialImport(&Credential{
+		UID: "", CID: "", SEID: "",
+	}); err != nil {
+		log.Fatalf("Import credential failed: %s", err.Error())
+	}
+
+	ticket := &ImportTicket{}
+	if err = ticket.FromFile("/path/to/local-file"); err != nil {
+		log.Fatalf("Init import ticket failed: %s", err.Error())
+	}
+	if err = agent.Import("0", ticket); err != nil {
+		log.Fatalf("Import file to cloud failed: %s", err.Error())
 	}
 }
 
@@ -82,51 +99,51 @@ func ExampleAgent_DownloadCreateTicket() {
 }
 
 func ExampleAgent_UploadCreateTicket() {
-	agent := Default()
-	// TODO: Import your credentials here
-
-	filename := "/path/to/file"
-	// Get file info
-	info, err := os.Stat(filename)
-	if err != nil {
-		log.Fatalf("Get file info error: %s", err)
-	}
-	// Create upload ticket
-	ticket, err := agent.UploadCreateTicket("0", info)
-	if err != nil {
-		log.Fatalf("Create upload ticket error: %s", err)
-	}
-	// Createa temp file to receive upload response
-	tmpFile, err := ioutil.TempFile(os.TempDir(), "115-upload-")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer func() {
-		_ = os.Remove(tmpFile.Name())
-	}()
-
-	// Process upload ticket through curl
-	cmd := exec.Command("/usr/bin/curl", ticket.Endpoint, "-o", tmpFile.Name())
-	for name, value := range ticket.Values {
-		cmd.Args = append(cmd.Args, "-F", fmt.Sprintf("%s=%s", name, value))
-	}
-	// Show upload progress
-	cmd.Args = append(cmd.Args, "-#")
-	// NOTICE: File field should be the LAST one.
-	cmd.Args = append(cmd.Args, "-F", fmt.Sprintf("%s=@%s", ticket.FileField, filename))
-	// Run the command
-	if err = cmd.Run(); err != nil {
-		log.Fatalf("Execute curl command error: %s", err)
-	}
-
-	// Parse upload response
-	response, _ := ioutil.ReadAll(tmpFile)
-	file, err := agent.UploadParseResult(response)
-	if err != nil {
-		log.Fatalf("Parse upload result error: %s", err)
-	} else {
-		log.Printf("Uploaded file: %#v", file)
-	}
+	//agent := Default()
+	//// TODO: Import your credentials here
+	//
+	//filename := "/path/to/file"
+	//// Get file info
+	//info, err := os.Stat(filename)
+	//if err != nil {
+	//	log.Fatalf("Get file info error: %s", err)
+	//}
+	//// Create upload ticket
+	//ticket, err := agent.UploadCreateTicket("0", info)
+	//if err != nil {
+	//	log.Fatalf("Create upload ticket error: %s", err)
+	//}
+	//// Create temp file to receive upload response
+	//tmpFile, err := ioutil.TempFile(os.TempDir(), "115-upload-")
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//defer func() {
+	//	_ = os.Remove(tmpFile.Name())
+	//}()
+	//
+	//// Process upload ticket through curl
+	//cmd := exec.Command("/usr/bin/curl", ticket.Endpoint, "-o", tmpFile.Name())
+	//for name, value := range ticket.Values {
+	//	cmd.Args = append(cmd.Args, "-F", fmt.Sprintf("%s=%s", name, value))
+	//}
+	//// Show upload progress
+	//cmd.Args = append(cmd.Args, "-#")
+	//// NOTICE: File field should be the LAST one.
+	//cmd.Args = append(cmd.Args, "-F", fmt.Sprintf("%s=@%s", ticket.FileField, filename))
+	//// Run the command
+	//if err = cmd.Run(); err != nil {
+	//	log.Fatalf("Execute curl command error: %s", err)
+	//}
+	//
+	//// Parse upload response
+	//response, _ := ioutil.ReadAll(tmpFile)
+	//file, err := agent.UploadParseResult(response)
+	//if err != nil {
+	//	log.Fatalf("Parse upload result error: %s", err)
+	//} else {
+	//	log.Printf("Uploaded file: %#v", file)
+	//}
 }
 
 func ExampleAgent_VideoGetInfo() {
