@@ -7,18 +7,39 @@ import (
 )
 
 func ExampleAgent_CredentialImport() {
+	var err error
 	agent := Default()
+
 	// Import credential to agent
-	err := agent.CredentialImport(&Credential{
-		UID:  "UID-from-cookie",
-		CID:  "CID-from-cookie",
-		SEID: "SEID-from-cookie",
-	})
-	if err != nil {
+	if err = agent.CredentialImport(&Credential{
+		UID:  "UID-From-Cookie",
+		CID:  "CID-From-Cookie",
+		SEID: "SEID-From-Cookie",
+	}); err != nil {
 		log.Fatalf("Import credentail error: %s", err)
-	} else {
-		user := agent.User()
-		log.Printf("Username: %s", user.Name)
+	}
+	user := agent.User()
+	log.Printf("Username: %s", user.Name)
+}
+
+func ExampleAgent_FileList() {
+
+	agent := Default()
+	if err := agent.CredentialImport(&Credential{
+		UID: "", CID: "", SEID: "",
+	}); err != nil {
+		log.Fatalf("Import credentail error: %s", err)
+	}
+
+	cursor, files := &FileCursor{}, make([]*File, 10)
+	for cursor.HasMore() {
+		n, err := agent.FileList("0", cursor, files)
+		if err != nil {
+			log.Fatalf("List file failed: %s", err.Error())
+		}
+		for i := 0; i < n; i++ {
+			log.Printf("File: %#v", files[i])
+		}
 	}
 }
 
@@ -39,23 +60,6 @@ func ExampleAgent_Import() {
 	if err = agent.Import("0", ticket); err != nil {
 		log.Fatalf("Import file to cloud failed: %s", err.Error())
 	}
-}
-
-func ExampleAgent_FileList() {
-	//agent := Default()
-	// TODO: Import your credentials here
-
-	// Get files under root directory
-	//for cursor := FileCursor(); cursor.HasMore(); cursor.Next() {
-	//	files, err := agent.FileList("0", cursor)
-	//	if err != nil {
-	//		log.Fatalf("Get file list error: %s", err)
-	//	} else {
-	//		for _, file := range files {
-	//			log.Printf("Remote file: %#v", file)
-	//		}
-	//	}
-	//}
 }
 
 func ExampleAgent_OfflineList() {

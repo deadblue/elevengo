@@ -4,37 +4,39 @@
 [![Reference](https://img.shields.io/badge/Go-Reference-blue.svg?style=flat-square)](https://pkg.go.dev/github.com/deadblue/elevengo)
 ![License](https://img.shields.io/:License-MIT-green.svg?style=flat-square)
 
-A API client of 115 Cloud Storage Service.
+An API client of 115 Cloud Storage Service.
+
+v0.2.x is in process.
 
 ## Example
 
 ```go
-import "github.com/deadblue/elevengo"
+import (
+    "github.com/deadblue/elevengo"
+	"log"
+)
 
-// Create agent
-agent = elevengo.Default()
-
-// Import credentials to login
-cr := &elevengo.Credential{
-    UID: "",
-    CID: "",
-    SEID: "",
+agent := elevengo.Default()
+credential := &elevengo.Credential{
+    UID: "", CID: "", SEID: "",
 }
-if err := agent.CredentialImport(cr); err != nil {
-    panic(err)
+if err := agent.CredentialImport(credential); err != nil {
+    log.Fatalf("Import credentail error: %s", err)
 }
 
-// List files under root.
-for cursor := elevengo.FileCursor(); cursor.HasMore(); cursor.Next() {
-    if files, err := agent.FileList("0", cursor); err != nil {
-        panic(err)
-    } else {
-        // TODO: deal with the files
+cursor, files := &elevengo.FileCursor{}, make([]*elevengo.File, 10)
+for cursor.HasMore() {
+    n, err := agent.FileList("0", cursor, files)
+    if err != nil {
+        log.Fatalf("List file failed: %s", err.Error())
+    }
+    for i := 0; i < n; i++ {
+        log.Printf("File: %#v", files[i])
     }
 }
 ```
 
-You can find more examples from [reference](https://pkg.go.dev/github.com/deadblue/elevengo).
+More examples can be found in [reference](https://pkg.go.dev/github.com/deadblue/elevengo).
 
 ## Features
 
@@ -63,11 +65,6 @@ You can find more examples from [reference](https://pkg.go.dev/github.com/deadbl
   * [x] Clear tasks
 * Other
   * [x] Captcha
-
-## TODO list
-
-* Handle more upstream errors.
-* Caller can switch upstream API between HTTP/HTTPS.
 
 ## License
 
