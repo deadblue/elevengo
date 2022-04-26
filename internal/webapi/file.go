@@ -9,8 +9,8 @@ type FileInfo struct {
 	Name     string      `json:"n"`
 	Type     string      `json:"ico"`
 	Size     StringInt64 `json:"s"`
-	PickCode string      `json:"pc"`
 	Sha1     string      `json:"sha"`
+	PickCode string      `json:"pc"`
 
 	CreateTime StringInt64 `json:"tp"`
 	UpdateTime StringInt64 `json:"te"`
@@ -23,9 +23,22 @@ type FileInfo struct {
 	VideoDefinition int `json:"vdi"`
 }
 
-type DirInfo struct {
+type FileParentInfo struct {
 	FileId   IntString `json:"file_id"`
 	FileName string    `json:"file_name"`
+}
+
+type FileDuplication struct {
+	FileId   string      `json:"fid"`
+	Name     string      `json:"fn"`
+	Type     string      `json:"ico"`
+	Size     StringInt64 `json:"fs"`
+	Sha1     string      `json:"sha1"`
+	PickCode string      `json:"pc"`
+
+	UpdateTime StringInt64 `json:"te"`
+
+	Parent FileParentInfo `json:"paths"`
 }
 
 type FileListResponse struct {
@@ -66,8 +79,20 @@ type FileStatResponse struct {
 	UpdateTime StringInt64 `json:"utime"`
 	AccessTime int64       `json:"open_time"`
 
-	Paths []*DirInfo `json:"paths"`
+	Paths []*FileParentInfo `json:"paths"`
 
 	FileCount StringInt `json:"count"`
 	DirCount  StringInt `json:"folder_count"`
+}
+
+type FileAddResponse struct {
+	BasicResponse
+
+	AreaId IntString `json:"aid"`
+
+	CategoryId   string `json:"cid"`
+	CategoryName string `json:"cname"`
+
+	FileId   string `json:"file_id"`
+	FileName string `json:"file_name"`
 }

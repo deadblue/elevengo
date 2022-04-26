@@ -13,7 +13,11 @@ const (
 	ApiFileRename     = "https://webapi.115.com/files/batch_rename"
 	ApiFileDelete     = "https://webapi.115.com/rb/delete"
 	ApiFileAddDir     = "https://webapi.115.com/files/add"
-	ApiFileVideo      = "https://v.anxia.com/webapi/files/video"
+
+	ApiFileFindDuplicate = "https://webapi.115.com/files/get_repeat_sha"
+
+	ApiFileImage = "https://webapi.115.com/files/image"
+	ApiFileVideo = "https://v.anxia.com/webapi/files/video"
 
 	ApiOfflineSpace  = "https://115.com/?ct=offline&ac=space"
 	ApiOfflineList   = "https://115.com/web/lixian/?ct=lixian&ac=task_lists"

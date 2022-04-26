@@ -7,25 +7,8 @@ import (
 )
 
 const (
-	apiDirCreate = "https://webapi.115.com/files/add"
-	apiDirGetId  = "https://webapi.115.com/files/getid"
+	apiDirGetId = "https://webapi.115.com/files/getid"
 )
-
-// DirCreate creates a directory under a directory with specific name.
-func (a *Agent) DirCreate(parentId, name string) (directoryId string, err error) {
-	form := core.NewForm().
-		WithString("pid", parentId).
-		WithString("cname", name)
-	result := &types.FileAddResult{}
-	err = a.hc.JsonApi(apiDirCreate, nil, form, result)
-	if err == nil && result.IsFailed() {
-		err = types.MakeFileError(int(result.ErrorCode), result.Error)
-	}
-	if err == nil {
-		directoryId = result.CategoryId
-	}
-	return
-}
 
 // DirGetId Retrieves directory ID from full path.
 func (a *Agent) DirGetId(path string) (directoryId string, err error) {

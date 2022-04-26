@@ -6,10 +6,6 @@ import (
 	"github.com/deadblue/elevengo/internal/webapi"
 )
 
-const (
-	apiFileImage = "https://webapi.115.com/files/image"
-)
-
 type VideoInfo struct {
 	FileId   string
 	FileName string
@@ -24,11 +20,11 @@ type VideoInfo struct {
 
 func (a *Agent) VideoGetInfo(pickcode string, info *VideoInfo) (err error) {
 	// Call video API
-	qs := (web.Params{}).
+	qs := web.Params{}.
 		With("pickcode", pickcode).
 		With("share_id", "0")
-	resp := webapi.VideoResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiFileVideo, qs, nil, &resp); err != nil {
+	resp := &webapi.VideoResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiFileVideo, qs, nil, resp); err != nil {
 		return
 	}
 	if err = resp.Err(); err != nil {
@@ -49,18 +45,22 @@ func (a *Agent) VideoGetInfo(pickcode string, info *VideoInfo) (err error) {
 	return
 }
 
-// ImageUrl gets an image URL which can be embedded into web page.
-//func (a *Agent) ImageUrl(pickcode string) (link string, err error) {
-//	qs := core.NewQueryString().
-//		WithString("pickcode", pickcode).
-//		WithInt64("_", time.Now().Unix())
-//	result := &types.FileImageResult{}
-//	err = a.hc.JsonApi(apiFileImage, qs, nil, result)
-//	if err == nil && result.IsFailed() {
-//		err = types.MakeFileError(result.ErrorCode, result.Error)
-//	}
-//	if err == nil {
-//		link = result.Data.OriginUrl
-//	}
-//	return
-//}
+// ImageGetUrl gets an accessible image URL of given pickcode, which is from an image file.
+func (a *Agent) ImageGetUrl(pickcode string) (imageUrl string, err error) {
+	qs := web.Params{}.
+		With("pickcode", pickcode).
+		WithNow("_")
+	resp := &webapi.BasicResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiFileImage, qs, nil, resp); err != nil {
+		return
+	}
+	if err = resp.Err(); err != nil {
+		return
+	}
+	// Parse response
+	data := &webapi.ImageData{}
+	if err = resp.Decode(data); err == nil {
+		imageUrl = data.OriginUrl
+	}
+	return
+}

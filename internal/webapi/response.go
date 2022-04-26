@@ -12,8 +12,8 @@ type BasicResponse struct {
 	// Response state
 	State bool `json:"state"`
 	// Error code
-	ErrorCode  int `json:"errno,omitempty"`
-	ErrorCode2 int `json:"errNo,omitempty"`
+	ErrorCode  StringInt `json:"errno,omitempty"`
+	ErrorCode2 int       `json:"errNo,omitempty"`
 	// Error message
 	ErrorMessage string `json:"error,omitempty"`
 	// Response data
@@ -22,7 +22,7 @@ type BasicResponse struct {
 
 func (r *BasicResponse) Err() error {
 	if !r.State {
-		code := r.ErrorCode
+		code := int(r.ErrorCode)
 		if code == 0 {
 			code = r.ErrorCode2
 		}

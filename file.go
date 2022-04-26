@@ -318,3 +318,42 @@ func (a *Agent) FileDelete(fileIds ...string) (err error) {
 	}
 	return
 }
+
+// FileMakeDir makes directory under parentId, and returns its ID.
+func (a *Agent) FileMakeDir(parentId string, name string) (dirId string, err error) {
+	qs := web.Params{}.
+		With("pid", parentId).
+		With("cname", name)
+	resp := &webapi.FileAddResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiFileAddDir, qs, nil, resp); err != nil {
+		return
+	}
+	if err = resp.Err(); err == nil {
+		dirId = resp.CategoryId
+	}
+	return
+}
+
+// FileFindDuplications finds all duplicate files which have the same SHA1 hash
+// with the given file, and return their ID.
+func (a *Agent) FileFindDuplications(fileId string) (dupIds []string, err error) {
+	qs := web.Params{}.With("file_id", fileId)
+	resp := &webapi.BasicResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiFileFindDuplicate, qs, nil, resp); err != nil {
+		return
+	}
+	if err = resp.Err(); err != nil {
+		return
+	}
+	// Parse response
+	var duplications []*webapi.FileDuplication
+	if err = resp.Decode(&duplications); err == nil {
+		if size := len(duplications); size > 0 {
+			dupIds = make([]string, size)
+			for i, dup := range duplications {
+				dupIds[i] = dup.FileId
+			}
+		}
+	}
+	return
+}

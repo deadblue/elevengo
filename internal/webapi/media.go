@@ -15,3 +15,13 @@ type VideoResponse struct {
 	PickCode   string      `json:"pick_code"`
 	Sha1       string      `json:"sha1"`
 }
+
+type ImageData struct {
+	Name string `json:"file_name"`
+	Sha1 string `json:"file_sha1"`
+
+	AllUrl    []string `json:"all_url"`
+	OriginUrl string   `json:"origin_url"`
+	SourceUrl string   `json:"source_url"`
+	Url       string   `json:"url"`
+}
