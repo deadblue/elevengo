@@ -167,3 +167,5 @@ func (a *Agent) UploadParseResult(content []byte, file *File) (err error) {
 	file.Sha1 = data.Sha1
 	return
 }
+
+// TODO: Support simple upload for small files.

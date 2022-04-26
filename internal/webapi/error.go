@@ -5,8 +5,10 @@ import "errors"
 var (
 	ErrNotLogin = errors.New("user not login")
 
-	ErrLoginPasswordIncorrect = errors.New("password incorrect")
-	ErrAccountNotBindMobile   = errors.New("account not binds mobile")
+	ErrPasswordIncorrect    = errors.New("password incorrect")
+	ErrLoginTwoStepVerify   = errors.New("requires two-step verification")
+	ErrAccountNotBindMobile = errors.New("account not binds mobile")
+	ErrCredentialExpired    = errors.New("credential expired")
 
 	ErrQrcodeExpired = errors.New("qrcode expired")
 
@@ -25,8 +27,10 @@ var (
 		10004: ErrOfflineInvalidLink,
 		10008: ErrOfflineTaskExisted,
 		// Login errors
-		40101009: ErrLoginPasswordIncorrect,
+		40101009: ErrPasswordIncorrect,
+		40101010: ErrLoginTwoStepVerify,
 		40101030: ErrAccountNotBindMobile,
+		40101032: ErrCredentialExpired,
 		// QRCode errors
 		40199002: ErrQrcodeExpired,
 	}

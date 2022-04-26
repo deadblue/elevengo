@@ -7,6 +7,9 @@ const (
 	ApiLoginGetKey   = "https://passportapi.115.com/app/1.0/web/5.0.1/login/getKey"
 	ApiPasswordLogin = "https://passportapi.115.com/app/1.0/web/1.0/login/login"
 
+	ApiSmsSendCode = "https://passportapi.115.com/app/1.0/web/1.0/code/sms/login"
+	ApiSmsLogin    = "https://passportapi.115.com/app/1.0/web/1.0/login/vip"
+
 	ApiQrcodeToken  = "https://qrcodeapi.115.com/api/1.0/web/1.0/token"
 	ApiQrcodeStatus = "https://qrcodeapi.115.com/get/status/"
 	ApiQrcodeLogin  = "https://passportapi.115.com/app/1.0/web/1.0/login/qrcode"

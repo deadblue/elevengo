@@ -88,19 +88,14 @@ func (a *Agent) QrcodeStatus(session *QrcodeSession) (status QrcodeStatus, err e
 
 // QrcodeLogin logins user through QRCode.
 // You SHOULD call this method ONLY when `QrcodeStatus.IsAllowed()` is true.
-func (a *Agent) QrcodeLogin(session *QrcodeSession) error {
-	//form := core.NewForm().
-	//	WithString("account", session.uid).
-	//	WithString("app", "web")
-	//data := &types.QrcodeLoginData{}
-	//if err := a.callQrcodeApi(apiQrcodeLogin, nil, form, data); err != nil {
-	//	return err
-	//} else {
-	//	a.user = UserInfo{
-	//		Id:   data.UserId,
-	//		Name: data.UserName,
-	//	}
-	//	return nil
-	//}
-	return nil
+func (a *Agent) QrcodeLogin(session *QrcodeSession) (err error) {
+	form := web.Params{}.
+		With("account", session.uid).
+		With("app", "web")
+	data := &webapi.LoginUserData{}
+	if err = a.qrcodeCallApi(webapi.ApiQrcodeLogin, nil, form, data); err == nil {
+		a.user.Id = data.Id
+		a.user.Name = data.Name
+	}
+	return
 }

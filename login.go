@@ -136,3 +136,34 @@ func (a *Agent) Login(account, password string) (err error) {
 	// TODO: Parse the response
 	return
 }
+
+func (a *Agent) LoginSendSmsCode(userId int) (err error) {
+	form := web.Params{}.
+		With("tpl", "login_from_two_step").
+		With("cv21", "2").
+		WithInt("user_id", userId)
+	resp := &webapi.LoginBasicResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiSmsSendCode, nil, form, resp); err == nil {
+		err = resp.Err()
+	}
+	return
+}
+
+func (a *Agent) LoginBySms(userId int, code string) (err error) {
+	form := web.Params{}.
+		WithInt("account", userId).
+		With("code", code)
+	resp := &webapi.LoginBasicResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiSmsLogin, nil, form, resp); err != nil {
+		return
+	}
+	if err = resp.Err(); err != nil {
+		return
+	}
+	data := &webapi.LoginUserData{}
+	if err = resp.Decode(data); err == nil {
+		a.user.Id = data.Id
+		a.user.Name = data.Name
+	}
+	return
+}

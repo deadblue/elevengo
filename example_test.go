@@ -23,16 +23,10 @@ func ExampleAgent_CredentialImport() {
 }
 
 func ExampleAgent_FileList() {
-
 	agent := Default()
-	if err := agent.CredentialImport(&Credential{
-		UID: "", CID: "", SEID: "",
-	}); err != nil {
-		log.Fatalf("Import credentail error: %s", err)
-	}
 
-	cursor, files := &FileCursor{}, make([]*File, 10)
-	for cursor.HasMore() {
+	files := make([]*File, 10)
+	for cursor := new(FileCursor); cursor.HasMore(); {
 		n, err := agent.FileList("0", cursor, files)
 		if err != nil {
 			log.Fatalf("List file failed: %s", err.Error())
@@ -44,16 +38,9 @@ func ExampleAgent_FileList() {
 }
 
 func ExampleAgent_Import() {
-	var err error
-
 	agent := Default()
-	if err = agent.CredentialImport(&Credential{
-		UID: "", CID: "", SEID: "",
-	}); err != nil {
-		log.Fatalf("Import credential failed: %s", err.Error())
-	}
 
-	ticket := &ImportTicket{}
+	ticket, err := &ImportTicket{}, error(nil)
 	if err = ticket.FromFile("/path/to/local-file"); err != nil {
 		log.Fatalf("Init import ticket failed: %s", err.Error())
 	}
