@@ -4,6 +4,13 @@ const (
 	ApiUserInfo  = "https://my.115.com/?ct=ajax&ac=nav"
 	ApiIndexInfo = "https://webapi.115.com/files/index_info"
 
+	ApiLoginGetKey   = "https://passportapi.115.com/app/1.0/web/5.0.1/login/getKey"
+	ApiPasswordLogin = "https://passportapi.115.com/app/1.0/web/1.0/login/login"
+
+	ApiQrcodeToken  = "https://qrcodeapi.115.com/api/1.0/web/1.0/token"
+	ApiQrcodeStatus = "https://qrcodeapi.115.com/get/status/"
+	ApiQrcodeLogin  = "https://passportapi.115.com/app/1.0/web/1.0/login/qrcode"
+
 	ApiFileList       = "https://webapi.115.com/files"
 	ApiFileListByName = "https://aps.115.com/natsort/files.php"
 	ApiFileSearch     = "https://webapi.115.com/files/search"

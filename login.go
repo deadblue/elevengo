@@ -1,9 +1,11 @@
 package elevengo
 
 import (
+	"encoding/base64"
 	"fmt"
 	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
+	"github.com/deadblue/elevengo/internal/webapi/sso"
 	"math/rand"
 	"time"
 )
@@ -73,4 +75,64 @@ func (a *Agent) syncUserInfo() (err error) {
 // User returns user information.
 func (a *Agent) User() *UserInfo {
 	return &a.user
+}
+
+func (a *Agent) loginGetKey() (key string, err error) {
+	resp := &webapi.LoginBasicResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiLoginGetKey, nil, nil, resp); err != nil {
+		return
+	}
+	if err = resp.Err(); err != nil {
+		return
+	}
+	data := &webapi.LoginKeyData{}
+	if err = resp.Decode(data); err != nil {
+		return
+	}
+	var keyData []byte
+	if keyData, err = base64.StdEncoding.DecodeString(data.Key); err == nil {
+		key = string(keyData)
+	}
+	return
+}
+
+func (a *Agent) Login(account, password string) (err error) {
+	// Get Login key
+	key, err := a.loginGetKey()
+	if err != nil {
+		return
+	}
+	// Encrypt password
+	now := time.Now().Unix()
+	encPwd, err := sso.EncryptPassword(password, now, key)
+	if err != nil {
+		return
+	}
+	// Send login request
+	ext := sso.GenerateExt()
+	form := web.Params{}.
+		With("login[version]", "2.0").
+		With("login[safe]", "1").
+		With("login[time]", "0").
+		With("login[safe_login]", "0").
+		With("login[country]", "").
+		With("login[ssoent]", "A1").
+		With("login[ssoext]", ext).
+		With("login[ssovcode]", ext).
+		With("login[ssoln]", account).
+		With("login[ssopw]", sso.EncodePassword(account, password, ext)).
+		WithInt("login[pwd_level]", sso.GetPasswordLevel(password)).
+		With("goto", "https://115.com").
+		With("country", "").
+		With("from_browser", "1").
+		With("cipher_ver", "2").
+		With("account", account).
+		With("passwd", encPwd).
+		WithInt64("time", now)
+	resp := &webapi.LoginBasicResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiPasswordLogin, nil, form, resp); err != nil {
+		return
+	}
+	// TODO: Parse the response
+	return
 }

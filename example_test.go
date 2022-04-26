@@ -197,8 +197,8 @@ func ExampleAgent_CaptchaStart() {
 
 func ExampleAgent_QrcodeStart() {
 	agent := Default()
-
-	session, err := agent.QrcodeStart()
+	session := &QrcodeSession{}
+	err := agent.QrcodeStart(session)
 	if err != nil {
 		log.Fatalf("Start QRcode session error: %s", err)
 	}
