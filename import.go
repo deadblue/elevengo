@@ -3,7 +3,7 @@ package elevengo
 import (
 	"errors"
 	"github.com/deadblue/elevengo/internal/crypto/hash"
-	"github.com/deadblue/gostream/quietly"
+	"github.com/deadblue/elevengo/internal/util"
 	"io"
 	"os"
 	"path"
@@ -26,7 +26,7 @@ func (t *ImportTicket) FromFile(name string) (err error) {
 	if err != nil {
 		return
 	}
-	defer quietly.Close(file)
+	defer util.QuietlyClose(file)
 	return t.From(path.Base(name), file)
 }
 

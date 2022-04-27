@@ -5,7 +5,6 @@ import (
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
-	"github.com/deadblue/gostream/quietly"
 	"io"
 	"math/rand"
 	"time"
@@ -48,32 +47,20 @@ type CaptchaSession struct {
 
 // CaptchaStart starts a CAPTCHA session.
 func (a *Agent) CaptchaStart(session *CaptchaSession) (err error) {
-	// Fetch captcha page
 	session.callback = fmt.Sprintf("Close911_%d", time.Now().UnixNano())
+	// Access captcha page
 	qs := web.Params{}.With("cb", session.callback)
-	body, err := a.wc.Get(webapi.ApiCaptchaPage, qs)
-	if err != nil {
+	if err = a.wc.Touch(webapi.ApiCaptchaPage, qs); err != nil {
 		return
 	}
-	util.ConsumeReader(body)
-
 	// Fetch CAPTCHA code image
 	qs = web.Params{}.WithNow("_t")
-	if body, err = a.wc.Get(webapi.ApiCaptchaCodeImage, qs); err != nil {
-		return
-	}
-	defer quietly.Close(body)
-	if session.CodeImage, err = io.ReadAll(body); err != nil {
-		return
-	}
-
-	// Fetch CAPTCHA keys image
-	body, err = a.wc.Get(webapi.ApiCaptchaAllKeyImage, qs)
+	session.CodeImage, err = a.wc.GetContent(webapi.ApiCaptchaCodeImage, qs)
 	if err != nil {
 		return
 	}
-	defer quietly.Close(body)
-	session.KeysImage, err = io.ReadAll(body)
+	// Fetch CAPTCHA keys image
+	session.KeysImage, err = a.wc.GetContent(webapi.ApiCaptchaAllKeyImage, qs)
 	return
 }
 
@@ -98,7 +85,7 @@ func (a *Agent) CaptchaKeyImage(session *CaptchaSession, index int) (data []byte
 	if err != nil {
 		return
 	}
-	defer quietly.Close(body)
+	defer util.QuietlyClose(body)
 	return io.ReadAll(body)
 }
 

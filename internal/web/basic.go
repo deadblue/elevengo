@@ -1,6 +1,7 @@
 package web
 
 import (
+	"github.com/deadblue/elevengo/internal/util"
 	"io"
 	"net/http"
 	"strings"
@@ -54,4 +55,22 @@ func (c *Client) PostForm(url string, qs Params, form Params) (body io.ReadClose
 		body = resp.Body
 	}
 	return
+}
+
+func (c *Client) GetContent(url string, qs Params) (data []byte, err error) {
+	body, err := c.Get(url, qs)
+	if err != nil {
+		return
+	}
+	defer util.QuietlyClose(body)
+	return io.ReadAll(body)
+}
+
+func (c *Client) Touch(url string, qs Params) error {
+	if body, err := c.Get(url, qs); err == nil {
+		util.ConsumeReader(body)
+		return nil
+	} else {
+		return err
+	}
 }

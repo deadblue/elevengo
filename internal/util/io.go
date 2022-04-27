@@ -27,7 +27,7 @@ func (w *WriterEx) MustWriteString(s ...string) {
 	}
 }
 
-// UpgradeWriter gives you a powerful Writer than the original one !
+// UpgradeWriter gives you a powerful Writer than the original one!
 func UpgradeWriter(w io.Writer) *WriterEx {
 	return &WriterEx{w: w}
 }
@@ -35,4 +35,8 @@ func UpgradeWriter(w io.Writer) *WriterEx {
 func ConsumeReader(r io.ReadCloser) {
 	_, _ = io.Copy(io.Discard, r)
 	_ = r.Close()
+}
+
+func QuietlyClose(c io.Closer) {
+	_ = c.Close()
 }

@@ -3,7 +3,7 @@ package web
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/deadblue/gostream/quietly"
+	"github.com/deadblue/elevengo/internal/util"
 	"io"
 )
 
@@ -19,7 +19,7 @@ func (c *Client) CallJsonApi(url string, qs Params, form Params, resp interface{
 	if err != nil {
 		return
 	}
-	defer quietly.Close(body)
+	defer util.QuietlyClose(body)
 	// Parse response
 	if resp != nil {
 		decoder := json.NewDecoder(body)
@@ -33,7 +33,7 @@ func (c *Client) CallJsonpApi(url string, qs Params, resp interface{}) (err erro
 	if err != nil {
 		return
 	}
-	defer quietly.Close(body)
+	defer util.QuietlyClose(body)
 	data, err := io.ReadAll(body)
 	if err != nil {
 		return

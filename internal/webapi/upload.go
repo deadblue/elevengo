@@ -6,6 +6,7 @@ type UploadToken struct {
 	AppId   string
 	AppVer  string
 	IspType int
+	UserId  int
 	UserKey string
 }
 
@@ -82,4 +83,15 @@ func (r *UploadOssTokenResponse) Err() error {
 		return nil
 	}
 	return ErrUnexpected
+}
+
+type UploadSimpleInitResponse struct {
+	Host     string `json:"host"`
+	Object   string `json:"object"`
+	Callback string `json:"callback"`
+
+	AccessKeyId string `json:"access_id"`
+	Policy      string `json:"policy"`
+	Expire      int64  `json:"expire"`
+	Signature   string `json:"signature"`
 }

@@ -43,6 +43,8 @@ const (
 	ApiUploadOssToken = "https://uplb.115.com/3.0/gettoken.php"
 	ApiUploadInit     = "https://uplb.115.com/3.0/initupload.php"
 
+	ApiUploadSimpleInit = "https://uplb.115.com/3.0/sampleinitupload.php"
+
 	ApiCaptchaPage        = "https://captchaapi.115.com/?ac=security_code&type=web"
 	ApiCaptchaCodeImage   = "https://captchaapi.115.com/?ct=index&ac=code&ctype=0"
 	ApiCaptchaAllKeyImage = "https://captchaapi.115.com/?ct=index&ac=code&t=all"
