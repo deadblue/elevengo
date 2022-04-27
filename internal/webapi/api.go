@@ -4,6 +4,8 @@ const (
 	ApiUserInfo  = "https://my.115.com/?ct=ajax&ac=nav"
 	ApiIndexInfo = "https://webapi.115.com/files/index_info"
 
+	ApiLoginCheck = "https://passportapi.115.com/app/1.0/web/1.0/check/sso"
+
 	ApiLoginGetKey   = "https://passportapi.115.com/app/1.0/web/5.0.1/login/getKey"
 	ApiPasswordLogin = "https://passportapi.115.com/app/1.0/web/1.0/login/login"
 
@@ -40,4 +42,11 @@ const (
 	ApiUploadInfo     = "https://proapi.115.com/app/uploadinfo"
 	ApiUploadOssToken = "https://uplb.115.com/3.0/gettoken.php"
 	ApiUploadInit     = "https://uplb.115.com/3.0/initupload.php"
+
+	ApiCaptchaPage        = "https://captchaapi.115.com/?ac=security_code&type=web"
+	ApiCaptchaCodeImage   = "https://captchaapi.115.com/?ct=index&ac=code&ctype=0"
+	ApiCaptchaAllKeyImage = "https://captchaapi.115.com/?ct=index&ac=code&t=all"
+	ApiCaptchaOneKeyImage = "https://captchaapi.115.com/?ct=index&ac=code&t=single"
+	ApiCaptchaSign        = "https://captchaapi.115.com/?ac=code&t=sign"
+	ApiCaptchaSubmit      = "https://webapi.115.com/user/captcha"
 )

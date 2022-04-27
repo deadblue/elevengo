@@ -1,16 +1,13 @@
 package elevengo
 
 import (
-	"github.com/deadblue/elevengo/internal/core"
 	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
 	"github.com/deadblue/elevengo/option"
 )
 
-/*
-Agent holds signed-in user's credentials, and provides methods to access upstream
-server's features, such as file management, offline download, etc.
-*/
+// Agent holds signed-in user's credentials, and provides methods to access upstream
+//server's features, such as file management, offline download, etc.
 type Agent struct {
 
 	// Agent name, used info "User-Agent" header.
@@ -18,19 +15,12 @@ type Agent struct {
 
 	// wc is the underlying web client
 	wc *web.Client
-
 	// User info
-	user UserInfo
-
+	ui UserInfo
 	// Offline token
 	ot webapi.OfflineToken
-
 	// Upload token
 	ut webapi.UploadToken
-
-	// hc is the old underlying http client
-	// Deprecated: use wc instead.
-	hc core.HttpClient
 }
 
 // New creates Agent with customized options.

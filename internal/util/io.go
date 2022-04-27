@@ -31,3 +31,8 @@ func (w *WriterEx) MustWriteString(s ...string) {
 func UpgradeWriter(w io.Writer) *WriterEx {
 	return &WriterEx{w: w}
 }
+
+func ConsumeReader(r io.ReadCloser) {
+	_, _ = io.Copy(io.Discard, r)
+	_ = r.Close()
+}

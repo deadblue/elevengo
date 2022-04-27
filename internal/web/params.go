@@ -29,6 +29,10 @@ func (p Params) WithNow(name string) Params {
 	return p.WithInt64(name, time.Now().Unix())
 }
 
+func (p Params) WithNowMilli(name string) Params {
+	return p.WithInt64(name, time.Now().UnixMilli())
+}
+
 func (p Params) WithArray(name string, values []string) Params {
 	for i, value := range values {
 		key := fmt.Sprintf("%s[%d]", name, i)

@@ -165,19 +165,18 @@ func ExampleAgent_VideoGetInfo() {
 
 func ExampleAgent_CaptchaStart() {
 	agent := Default()
-	// TODO: Import your credentials here
 
+	var err error
 	// Start captcha session.
-	session, err := agent.CaptchaStart()
-	if err != nil {
+	session := &CaptchaSession{}
+	if err = agent.CaptchaStart(session); err != nil {
 		log.Fatalf("Start captcha session error: %s", err)
 	}
-	// TODO:
-	//   * Show `session.CodeImage` and `session.KeysImage` to user.
-	//   * Ask user to give the captcha code.
 
-	err = agent.CaptchaSubmit(session, "code")
-	if err != nil {
+	// 1. Show `session.CodeImage` and `session.KeysImage` to user.
+	// 2. Ask user to give the captcha code.
+
+	if err = agent.CaptchaSubmit(session, "code"); err != nil {
 		log.Fatalf("Submit captcha code error: %s", err)
 	}
 }
@@ -193,35 +192,35 @@ func ExampleAgent_QrcodeStart() {
 	// 	Convert `session.Content` to QRcode, show it to user,
 	// 	and prompt user to scan it through mobile app.
 
-	for {
-		// Get QRcode status
-		status, err := agent.QrcodeStatus(session)
-		if err != nil {
-			if IsQrcodeExpire(err) {
-				log.Printf("QRCode expired, please re-generate one.")
-				break
-			} else {
-				log.Fatalf("Get QRcode status error: %s", err)
-			}
-		} else {
-			// Check QRcode status
-			if status.IsWaiting() {
-				log.Println("Please scan the QRcode in mobile app.")
-			} else if status.IsScanned() {
-				log.Println("QRcode has beed scanned, please allow this login in mobile app.")
-			} else if status.IsAllowed() {
-				err = agent.QrcodeLogin(session)
-				if err == nil {
-					log.Println("QRcode login successed!")
-				} else {
-					log.Printf("Submit QRcode login error: %s", err)
-				}
-				break
-			} else if status.IsCanceled() {
-				fmt.Println("User canceled this login!")
-				break
-			}
-		}
-	}
+	//for {
+	//	// Get QRcode status
+	//	status, err := agent.QrcodeStatus(session)
+	//	if err != nil {
+	//		if IsQrcodeExpire(err) {
+	//			log.Printf("QRCode expired, please re-generate one.")
+	//			break
+	//		} else {
+	//			log.Fatalf("Get QRcode status error: %s", err)
+	//		}
+	//	} else {
+	//		// Check QRcode status
+	//		if status.IsWaiting() {
+	//			log.Println("Please scan the QRcode in mobile app.")
+	//		} else if status.IsScanned() {
+	//			log.Println("QRcode has beed scanned, please allow this login in mobile app.")
+	//		} else if status.IsAllowed() {
+	//			err = agent.QrcodeLogin(session)
+	//			if err == nil {
+	//				log.Println("QRcode login successed!")
+	//			} else {
+	//				log.Printf("Submit QRcode login error: %s", err)
+	//			}
+	//			break
+	//		} else if status.IsCanceled() {
+	//			fmt.Println("User canceled this login!")
+	//			break
+	//		}
+	//	}
+	//}
 
 }

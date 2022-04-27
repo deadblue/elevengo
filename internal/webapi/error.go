@@ -8,7 +8,8 @@ var (
 	ErrPasswordIncorrect    = errors.New("password incorrect")
 	ErrLoginTwoStepVerify   = errors.New("requires two-step verification")
 	ErrAccountNotBindMobile = errors.New("account not binds mobile")
-	ErrCredentialExpired    = errors.New("credential expired")
+	ErrCredentialInvalid    = errors.New("credential invalid")
+	ErrSessionExited        = errors.New("session exited")
 
 	ErrQrcodeExpired = errors.New("qrcode expired")
 
@@ -30,7 +31,8 @@ var (
 		40101009: ErrPasswordIncorrect,
 		40101010: ErrLoginTwoStepVerify,
 		40101030: ErrAccountNotBindMobile,
-		40101032: ErrCredentialExpired,
+		40101032: ErrCredentialInvalid,
+		40101037: ErrSessionExited,
 		// QRCode errors
 		40199002: ErrQrcodeExpired,
 	}

@@ -50,6 +50,16 @@ func (a *Agent) CredentialExport(cr *Credential) (err error) {
 	return
 }
 
+func (a *Agent) LoginCheck() bool {
+	qs := web.Params{}.WithNowMilli("_")
+	resp := &webapi.LoginBasicResponse{}
+	if err := a.wc.CallJsonApi(webapi.ApiLoginCheck, qs, nil, resp); err != nil {
+		return false
+	}
+	//
+	return resp.State == 0
+}
+
 // syncUserInfo syncs user information from cloud to agent.
 func (a *Agent) syncUserInfo() (err error) {
 	cb := fmt.Sprintf("jQuery%d_%d", rand.Uint64(), time.Now().Unix())
@@ -67,14 +77,14 @@ func (a *Agent) syncUserInfo() (err error) {
 	if err = resp.Decode(&result); err != nil {
 		return
 	}
-	a.user.Id = result.UserId
-	a.user.Name = result.UserName
+	a.ui.Id = result.UserId
+	a.ui.Name = result.UserName
 	return
 }
 
 // User returns user information.
 func (a *Agent) User() *UserInfo {
-	return &a.user
+	return &a.ui
 }
 
 func (a *Agent) loginGetKey() (key string, err error) {
@@ -162,8 +172,8 @@ func (a *Agent) LoginBySms(userId int, code string) (err error) {
 	}
 	data := &webapi.LoginUserData{}
 	if err = resp.Decode(data); err == nil {
-		a.user.Id = data.Id
-		a.user.Name = data.Name
+		a.ui.Id = data.Id
+		a.ui.Name = data.Name
 	}
 	return
 }

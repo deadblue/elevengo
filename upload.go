@@ -55,7 +55,7 @@ func (a *Agent) uploadInit(dirId string, name string, size int64,
 		With("fileid", quickId).
 		With("filename", name).
 		WithInt64("filesize", size).
-		WithInt("userid", a.user.Id)
+		WithInt("userid", a.ui.Id)
 	// Send request
 	resp := &webapi.UploadInitResponse{}
 	if err = a.wc.CallJsonApi(webapi.ApiUploadInit, qs, form, resp); err != nil {
@@ -90,7 +90,7 @@ func (a *Agent) uploadInitToken() (err error) {
 func (a *Agent) uploadCalculateSignature(targetId, fileId string) string {
 	digester := sha1.New()
 	wx := util.UpgradeWriter(digester)
-	wx.MustWriteString(strconv.Itoa(a.user.Id), fileId, fileId, targetId, "0")
+	wx.MustWriteString(strconv.Itoa(a.ui.Id), fileId, fileId, targetId, "0")
 	h := hex.EncodeToString(digester.Sum(nil))
 	// Second pass
 	digester.Reset()
