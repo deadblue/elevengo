@@ -76,7 +76,7 @@ func (a *Agent) offlineCallApi(url string, form web.Params, resp interface{}) (e
 	if form == nil {
 		form = web.Params{}
 	}
-	form.WithInt("uid", a.ui.Id).
+	form.WithInt("uid", a.uid).
 		WithInt64("time", a.ot.Time).
 		With("sign", a.ot.Sign)
 	return a.wc.CallJsonApi(url, nil, form, resp)

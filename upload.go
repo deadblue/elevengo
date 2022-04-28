@@ -1,10 +1,12 @@
 package elevengo
 
 import (
+	"bytes"
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/deadblue/elevengo/internal/crypto/hash"
 	"github.com/deadblue/elevengo/internal/oss"
@@ -13,6 +15,7 @@ import (
 	"github.com/deadblue/elevengo/internal/webapi"
 	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -55,7 +58,7 @@ func (a *Agent) uploadInit(dirId string, name string, size int64,
 		With("fileid", quickId).
 		With("filename", name).
 		WithInt64("filesize", size).
-		WithInt("userid", a.ui.Id)
+		WithInt("userid", a.ut.UserId)
 	// Send request
 	resp := &webapi.UploadInitResponse{}
 	if err = a.wc.CallJsonApi(webapi.ApiUploadInit, qs, form, resp); err != nil {
@@ -83,6 +86,7 @@ func (a *Agent) uploadInitToken() (err error) {
 	a.ut.AppId = string(resp.AppId)
 	a.ut.AppVer = string(resp.AppVersion)
 	a.ut.IspType = resp.IspType
+	a.ut.UserId = resp.UserId
 	a.ut.UserKey = resp.UserKey
 	return
 }
@@ -90,7 +94,7 @@ func (a *Agent) uploadInitToken() (err error) {
 func (a *Agent) uploadCalculateSignature(targetId, fileId string) string {
 	digester := sha1.New()
 	wx := util.UpgradeWriter(digester)
-	wx.MustWriteString(strconv.Itoa(a.ui.Id), fileId, fileId, targetId, "0")
+	wx.MustWriteString(strconv.Itoa(a.uid), fileId, fileId, targetId, "0")
 	h := hex.EncodeToString(digester.Sum(nil))
 	// Second pass
 	digester.Reset()
@@ -168,4 +172,35 @@ func (a *Agent) UploadParseResult(content []byte, file *File) (err error) {
 	return
 }
 
-// TODO: Support simple upload for small files.
+func (a *Agent) UploadSimply(dirId, name string, size int64, r io.Reader) (err error) {
+	if size == 0 {
+		// Try to inspect input size from r
+		switch r.(type) {
+		case *bytes.Buffer:
+			size = int64(r.(*bytes.Buffer).Len())
+		case *bytes.Reader:
+			size = r.(*bytes.Reader).Size()
+		case *strings.Reader:
+			size = int64(r.(*strings.Reader).Len())
+		case *os.File:
+			if i, e := r.(*os.File).Stat(); e == nil {
+				size = i.Size()
+			}
+		}
+	}
+	if size == 0 {
+		return errors.New("upload size is zero")
+	}
+	form := web.Params{}.
+		WithInt("userid", a.ut.UserId).
+		With("filename", name).
+		WithInt64("filesize", size).
+		With("target", fmt.Sprintf("U_1_%s", dirId))
+	resp := &webapi.UploadSimpleInitResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiUploadSimpleInit, nil, form, resp); err != nil {
+		return
+	}
+	// TODO
+
+	return
+}

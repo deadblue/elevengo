@@ -15,8 +15,9 @@ type Agent struct {
 
 	// wc is the underlying web client
 	wc *web.Client
-	// User info
-	ui UserInfo
+
+	// User ID
+	uid int
 	// Offline token
 	ot webapi.OfflineToken
 	// Upload token

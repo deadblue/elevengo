@@ -24,6 +24,12 @@ func (r *LoginBasicResponse) Decode(data interface{}) error {
 	return json.Unmarshal(r.Data, data)
 }
 
+type LoginCheckData struct {
+	UserId int    `json:"user_id"`
+	Link   string `json:"link"`
+	Expire int    `json:"expire"`
+}
+
 type LoginKeyData struct {
 	Key string `json:"key"`
 }

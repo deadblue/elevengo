@@ -26,10 +26,6 @@ type UserInfo struct {
 	Name string
 }
 
-func (u *UserInfo) IsLogin() bool {
-	return u.Id != 0
-}
-
 // CredentialImport imports credentials into agent.
 func (a *Agent) CredentialImport(cr *Credential) (err error) {
 	cookies := map[string]string{
@@ -38,16 +34,18 @@ func (a *Agent) CredentialImport(cr *Credential) (err error) {
 		webapi.CookieNameSeid: cr.SEID,
 	}
 	a.wc.ImportCookies(cookies, webapi.CookieDomain115, webapi.CookieDomainAnxia)
-	return a.syncUserInfo()
+	if !a.LoginCheck() {
+		err = webapi.ErrCredentialInvalid
+	}
+	return
 }
 
 // CredentialExport exports credentials for future-use.
-func (a *Agent) CredentialExport(cr *Credential) (err error) {
+func (a *Agent) CredentialExport(cr *Credential) {
 	cookies := a.wc.ExportCookies(webapi.CookieUrl)
 	cr.UID = cookies[webapi.CookieNameUid]
 	cr.CID = cookies[webapi.CookieNameCid]
 	cr.SEID = cookies[webapi.CookieNameSeid]
-	return
 }
 
 func (a *Agent) LoginCheck() bool {
@@ -56,12 +54,19 @@ func (a *Agent) LoginCheck() bool {
 	if err := a.wc.CallJsonApi(webapi.ApiLoginCheck, qs, nil, resp); err != nil {
 		return false
 	}
-	//
-	return resp.State == 0
+	if resp.State != 0 {
+		return false
+	}
+	data := &webapi.LoginCheckData{}
+	if err := resp.Decode(data); err != nil {
+		return false
+	}
+	a.uid = data.UserId
+	return true
 }
 
-// syncUserInfo syncs user information from cloud to agent.
-func (a *Agent) syncUserInfo() (err error) {
+// UserGet retrieves user information from cloud.
+func (a *Agent) UserGet(info *UserInfo) (err error) {
 	cb := fmt.Sprintf("jQuery%d_%d", rand.Uint64(), time.Now().Unix())
 	qs := web.Params{}.
 		With("callback", cb).
@@ -74,17 +79,11 @@ func (a *Agent) syncUserInfo() (err error) {
 		return err
 	}
 	result := webapi.UserInfoData{}
-	if err = resp.Decode(&result); err != nil {
-		return
+	if err = resp.Decode(&result); err == nil {
+		info.Id = result.UserId
+		info.Name = result.UserName
 	}
-	a.ui.Id = result.UserId
-	a.ui.Name = result.UserName
 	return
-}
-
-// User returns user information.
-func (a *Agent) User() *UserInfo {
-	return &a.ui
 }
 
 func (a *Agent) loginGetKey() (key string, err error) {
@@ -172,8 +171,7 @@ func (a *Agent) LoginBySms(userId int, code string) (err error) {
 	}
 	data := &webapi.LoginUserData{}
 	if err = resp.Decode(data); err == nil {
-		a.ui.Id = data.Id
-		a.ui.Name = data.Name
+		a.uid = data.Id
 	}
 	return
 }
