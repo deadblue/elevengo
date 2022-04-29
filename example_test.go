@@ -18,8 +18,6 @@ func ExampleAgent_CredentialImport() {
 	}); err != nil {
 		log.Fatalf("Import credentail error: %s", err)
 	}
-	user := agent.User()
-	log.Printf("Username: %s", user.Name)
 }
 
 func ExampleAgent_FileList() {
@@ -49,21 +47,13 @@ func ExampleAgent_Import() {
 	}
 }
 
-func ExampleAgent_OfflineList() {
-	//agent := Default()
-	// TODO: Import your credentials here
+func ExampleAgent_OfflineIterate() {
+	agent := Default()
 
-	// Get offline tasks
-	//for cursor := OfflineCursor(); cursor.HasMore(); cursor.Next() {
-	//	tasks, err := agent.OfflineList(cursor)
-	//	if err != nil {
-	//		log.Fatalf("Get offline task list error: %s", err)
-	//	} else {
-	//		for _, task := range tasks {
-	//			log.Printf("Offline task: %#v", task)
-	//		}
-	//	}
-	//}
+	for it, err := agent.OfflineIterate(); err == nil; err = it.Next() {
+		task := &OfflineTask{}
+		err = it.Get(task)
+	}
 }
 
 func ExampleAgent_DownloadCreateTicket() {

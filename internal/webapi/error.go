@@ -23,6 +23,7 @@ var (
 
 	errMap = map[int]error{
 		// Normal errors
+		99:     ErrNotLogin,
 		990001: ErrNotLogin,
 		// Offline errors
 		10004: ErrOfflineInvalidLink,

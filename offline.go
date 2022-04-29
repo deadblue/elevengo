@@ -3,6 +3,7 @@ package elevengo
 import (
 	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
+	"io"
 )
 
 type OfflineClearFlag int
@@ -27,16 +28,6 @@ type OfflineTask struct {
 	FileId   string
 }
 
-func (t *OfflineTask) from(task *webapi.OfflineTask) {
-	t.InfoHash = task.InfoHash
-	t.Name = task.Name
-	t.Size = task.Size
-	t.Status = task.Status
-	t.Percent = task.Percent
-	t.Url = task.Url
-	t.FileId = task.FileId
-}
-
 func (t *OfflineTask) IsRunning() bool {
 	return t.Status == 1
 }
@@ -49,11 +40,7 @@ func (t *OfflineTask) IsFailed() bool {
 	return t.Status == -1
 }
 
-type OfflineCursor struct {
-	page int
-}
-
-func (a *Agent) offlineUpdateToken() (err error) {
+func (a *Agent) offlineInitToken() (err error) {
 	qs := web.Params{}.WithNow("_")
 	resp := &webapi.OfflineSpaceResponse{}
 	if err = a.wc.CallJsonApi(webapi.ApiOfflineSpace, qs, nil, resp); err != nil {
@@ -69,7 +56,7 @@ func (a *Agent) offlineUpdateToken() (err error) {
 
 func (a *Agent) offlineCallApi(url string, form web.Params, resp interface{}) (err error) {
 	if a.ot.Time == 0 {
-		if err = a.offlineUpdateToken(); err != nil {
+		if err = a.offlineInitToken(); err != nil {
 			return
 		}
 	}
@@ -82,22 +69,95 @@ func (a *Agent) offlineCallApi(url string, form web.Params, resp interface{}) (e
 	return a.wc.CallJsonApi(url, nil, form, resp)
 }
 
-// OfflineList lists offline tasks
-func (a *Agent) OfflineList() (err error) {
-	form := web.Params{}.
-		WithInt("page", 1)
-	resp := &webapi.OfflineListResponse{}
-	if err = a.offlineCallApi(webapi.ApiOfflineList, form, resp); err != nil {
-		err = resp.Err()
+type OfflineIterator interface {
+	Next() error
+
+	Get(*OfflineTask) error
+}
+
+type implOfflineIterator struct {
+	a *Agent
+	// Page index
+	pi int
+	// Page count
+	pc int
+	// Cached tasks
+	ts []*webapi.OfflineTask
+	// Task index
+	ti int
+	// Task count
+	tc int
+}
+
+func (i *implOfflineIterator) Next() (err error) {
+	i.ti += 1
+	// If we reach the last record?
+	if i.ti == i.tc && i.pi == i.pc {
+		return io.EOF
 	}
-	if err != nil {
-		return
+	// Is cache available?
+	if i.ti < i.tc {
+		return nil
 	}
-	// TODO: How we return
+	// Fetch next page
+	if err = i.a.offlineGetTasks(i.pi+1, i); err == nil {
+		if i.tc == 0 {
+			err = io.EOF
+		}
+	}
 	return
 }
 
-// OfflineAdd adds an offline task with url.
+func (i *implOfflineIterator) Get(task *OfflineTask) (err error) {
+	if i.ti >= i.tc {
+		return io.EOF
+	}
+	t := i.ts[i.ti]
+	task.InfoHash = t.InfoHash
+	task.Name = t.Name
+	task.Size = t.Size
+	task.Url = t.Url
+	task.Status = t.Status
+	task.Percent = t.Percent
+	task.FileId = t.FileId
+	return nil
+}
+
+// OfflineIterate returns an iterator for travelling offline tasks. it will
+// return io.EOF error when there are no tasks.
+func (a *Agent) OfflineIterate() (it OfflineIterator, err error) {
+	impl := &implOfflineIterator{
+		a: a,
+	}
+	if err = a.offlineGetTasks(1, impl); err == nil {
+		if impl.tc == 0 {
+			err = io.EOF
+		} else {
+			it = impl
+		}
+	}
+	return
+}
+
+func (a Agent) offlineGetTasks(page int, it *implOfflineIterator) (err error) {
+	form := web.Params{}.
+		WithInt("page", page)
+	resp := &webapi.OfflineListResponse{}
+	if err = a.offlineCallApi(webapi.ApiOfflineList, form, resp); err != nil {
+		return
+	}
+	if err = resp.Err(); err == nil {
+		it.pi, it.pc = resp.PageIndex, resp.PageCount
+		it.ts, it.tc = resp.Tasks, len(resp.Tasks)
+		it.ti = 0
+	}
+	return
+}
+
+// OfflineAdd adds an offline task with url, and saves the downloaded files at
+// directory whose ID is dirId.
+// You can pass empty string as dirId, to save the downloaded files at default
+// directory.
 func (a *Agent) OfflineAdd(url string, dirId string) (err error) {
 	form := web.Params{}.
 		With("url", url)

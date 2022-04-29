@@ -83,11 +83,13 @@ func (a *Agent) uploadInitToken() (err error) {
 	if err = a.wc.CallJsonApi(webapi.ApiUploadInfo, nil, nil, resp); err != nil {
 		return
 	}
-	a.ut.AppId = string(resp.AppId)
-	a.ut.AppVer = string(resp.AppVersion)
-	a.ut.IspType = resp.IspType
-	a.ut.UserId = resp.UserId
-	a.ut.UserKey = resp.UserKey
+	if err = resp.Err(); err == nil {
+		a.ut.AppId = string(resp.AppId)
+		a.ut.AppVer = string(resp.AppVersion)
+		a.ut.IspType = resp.IspType
+		a.ut.UserId = resp.UserId
+		a.ut.UserKey = resp.UserKey
+	}
 	return
 }
 

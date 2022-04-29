@@ -105,6 +105,9 @@ func (a *Agent) loginGetKey() (key string, err error) {
 	return
 }
 
+// Login authenticates user by account and password.
+//
+// This API does not work for VIP user, because VIP user always need verify by SMS.
 func (a *Agent) Login(account, password string) (err error) {
 	// Get Login key
 	key, err := a.loginGetKey()
