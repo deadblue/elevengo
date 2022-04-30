@@ -28,6 +28,9 @@ const (
 
 	ApiFileFindDuplicate = "https://webapi.115.com/files/get_repeat_sha"
 
+	ApiDirGetId    = "https://webapi.115.com/files/getid"
+	ApiDirSetOrder = "https://webapi.115.com/files/order"
+
 	ApiFileImage = "https://webapi.115.com/files/image"
 	ApiFileVideo = "https://v.anxia.com/webapi/files/video"
 

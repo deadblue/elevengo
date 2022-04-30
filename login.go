@@ -145,7 +145,14 @@ func (a *Agent) Login(account, password string) (err error) {
 	if err = a.wc.CallJsonApi(webapi.ApiPasswordLogin, nil, form, resp); err != nil {
 		return
 	}
-	// TODO: Parse the response
+	// Parse response
+	if err = resp.Err(); err != nil {
+		return
+	}
+	data := &webapi.LoginUserData{}
+	if err = resp.Decode(data); err == nil {
+		a.uid = data.Id
+	}
 	return
 }
 

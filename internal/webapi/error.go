@@ -19,6 +19,7 @@ var (
 	// ErrUnexpected is the fall-back error whose code is not handled.
 	ErrUnexpected = errors.New("unexpected error")
 
+	ErrNotExist      = errors.New("file or directory no exists")
 	ErrVideoNotReady = errors.New("video is not ready")
 
 	errMap = map[int]error{
