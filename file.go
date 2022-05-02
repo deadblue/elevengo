@@ -54,9 +54,11 @@ func (f *File) from(info *webapi.FileInfo) *File {
 	f.Star = info.IsStar != 0
 	f.Labels = make([]*Label, len(info.Labels))
 	for i, l := range info.Labels {
-		f.Labels[i].Id = l.Id
-		f.Labels[i].Name = l.Name
-		f.Labels[i].Color = LabelColor(webapi.LabelColorMap[l.Color])
+		f.Labels[i] = &Label{
+			Id:    l.Id,
+			Name:  l.Name,
+			Color: LabelColor(webapi.LabelColorMap[l.Color]),
+		}
 	}
 
 	f.CreateTime = time.Unix(int64(info.CreateTime), 0)
@@ -150,28 +152,25 @@ func (a *Agent) FileList(dirId string, cursor *FileCursor, files []*File) (n int
 			apiUrl = webapi.ApiFileListByName
 		}
 		// Call API
-		err, retry = a.wc.CallJsonApi(apiUrl, qs, nil, resp), false
-		if err != nil {
-			break
-		}
-		// Parse response
-		if err = resp.Err(); err != nil {
-			if resp.ErrorCode2 == 20130827 {
-				// Change order and retry
-				cursor.order, cursor.asc = resp.Order, resp.IsAsc
-				qs.With("o", cursor.order).WithInt("asc", cursor.asc)
-				retry = true
-			}
+		err = a.wc.CallJsonApi(apiUrl, qs, nil, resp)
+		if err == webapi.ErrOrderNotSupport {
+			cursor.order, cursor.asc = resp.Order, resp.IsAsc
+			qs.With("o", cursor.order).
+				WithInt("asc", cursor.asc)
+			retry = true
+		} else {
+			retry = false
 		}
 	}
 	if err != nil {
 		return
 	}
-	// Upstream will return file list under root when parentId is invalid, but this API should
-	// return an error.
-	//if parentId != string(resp.CategoryId) {
-	//	return 0, errFileNotExist
-	//}
+	// When dirId is not exists, 115 will return the file list under root dir,
+	// that should be considered as an error.
+	if dirId != string(resp.CategoryId) {
+		return 0, webapi.ErrNotExist
+	}
+	// Fill result
 	result := make([]*webapi.FileInfo, 0, n)
 	if err = resp.Decode(&result); err != nil {
 		return
@@ -210,9 +209,6 @@ func (a *Agent) FileSearch(dirId, keyword string, cursor *FileCursor, files []*F
 	if err = a.wc.CallJsonApi(webapi.ApiFileSearch, qs, nil, &resp); err != nil {
 		return
 	}
-	if err = resp.Err(); err != nil {
-		return
-	}
 	// Parse response
 	result := make([]*webapi.FileInfo, 0, n)
 	if err = resp.Decode(&result); err != nil {
@@ -239,9 +235,6 @@ func (a *Agent) FileGet(fileId string, file *File) (err error) {
 	if err = a.wc.CallJsonApi(webapi.ApiFileInfo, qs, nil, resp); err != nil {
 		return
 	}
-	if err = resp.Err(); err != nil {
-		return
-	}
 	data := &webapi.FileInfo{}
 	if err = resp.Decode(data); err == nil {
 		file.from(data)
@@ -253,10 +246,7 @@ func (a *Agent) FileGet(fileId string, file *File) (err error) {
 func (a *Agent) FileStat(fileId string, info *FileInfo) (err error) {
 	qs := (web.Params{}).With("cid", fileId)
 	resp := &webapi.FileStatResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiFileStat, qs, nil, resp); err == nil {
-		err = resp.Err()
-	}
-	if err != nil {
+	if err = a.wc.CallJsonApi(webapi.ApiFileStat, qs, nil, resp); err != nil {
 		return
 	}
 	info.Name = resp.FileName
@@ -290,11 +280,8 @@ func (a *Agent) FileMove(dirId string, fileIds ...string) (err error) {
 	form := web.Params{}.
 		With("pid", dirId).
 		WithArray("fid", fileIds)
-	resp := &webapi.BasicResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiFileMove, nil, form, resp); err == nil {
-		err = resp.Err()
-	}
-	return
+	return a.wc.CallJsonApi(
+		webapi.ApiFileMove, nil, form, &webapi.BasicResponse{})
 }
 
 // FileCopy copies files into target directory whose id is dirId.
@@ -305,11 +292,8 @@ func (a *Agent) FileCopy(dirId string, fileIds ...string) (err error) {
 	form := web.Params{}.
 		With("pid", dirId).
 		WithArray("fid", fileIds)
-	resp := &webapi.BasicResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiFileCopy, nil, form, resp); err == nil {
-		err = resp.Err()
-	}
-	return
+	return a.wc.CallJsonApi(
+		webapi.ApiFileCopy, nil, form, &webapi.BasicResponse{})
 }
 
 // FileRename renames file to new name.
@@ -318,11 +302,8 @@ func (a *Agent) FileRename(fileId, newName string) (err error) {
 		WithMap("files_new_name", map[string]string{
 			fileId: newName,
 		})
-	resp := &webapi.BasicResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiFileRename, nil, form, resp); err == nil {
-		err = resp.Err()
-	}
-	return
+	return a.wc.CallJsonApi(
+		webapi.ApiFileRename, nil, form, &webapi.BasicResponse{})
 }
 
 // FileDelete deletes files.
@@ -331,26 +312,8 @@ func (a *Agent) FileDelete(fileIds ...string) (err error) {
 		return
 	}
 	form := web.Params{}.WithArray("fid", fileIds)
-	resp := &webapi.BasicResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiFileDelete, nil, form, resp); err == nil {
-		err = resp.Err()
-	}
-	return
-}
-
-// FileMakeDir makes directory under parentId, and returns its ID.
-func (a *Agent) FileMakeDir(parentId string, name string) (dirId string, err error) {
-	qs := web.Params{}.
-		With("pid", parentId).
-		With("cname", name)
-	resp := &webapi.FileAddResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiFileAddDir, qs, nil, resp); err != nil {
-		return
-	}
-	if err = resp.Err(); err == nil {
-		dirId = resp.CategoryId
-	}
-	return
+	return a.wc.CallJsonApi(
+		webapi.ApiFileDelete, nil, form, &webapi.BasicResponse{})
 }
 
 // FileFindDuplications finds all duplicate files which have the same SHA1 hash
@@ -359,9 +322,6 @@ func (a *Agent) FileFindDuplications(fileId string) (dupIds []string, err error)
 	qs := web.Params{}.With("file_id", fileId)
 	resp := &webapi.BasicResponse{}
 	if err = a.wc.CallJsonApi(webapi.ApiFileFindDuplicate, qs, nil, resp); err != nil {
-		return
-	}
-	if err = resp.Err(); err != nil {
 		return
 	}
 	// Parse response

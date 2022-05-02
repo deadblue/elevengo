@@ -39,9 +39,6 @@ func (a *Agent) LabelList() (err error) {
 	if err = a.wc.CallJsonApi(webapi.ApiLabelList, qs, nil, resp); err != nil {
 		return
 	}
-	if err = resp.Err(); err != nil {
-		return
-	}
 	data := &webapi.LabelListData{}
 	if err = resp.Decode(data); err != nil {
 		return
@@ -57,9 +54,6 @@ func (a *Agent) LabelFind(name string, label *Label) (err error) {
 		WithInt("limit", 11150)
 	resp := &webapi.BasicResponse{}
 	if err = a.wc.CallJsonApi(webapi.ApiLabelList, qs, nil, resp); err != nil {
-		return
-	}
-	if err = resp.Err(); err != nil {
 		return
 	}
 	data := &webapi.LabelListData{}
@@ -88,9 +82,6 @@ func (a *Agent) LabelCreate(name string, color LabelColor) (labelId string, err 
 	if err = a.wc.CallJsonApi(webapi.ApiLabelAdd, nil, form, resp); err != nil {
 		return
 	}
-	if err = resp.Err(); err != nil {
-		return
-	}
 	var data []*webapi.LabelInfo
 	if err = resp.Decode(&data); err == nil {
 		if len(data) > 0 {
@@ -111,21 +102,16 @@ func (a *Agent) LabelUpdate(label *Label) (err error) {
 		With("id", label.Id).
 		With("name", label.Name).
 		With("color", webapi.LabelColors[label.Color])
-	resp := &webapi.BasicResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiLabelEdit, nil, form, resp); err == nil {
-		err = resp.Err()
-	}
-	return
+	return a.wc.CallJsonApi(webapi.ApiLabelEdit, nil, form, &webapi.BasicResponse{})
 }
 
 // LabelDelete deletes a label whose ID is labelId.
 func (a *Agent) LabelDelete(labelId string) (err error) {
-	form := web.Params{}.With("id", labelId)
-	resp := &webapi.BasicResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiLabelDelete, nil, form, resp); err == nil {
-		err = resp.Err()
+	if labelId == "" {
+		return
 	}
-	return
+	form := web.Params{}.With("id", labelId)
+	return a.wc.CallJsonApi(webapi.ApiLabelDelete, nil, form, &webapi.BasicResponse{})
 }
 
 // FileSetLabel sets labels for a file, you can also remove all labels from it
@@ -138,9 +124,5 @@ func (a *Agent) FileSetLabel(fileId string, labelIds ...string) (err error) {
 	} else {
 		form.With("file_label", strings.Join(labelIds, ","))
 	}
-	resp := &webapi.BasicResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiFileEdit, nil, form, resp); err == nil {
-		err = resp.Err()
-	}
-	return
+	return a.wc.CallJsonApi(webapi.ApiFileEdit, nil, form, &webapi.BasicResponse{})
 }

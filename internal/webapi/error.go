@@ -5,6 +5,11 @@ import "errors"
 var (
 	ErrNotLogin = errors.New("user not login")
 
+	ErrOfflineInvalidLink = errors.New("invalid download link")
+	ErrOfflineTaskExisted = errors.New("offline task existed")
+
+	ErrOrderNotSupport = errors.New("file order not supported")
+
 	ErrPasswordIncorrect    = errors.New("password incorrect")
 	ErrLoginTwoStepVerify   = errors.New("requires two-step verification")
 	ErrAccountNotBindMobile = errors.New("account not binds mobile")
@@ -13,14 +18,14 @@ var (
 
 	ErrQrcodeExpired = errors.New("qrcode expired")
 
-	ErrOfflineInvalidLink = errors.New("invalid download link")
-	ErrOfflineTaskExisted = errors.New("offline task existed")
-
-	ErrLabelExist = errors.New("label name exist")
 	// ErrUnexpected is the fall-back error whose code is not handled.
 	ErrUnexpected = errors.New("unexpected error")
 
-	ErrNotExist      = errors.New("file or directory no exists")
+	// ErrExist means an item which you want to create is already existed.
+	ErrExist = errors.New("target already exists")
+	// ErrNotExist means an item which you find is not existed.
+	ErrNotExist = errors.New("target does not exist")
+
 	ErrVideoNotReady = errors.New("video is not ready")
 
 	errMap = map[int]error{
@@ -30,8 +35,10 @@ var (
 		// Offline errors
 		10004: ErrOfflineInvalidLink,
 		10008: ErrOfflineTaskExisted,
-		//
-		21003: ErrLabelExist,
+		// Label errors
+		21003: ErrExist,
+		// File errors
+		20130827: ErrOrderNotSupport,
 		// Login errors
 		40101009: ErrPasswordIncorrect,
 		40101010: ErrLoginTwoStepVerify,

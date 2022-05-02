@@ -95,3 +95,7 @@ type UploadSimpleInitResponse struct {
 	Expire      int64  `json:"expire"`
 	Signature   string `json:"signature"`
 }
+
+func (r *UploadSimpleInitResponse) Err() error {
+	return nil
+}

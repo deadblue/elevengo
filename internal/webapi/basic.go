@@ -4,10 +4,6 @@ import (
 	"encoding/json"
 )
 
-type ApiResponse interface {
-	Err() error
-}
-
 type BasicResponse struct {
 	// Response state
 	State bool `json:"state"`

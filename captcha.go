@@ -2,10 +2,8 @@ package elevengo
 
 import (
 	"fmt"
-	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
-	"io"
 	"math/rand"
 	"time"
 )
@@ -81,12 +79,7 @@ func (a *Agent) CaptchaKeyImage(session *CaptchaSession, index int) (data []byte
 	qs := web.Params{}.
 		WithInt("id", index).
 		WithNow("_t")
-	body, err := a.wc.Get(webapi.ApiCaptchaOneKeyImage, qs)
-	if err != nil {
-		return
-	}
-	defer util.QuietlyClose(body)
-	return io.ReadAll(body)
+	return a.wc.GetContent(webapi.ApiCaptchaOneKeyImage, qs)
 }
 
 // CaptchaSubmit submits the CAPTCHA code to session.
@@ -96,23 +89,16 @@ func (a *Agent) CaptchaSubmit(session *CaptchaSession, code string) (err error) 
 	qs := web.Params{}.
 		With("callback", cb).
 		WithNow("_")
-	signResp := &webapi.CaptchaSignResponse{}
-	if err = a.wc.CallJsonpApi(webapi.ApiCaptchaSign, qs, signResp); err != nil {
-		return
-	}
-	if err = signResp.Err(); err != nil {
+	resp := &webapi.CaptchaSignResponse{}
+	if err = a.wc.CallJsonpApi(webapi.ApiCaptchaSign, qs, resp); err != nil {
 		return
 	}
 	// Submit captcha code
 	form := web.Params{}.
 		With("ac", "security_code").
 		With("type", "web").
-		With("sign", signResp.Sign).
+		With("sign", resp.Sign).
 		With("code", code).
 		With("cb", session.callback)
-	submitResp := &webapi.BasicResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiCaptchaSubmit, nil, form, submitResp); err == nil {
-		err = submitResp.Err()
-	}
-	return
+	return a.wc.CallJsonApi(webapi.ApiCaptchaSubmit, nil, form, &webapi.BasicResponse{})
 }

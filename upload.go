@@ -34,8 +34,23 @@ func (t *UploadTicket) setHeader(name, value string) {
 	t.Header[name] = value
 }
 
-func (a *Agent) uploadInit(dirId string, name string, size int64,
-	preId string, quickId string, params *webapi.UploadOssParams) (exist bool, err error) {
+func (a *Agent) uploadInitToken() (err error) {
+	resp := &webapi.UploadInfoResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiUploadInfo, nil, nil, resp); err != nil {
+		return
+	}
+	a.ut.AppId = string(resp.AppId)
+	a.ut.AppVer = string(resp.AppVersion)
+	a.ut.IspType = resp.IspType
+	a.ut.UserId = resp.UserId
+	a.ut.UserKey = resp.UserKey
+	return
+}
+
+func (a *Agent) uploadInit(
+	dirId string, name string, size int64,
+	preId string, quickId string,
+	params *webapi.UploadOssParams) (exist bool, err error) {
 	if !a.ut.Available() {
 		if err = a.uploadInitToken(); err != nil {
 			return
@@ -65,30 +80,12 @@ func (a *Agent) uploadInit(dirId string, name string, size int64,
 		return
 	}
 	// Parse response
-	if err = resp.Err(); err != nil {
-		return
-	}
 	exist = resp.Status == 2
 	if !exist && params != nil {
 		params.Bucket = resp.Bucket
 		params.Object = resp.Object
 		params.Callback = resp.Callback.Callback
 		params.CallbackVar = resp.Callback.CallbackVar
-	}
-	return
-}
-
-func (a *Agent) uploadInitToken() (err error) {
-	resp := &webapi.UploadInfoResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiUploadInfo, nil, nil, resp); err != nil {
-		return
-	}
-	if err = resp.Err(); err == nil {
-		a.ut.AppId = string(resp.AppId)
-		a.ut.AppVer = string(resp.AppVersion)
-		a.ut.IspType = resp.IspType
-		a.ut.UserId = resp.UserId
-		a.ut.UserKey = resp.UserKey
 	}
 	return
 }
@@ -120,9 +117,6 @@ func (a *Agent) UploadCreateTicket(dirId, name string, r io.Reader, ticket *Uplo
 	// Get OSS token
 	resp := &webapi.UploadOssTokenResponse{}
 	if err = a.wc.CallJsonApi(webapi.ApiUploadOssToken, nil, nil, resp); err != nil {
-		return
-	}
-	if err = resp.Err(); err != nil {
 		return
 	}
 

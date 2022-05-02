@@ -31,8 +31,6 @@ const (
 	ApiFileRename = "https://webapi.115.com/files/batch_rename"
 	ApiFileDelete = "https://webapi.115.com/rb/delete"
 
-	ApiFileAddDir = "https://webapi.115.com/files/add"
-
 	ApiFileFindDuplicate = "https://webapi.115.com/files/get_repeat_sha"
 
 	ApiLabelList   = "https://webapi.115.com/label/list"
@@ -40,6 +38,7 @@ const (
 	ApiLabelEdit   = "https://webapi.115.com/label/edit"
 	ApiLabelDelete = "https://webapi.115.com/label/delete"
 
+	ApiDirAdd      = "https://webapi.115.com/files/add"
 	ApiDirGetId    = "https://webapi.115.com/files/getid"
 	ApiDirSetOrder = "https://webapi.115.com/files/order"
 

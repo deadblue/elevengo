@@ -7,8 +7,12 @@ import (
 	"io"
 )
 
+type ApiResp interface {
+	Err() error
+}
+
 // CallJsonApi calls remote HTTP API, and parses its result as JSON.
-func (c *Client) CallJsonApi(url string, qs Params, form Params, resp interface{}) (err error) {
+func (c *Client) CallJsonApi(url string, qs Params, form Params, resp ApiResp) (err error) {
 	// Prepare request
 	var body io.ReadCloser
 	if form != nil {
@@ -21,14 +25,17 @@ func (c *Client) CallJsonApi(url string, qs Params, form Params, resp interface{
 	}
 	defer util.QuietlyClose(body)
 	// Parse response
-	if resp != nil {
-		decoder := json.NewDecoder(body)
-		err = decoder.Decode(resp)
+	if resp == nil {
+		return
+	}
+	decoder := json.NewDecoder(body)
+	if err = decoder.Decode(resp); err == nil {
+		err = resp.Err()
 	}
 	return
 }
 
-func (c *Client) CallJsonpApi(url string, qs Params, resp interface{}) (err error) {
+func (c *Client) CallJsonpApi(url string, qs Params, resp ApiResp) (err error) {
 	body, err := c.Get(url, qs)
 	if err != nil {
 		return
@@ -40,9 +47,10 @@ func (c *Client) CallJsonpApi(url string, qs Params, resp interface{}) (err erro
 	}
 	left, right := bytes.IndexByte(data, '('), bytes.LastIndexByte(data, ')')
 	if left < 0 || right < 0 {
-		err = &json.SyntaxError{Offset: 0}
-	} else {
-		err = json.Unmarshal(data[left+1:right], resp)
+		return &json.SyntaxError{Offset: 0}
+	}
+	if err = json.Unmarshal(data[left+1:right], resp); err == nil {
+		err = resp.Err()
 	}
 	return
 }

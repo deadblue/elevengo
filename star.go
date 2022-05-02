@@ -8,17 +8,9 @@ import (
 // FileStar adds/removes star from a file, whose ID is fileId.
 func (a *Agent) FileStar(fileId string, star bool) (err error) {
 	form := web.Params{}.
-		With("file_id", fileId)
-	if star {
-		form.With("star", "1")
-	} else {
-		form.With("star", "0")
-	}
-	resp := &webapi.BasicResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiFileStar, nil, form, resp); err == nil {
-		err = resp.Err()
-	}
-	return
+		With("file_id", fileId).
+		WithInt("star", webapi.BoolToInt(star))
+	return a.wc.CallJsonApi(webapi.ApiFileStar, nil, form, &webapi.BasicResponse{})
 }
 
 // FileListStared lists all started files.
@@ -40,9 +32,6 @@ func (a *Agent) FileListStared(cursor *FileCursor, files []*File) (n int, err er
 		WithInt("limit", n)
 	resp := &webapi.FileListResponse{}
 	if err = a.wc.CallJsonApi(webapi.ApiFileList, qs, nil, resp); err != nil {
-		return
-	}
-	if err = resp.Err(); err != nil {
 		return
 	}
 	// Parse result

@@ -6,7 +6,7 @@ import (
 	"github.com/deadblue/elevengo/internal/webapi"
 )
 
-type VideoInfo struct {
+type Video struct {
 	FileId   string
 	FileName string
 	FileSize int64
@@ -18,7 +18,7 @@ type VideoInfo struct {
 	PlayUrl  string
 }
 
-func (a *Agent) VideoGetInfo(pickcode string, info *VideoInfo) (err error) {
+func (a *Agent) VideoGetInfo(pickcode string, video *Video) (err error) {
 	// Call video API
 	qs := web.Params{}.
 		With("pickcode", pickcode).
@@ -27,21 +27,18 @@ func (a *Agent) VideoGetInfo(pickcode string, info *VideoInfo) (err error) {
 	if err = a.wc.CallJsonApi(webapi.ApiFileVideo, qs, nil, resp); err != nil {
 		return
 	}
-	if err = resp.Err(); err != nil {
-		return
-	}
 	if resp.FileStatus != 1 {
 		return webapi.ErrVideoNotReady
 	}
-	info.FileId = resp.FileId
-	info.FileName = resp.FileName
-	info.FileSize = int64(resp.FileSize)
-	info.FileSha1 = resp.Sha1
-	info.PickCode = resp.PickCode
-	info.Width = int(resp.Width)
-	info.Height = int(resp.Height)
-	info.Duration = float64(resp.Duration)
-	info.PlayUrl = util.SecretUrl(resp.VideoUrl)
+	video.FileId = resp.FileId
+	video.FileName = resp.FileName
+	video.FileSize = int64(resp.FileSize)
+	video.FileSha1 = resp.Sha1
+	video.PickCode = resp.PickCode
+	video.Width = int(resp.Width)
+	video.Height = int(resp.Height)
+	video.Duration = float64(resp.Duration)
+	video.PlayUrl = util.SecretUrl(resp.VideoUrl)
 	return
 }
 
@@ -52,9 +49,6 @@ func (a *Agent) ImageGetUrl(pickcode string) (imageUrl string, err error) {
 		WithNow("_")
 	resp := &webapi.BasicResponse{}
 	if err = a.wc.CallJsonApi(webapi.ApiFileImage, qs, nil, resp); err != nil {
-		return
-	}
-	if err = resp.Err(); err != nil {
 		return
 	}
 	// Parse response

@@ -132,7 +132,7 @@ func ExampleAgent_VideoGetInfo() {
 	// TODO: Import your credentials here
 
 	// Get video information
-	info := VideoInfo{}
+	info := Video{}
 	err := agent.VideoGetInfo("pickcode", &info)
 	if err != nil {
 		log.Fatalf("Get video info failed: %s", err)

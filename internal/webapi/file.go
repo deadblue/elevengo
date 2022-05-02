@@ -12,7 +12,7 @@ type FileInfo struct {
 	Sha1     string      `json:"sha"`
 	PickCode string      `json:"pc"`
 
-	IsStar int          `json:"m"`
+	IsStar StringInt    `json:"m"`
 	Labels []*LabelInfo `json:"fl"`
 
 	CreateTime StringInt64 `json:"tp"`
@@ -86,16 +86,4 @@ type FileStatResponse struct {
 
 	FileCount StringInt `json:"count"`
 	DirCount  StringInt `json:"folder_count"`
-}
-
-type FileAddResponse struct {
-	BasicResponse
-
-	AreaId IntString `json:"aid"`
-
-	CategoryId   string `json:"cid"`
-	CategoryName string `json:"cname"`
-
-	FileId   string `json:"file_id"`
-	FileName string `json:"file_name"`
 }

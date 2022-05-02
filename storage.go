@@ -16,13 +16,9 @@ type StorageInfo struct {
 
 // StorageStat gets storage size information.
 func (a *Agent) StorageStat(info *StorageInfo) (err error) {
-	resp := webapi.BasicResponse{}
-	err = a.wc.CallJsonApi(webapi.ApiIndexInfo, nil, nil, &resp)
-	if err != nil {
+	resp := &webapi.BasicResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiIndexInfo, nil, nil, resp); err != nil {
 		return err
-	}
-	if err = resp.Err(); err != nil {
-		return
 	}
 	result := webapi.IndexData{}
 	if err = resp.Decode(&result); err != nil {

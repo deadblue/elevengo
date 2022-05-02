@@ -46,15 +46,12 @@ func (a *Agent) offlineInitToken() (err error) {
 	if err = a.wc.CallJsonApi(webapi.ApiOfflineSpace, qs, nil, resp); err != nil {
 		return
 	}
-	if err = resp.Err(); err != nil {
-		return
-	}
 	a.ot.Time = resp.Time
 	a.ot.Sign = resp.Sign
 	return nil
 }
 
-func (a *Agent) offlineCallApi(url string, form web.Params, resp interface{}) (err error) {
+func (a *Agent) offlineCallApi(url string, form web.Params, resp web.ApiResp) (err error) {
 	if a.ot.Time == 0 {
 		if err = a.offlineInitToken(); err != nil {
 			return
@@ -71,7 +68,6 @@ func (a *Agent) offlineCallApi(url string, form web.Params, resp interface{}) (e
 
 type OfflineIterator interface {
 	Next() error
-
 	Get(*OfflineTask) error
 }
 
@@ -146,11 +142,8 @@ func (a Agent) offlineGetTasks(page int, it *implOfflineIterator) (err error) {
 	if err = a.offlineCallApi(webapi.ApiOfflineList, form, resp); err != nil {
 		return
 	}
-	if err = resp.Err(); err == nil {
-		it.pi, it.pc = resp.PageIndex, resp.PageCount
-		it.ts, it.tc = resp.Tasks, len(resp.Tasks)
-		it.ti = 0
-	}
+	it.pc, it.pi = resp.PageCount, resp.PageIndex
+	it.ts, it.tc, it.ti = resp.Tasks, len(resp.Tasks), 0
 	return
 }
 
@@ -165,10 +158,7 @@ func (a *Agent) OfflineAdd(url string, dirId string) (err error) {
 		form.With("wp_path_id", dirId)
 	}
 	resp := &webapi.OfflineAddUrlResponse{}
-	if err = a.offlineCallApi(webapi.ApiOfflineAddUrl, form, resp); err != nil {
-		err = resp.Err()
-	}
-	return
+	return a.offlineCallApi(webapi.ApiOfflineAddUrl, form, resp)
 }
 
 // OfflineDelete deletes tasks.
@@ -180,20 +170,14 @@ func (a *Agent) OfflineDelete(deleteFiles bool, hashes ...string) (err error) {
 	if deleteFiles {
 		form.With("flag", "1")
 	}
-	resp := &webapi.OfflineBasicResponse{}
-	if err = a.offlineCallApi(webapi.ApiOfflineDelete, form, resp); err != nil {
-		err = resp.Err()
-	}
-	return
+	return a.offlineCallApi(
+		webapi.ApiOfflineDelete, form, &webapi.OfflineBasicResponse{})
 }
 
 // OfflineClear clears tasks which is in specific status.
 func (a *Agent) OfflineClear(flag OfflineClearFlag) (err error) {
 	form := web.Params{}.
 		WithInt("flag", int(flag))
-	resp := &webapi.OfflineBasicResponse{}
-	if err = a.offlineCallApi(webapi.ApiOfflineClear, form, resp); err != nil {
-		err = resp.Err()
-	}
-	return
+	return a.offlineCallApi(
+		webapi.ApiOfflineClear, form, &webapi.OfflineBasicResponse{})
 }

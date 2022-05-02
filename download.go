@@ -38,11 +38,8 @@ func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (e
 	qs := web.Params{}.WithNow("t")
 	form := web.Params{}.With("data", m115.Encode(data, key))
 	// Send request
-	resp := webapi.BasicResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiDownloadGetUrl, qs, form, &resp); err != nil {
-		return
-	}
-	if err = resp.Err(); err != nil {
+	resp := &webapi.BasicResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiDownloadGetUrl, qs, form, resp); err != nil {
 		return
 	}
 	// Parse response

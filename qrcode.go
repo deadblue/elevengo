@@ -39,10 +39,7 @@ func (a *Agent) qrcodeCallApi(url string, qs web.Params, form web.Params, data i
 	if err = a.wc.CallJsonApi(url, qs, form, resp); err != nil {
 		return err
 	}
-	if err = resp.Err(); err == nil {
-		err = resp.Decode(data)
-	}
-	return
+	return resp.Decode(data)
 }
 
 // QrcodeStart starts a QRCode login session.
