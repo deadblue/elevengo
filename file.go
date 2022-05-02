@@ -11,28 +11,27 @@ type File struct {
 
 	// Marks is the file a directory.
 	IsDirectory bool
-
 	// Unique identifier of the file on the cloud storage.
 	FileId string
-
 	// FileId of the parent directory.
 	ParentId string
 
 	// Base name of the file.
 	Name string
-
 	// Size in bytes of the file.
 	Size int64
-
 	// Identifier used for downloading or playing the file.
 	PickCode string
-
 	// SHA1 hash of file content, in HEX format.
 	Sha1 string
 
+	// Is file stared
+	Star bool
+	// File labels
+	Labels []*Label
+
 	// Create time of the file.
 	CreateTime time.Time
-
 	// Update time of the file.
 	UpdateTime time.Time
 }
@@ -51,6 +50,15 @@ func (f *File) from(info *webapi.FileInfo) *File {
 	f.Size = int64(info.Size)
 	f.PickCode = info.PickCode
 	f.Sha1 = info.Sha1
+
+	f.Star = info.IsStar != 0
+	f.Labels = make([]*Label, len(info.Labels))
+	for i, l := range info.Labels {
+		f.Labels[i].Id = l.Id
+		f.Labels[i].Name = l.Name
+		f.Labels[i].Color = LabelColor(webapi.LabelColorMap[l.Color])
+	}
+
 	f.CreateTime = time.Unix(int64(info.CreateTime), 0)
 	f.UpdateTime = time.Unix(int64(info.UpdateTime), 0)
 
@@ -70,28 +78,21 @@ type FileInfo struct {
 
 	// Base name of the file.
 	Name string
-
 	// Identifier used for downloading or playing the file.
 	PickCode string
-
 	// SHA1 hash of file content, in HEX format.
 	Sha1 string
-
 	// Marks is file a directory.
 	IsDirectory bool
-
 	// Files count under this directory.
 	FileCount int
-
 	// Subdirectories count under this directory.
 	DirCount int
 
 	// Create time of the file.
 	CreateTime time.Time
-
 	// Last update time of the file.
 	UpdateTime time.Time
-
 	// Last access time of the file.
 	AccessTime time.Time
 
@@ -230,45 +231,21 @@ func (a *Agent) FileSearch(dirId, keyword string, cursor *FileCursor, files []*F
 	return
 }
 
-// FileListStared lists all started files.
-func (a *Agent) FileListStared(cursor *FileCursor, files []*File) (n int, err error) {
-	if n = len(files); n == 0 {
-		return
-	}
-	// Initialize cursor
-	if !cursor.init {
-		cursor.init = true
-	}
+// FileGet gets file information by its ID.
+func (a *Agent) FileGet(fileId string, file *File) (err error) {
 	qs := web.Params{}.
-		With("aid", "1").
-		With("cid", "0").
-		With("show_dir", "1").
-		With("star", "1").
-		With("format", "json").
-		WithInt("offset", cursor.offset).
-		WithInt("limit", n)
-	resp := &webapi.FileListResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiFileList, qs, nil, resp); err != nil {
+		With("file_id", fileId)
+	resp := &webapi.BasicResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiFileInfo, qs, nil, resp); err != nil {
 		return
 	}
 	if err = resp.Err(); err != nil {
 		return
 	}
-	// Parse result
-	result := make([]*webapi.FileInfo, 0, n)
-	if err = resp.Decode(&result); err != nil {
-		return
+	data := &webapi.FileInfo{}
+	if err = resp.Decode(data); err == nil {
+		file.from(data)
 	}
-	// Fill result to files
-	if rn := len(result); rn < n {
-		n = rn
-	}
-	for i := 0; i < n; i++ {
-		files[i] = (&File{}).from(result[i])
-	}
-	// Update cursor
-	cursor.offset += n
-	cursor.total = resp.Count
 	return
 }
 

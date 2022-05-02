@@ -14,18 +14,27 @@ type BasicResponse struct {
 	// Error code
 	ErrorCode  StringInt `json:"errno,omitempty"`
 	ErrorCode2 int       `json:"errNo,omitempty"`
+	ErrorCode3 int       `json:"code,omitempty"`
 	// Error message
-	ErrorMessage string `json:"error,omitempty"`
+	ErrorMessage  string `json:"error,omitempty"`
+	ErrorMessage2 string `json:"message,omitempty"`
 	// Response data
 	Data json.RawMessage `json:"data,omitempty"`
 }
 
+func findNonZero(code ...int) int {
+	for _, c := range code {
+		if c != 0 {
+			return c
+		}
+	}
+	return 0
+}
+
 func (r *BasicResponse) Err() error {
 	if !r.State {
-		code := int(r.ErrorCode)
-		if code == 0 {
-			code = r.ErrorCode2
-		}
+		code := findNonZero(
+			int(r.ErrorCode), r.ErrorCode2, r.ErrorCode3)
 		return getError(code)
 	}
 	return nil

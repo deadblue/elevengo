@@ -12,6 +12,9 @@ type FileInfo struct {
 	Sha1     string      `json:"sha"`
 	PickCode string      `json:"pc"`
 
+	IsStar int          `json:"m"`
+	Labels []*LabelInfo `json:"fl"`
+
 	CreateTime StringInt64 `json:"tp"`
 	UpdateTime StringInt64 `json:"te"`
 

@@ -16,6 +16,7 @@ var (
 	ErrOfflineInvalidLink = errors.New("invalid download link")
 	ErrOfflineTaskExisted = errors.New("offline task existed")
 
+	ErrLabelExist = errors.New("label name exist")
 	// ErrUnexpected is the fall-back error whose code is not handled.
 	ErrUnexpected = errors.New("unexpected error")
 
@@ -29,6 +30,8 @@ var (
 		// Offline errors
 		10004: ErrOfflineInvalidLink,
 		10008: ErrOfflineTaskExisted,
+		//
+		21003: ErrLabelExist,
 		// Login errors
 		40101009: ErrPasswordIncorrect,
 		40101010: ErrLoginTwoStepVerify,

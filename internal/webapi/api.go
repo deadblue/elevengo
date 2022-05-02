@@ -19,14 +19,26 @@ const (
 	ApiFileList       = "https://webapi.115.com/files"
 	ApiFileListByName = "https://aps.115.com/natsort/files.php"
 	ApiFileSearch     = "https://webapi.115.com/files/search"
-	ApiFileStat       = "https://webapi.115.com/category/get"
-	ApiFileMove       = "https://webapi.115.com/files/move"
-	ApiFileCopy       = "https://webapi.115.com/files/copy"
-	ApiFileRename     = "https://webapi.115.com/files/batch_rename"
-	ApiFileDelete     = "https://webapi.115.com/rb/delete"
-	ApiFileAddDir     = "https://webapi.115.com/files/add"
+
+	ApiFileInfo = "https://webapi.115.com/files/get_info"
+	ApiFileStat = "https://webapi.115.com/category/get"
+
+	ApiFileStar = "https://webapi.115.com/files/star"
+	ApiFileEdit = "https://webapi.115.com/files/edit"
+
+	ApiFileMove   = "https://webapi.115.com/files/move"
+	ApiFileCopy   = "https://webapi.115.com/files/copy"
+	ApiFileRename = "https://webapi.115.com/files/batch_rename"
+	ApiFileDelete = "https://webapi.115.com/rb/delete"
+
+	ApiFileAddDir = "https://webapi.115.com/files/add"
 
 	ApiFileFindDuplicate = "https://webapi.115.com/files/get_repeat_sha"
+
+	ApiLabelList   = "https://webapi.115.com/label/list"
+	ApiLabelAdd    = "https://webapi.115.com/label/add_multi"
+	ApiLabelEdit   = "https://webapi.115.com/label/edit"
+	ApiLabelDelete = "https://webapi.115.com/label/delete"
 
 	ApiDirGetId    = "https://webapi.115.com/files/getid"
 	ApiDirSetOrder = "https://webapi.115.com/files/order"
