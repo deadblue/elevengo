@@ -30,20 +30,20 @@ type UploadTicket struct {
 	Header map[string]string
 }
 
-func (t *UploadTicket) setHeader(name, value string) {
+func (t *UploadTicket) header(name, value string) *UploadTicket {
 	t.Header[name] = value
+	return t
 }
 
 func (a *Agent) uploadInitToken() (err error) {
 	resp := &webapi.UploadInfoResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiUploadInfo, nil, nil, resp); err != nil {
-		return
+	if err = a.wc.CallJsonApi(webapi.ApiUploadInfo, nil, nil, resp); err == nil {
+		a.ut.AppId = string(resp.AppId)
+		a.ut.AppVer = string(resp.AppVersion)
+		a.ut.IspType = resp.IspType
+		a.ut.UserId = resp.UserId
+		a.ut.UserKey = resp.UserKey
 	}
-	a.ut.AppId = string(resp.AppId)
-	a.ut.AppVer = string(resp.AppVersion)
-	a.ut.IspType = resp.IspType
-	a.ut.UserId = resp.UserId
-	a.ut.UserKey = resp.UserKey
 	return
 }
 
@@ -114,33 +114,33 @@ func (a *Agent) UploadCreateTicket(dirId, name string, r io.Reader, ticket *Uplo
 	if exist, err = a.uploadInit(dirId, name, dr.Size, dr.PreId, dr.QuickId, params); exist || err != nil {
 		return
 	}
+
 	// Get OSS token
 	resp := &webapi.UploadOssTokenResponse{}
 	if err = a.wc.CallJsonApi(webapi.ApiUploadOssToken, nil, nil, resp); err != nil {
 		return
 	}
-
 	// Fill UploadTicket
-	// TODO: Not test yet.
 	ticket.Verb = http.MethodPut
 	ticket.Url = fmt.Sprintf("https://%s.%s/%s", params.Bucket, oss.Endpoint, params.Object)
 	if ticket.Header == nil {
 		ticket.Header = make(map[string]string)
 	}
-	ticket.setHeader(oss.HeaderDate, oss.Date())
-	ticket.setHeader(oss.HeaderContentLength, strconv.FormatInt(dr.Size, 10))
-	ticket.setHeader(oss.HeaderContentType, util.DetermineMimeType(name))
-	ticket.setHeader(oss.HeaderContentMd5, dr.MD5)
-	ticket.setHeader(oss.HeaderOssCallback, base64.StdEncoding.EncodeToString([]byte(params.Callback)))
-	ticket.setHeader(oss.HeaderOssCallbackVar, base64.StdEncoding.EncodeToString([]byte(params.CallbackVar)))
-	ticket.setHeader(oss.HeaderOssSecurityToken, resp.SecurityToken)
+	ticket.header(oss.HeaderDate, oss.Date()).
+		header(oss.HeaderContentLength, strconv.FormatInt(dr.Size, 10)).
+		header(oss.HeaderContentType, util.DetermineMimeType(name)).
+		header(oss.HeaderContentMd5, dr.MD5).
+		header(oss.HeaderOssCallback, base64.StdEncoding.EncodeToString([]byte(params.Callback))).
+		header(oss.HeaderOssCallbackVar, base64.StdEncoding.EncodeToString([]byte(params.CallbackVar))).
+		header(oss.HeaderOssSecurityToken, resp.SecurityToken)
 
-	ticket.Header[oss.HeaderAuthorization] = oss.CalculateAuthorization(&oss.RequestMetadata{
+	authorization := oss.CalculateAuthorization(&oss.RequestMetadata{
 		Verb:   ticket.Verb,
 		Header: ticket.Header,
 		Bucket: params.Bucket,
 		Object: params.Object,
 	}, resp.AccessKeyId, resp.AccessKeySecret)
+	ticket.header(oss.HeaderAuthorization, authorization)
 	return
 }
 
@@ -163,8 +163,8 @@ func (a *Agent) UploadParseResult(content []byte, file *File) (err error) {
 	file.FileId = data.FileId
 	file.Name = data.FileName
 	file.Size = data.FileSize
-	file.PickCode = data.PickCode
 	file.Sha1 = data.Sha1
+	file.PickCode = data.PickCode
 	return
 }
 
@@ -196,7 +196,7 @@ func (a *Agent) UploadSimply(dirId, name string, size int64, r io.Reader) (err e
 	if err = a.wc.CallJsonApi(webapi.ApiUploadSimpleInit, nil, form, resp); err != nil {
 		return
 	}
-	// TODO
+	// TODO: Unfinished
 
 	return
 }

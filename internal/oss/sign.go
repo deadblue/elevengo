@@ -2,7 +2,7 @@ package oss
 
 import (
 	"crypto/hmac"
-	"crypto/sha256"
+	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
 	"github.com/deadblue/elevengo/internal/util"
@@ -25,7 +25,7 @@ type RequestMetadata struct {
 // CalculateAuthorization calculates authorization for OSS request
 func CalculateAuthorization(metadata *RequestMetadata, keyId string, keySecret string) string {
 	// Create signer
-	signer := hmac.New(sha256.New, []byte(keySecret))
+	signer := hmac.New(sha1.New, []byte(keySecret))
 	wx := util.UpgradeWriter(signer)
 
 	// Common parameters
