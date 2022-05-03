@@ -1,16 +1,12 @@
 package elevengo
 
 import (
-	"errors"
 	"github.com/deadblue/elevengo/internal/crypto/hash"
 	"github.com/deadblue/elevengo/internal/util"
+	"github.com/deadblue/elevengo/internal/webapi"
 	"io"
 	"os"
 	"path"
-)
-
-var (
-	ErrImportFailed = errors.New("import failed: file does not exist no remote")
 )
 
 type ImportTicket struct {
@@ -48,7 +44,7 @@ func (a *Agent) Import(dirId string, ticket *ImportTicket) (err error) {
 	var exist bool
 	exist, err = a.uploadInit(dirId, ticket.Name, ticket.Size, ticket.PreId, ticket.QuickId, nil)
 	if err == nil && !exist {
-		err = ErrImportFailed
+		err = webapi.ErrNotExist
 	}
 	return
 }

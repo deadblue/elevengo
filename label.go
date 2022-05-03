@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
-	"os"
 	"strings"
 )
 
@@ -19,6 +18,8 @@ const (
 	LabelBlue
 	LabelPurple
 	LabelGray
+
+	labelColorMin = LabelNoColor
 	labelColorMax = LabelGray
 )
 
@@ -61,7 +62,7 @@ func (a *Agent) LabelFind(name string, label *Label) (err error) {
 		return
 	}
 	if data.Total == 0 || data.List[0].Name != name {
-		err = os.ErrNotExist
+		err = webapi.ErrNotExist
 	} else {
 		label.Id = data.List[0].Id
 		label.Name = data.List[0].Name
@@ -72,9 +73,8 @@ func (a *Agent) LabelFind(name string, label *Label) (err error) {
 
 // LabelCreate creates a label with name and color, returns its ID.
 func (a *Agent) LabelCreate(name string, color LabelColor) (labelId string, err error) {
-	if color > labelColorMax {
-		err = os.ErrNotExist
-		return
+	if color < labelColorMin || color > labelColorMax {
+		color = LabelNoColor
 	}
 	form := web.Params{}.
 		With("name[]", fmt.Sprintf("%s.%s", name, webapi.LabelColors[color]))

@@ -3,7 +3,6 @@ package elevengo
 import (
 	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
-	"io"
 )
 
 type OfflineClearFlag int
@@ -15,6 +14,9 @@ const (
 	OfflineClearRunning
 	OfflineClearDoneAndDelete
 	OfflineClearAllAndDelete
+
+	offlineClearFlagMin = OfflineClearDone
+	offlineClearFlagMax = OfflineClearAllAndDelete
 )
 
 // OfflineTask describe an offline downloading task.
@@ -89,7 +91,7 @@ func (i *implOfflineIterator) Next() (err error) {
 	i.ti += 1
 	// If we reach the last record?
 	if i.ti == i.tc && i.pi == i.pc {
-		return io.EOF
+		return webapi.ErrReachEnd
 	}
 	// Is cache available?
 	if i.ti < i.tc {
@@ -98,7 +100,7 @@ func (i *implOfflineIterator) Next() (err error) {
 	// Fetch next page
 	if err = i.a.offlineGetTasks(i.pi+1, i); err == nil {
 		if i.tc == 0 {
-			err = io.EOF
+			err = webapi.ErrReachEnd
 		}
 	}
 	return
@@ -106,7 +108,7 @@ func (i *implOfflineIterator) Next() (err error) {
 
 func (i *implOfflineIterator) Get(task *OfflineTask) (err error) {
 	if i.ti >= i.tc {
-		return io.EOF
+		return webapi.ErrReachEnd
 	}
 	t := i.ts[i.ti]
 	task.InfoHash = t.InfoHash
@@ -127,7 +129,7 @@ func (a *Agent) OfflineIterate() (it OfflineIterator, err error) {
 	}
 	if err = a.offlineGetTasks(1, impl); err == nil {
 		if impl.tc == 0 {
-			err = io.EOF
+			err = webapi.ErrReachEnd
 		} else {
 			it = impl
 		}
@@ -176,6 +178,9 @@ func (a *Agent) OfflineDelete(deleteFiles bool, hashes ...string) (err error) {
 
 // OfflineClear clears tasks which is in specific status.
 func (a *Agent) OfflineClear(flag OfflineClearFlag) (err error) {
+	if flag < offlineClearFlagMin || flag > offlineClearFlagMax {
+		flag = OfflineClearDone
+	}
 	form := web.Params{}.
 		WithInt("flag", int(flag))
 	return a.offlineCallApi(

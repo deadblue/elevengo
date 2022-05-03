@@ -25,6 +25,8 @@ var (
 	ErrExist = errors.New("target already exists")
 	// ErrNotExist means an item which you find is not existed.
 	ErrNotExist = errors.New("target does not exist")
+	// ErrReachEnd means there are no more item.
+	ErrReachEnd = errors.New("reach the end")
 
 	ErrVideoNotReady = errors.New("video is not ready")
 
