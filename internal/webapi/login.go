@@ -24,20 +24,21 @@ func (r *LoginBasicResponse) Decode(data interface{}) error {
 	return json.Unmarshal(r.Data, data)
 }
 
+type LoginCheckResponse struct {
+	LoginBasicResponse
+}
+
+func (r *LoginCheckResponse) Err() error {
+	if r.State == 0 {
+		return nil
+	}
+	return getError(r.Code)
+}
+
 type LoginCheckData struct {
 	UserId int    `json:"user_id"`
 	Link   string `json:"link"`
 	Expire int    `json:"expire"`
-}
-
-type LoginKeyData struct {
-	Key string `json:"key"`
-}
-
-type LoginResultData struct {
-	UserId int    `json:"user_id"`
-	Token  string `json:"token"`
-	Mobile string `json:"mobile"`
 }
 
 type LoginUserData struct {
