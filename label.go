@@ -29,24 +29,71 @@ type Label struct {
 	Color LabelColor
 }
 
-/*
-func (a *Agent) LabelList() (err error) {
+type labelIterator struct {
+	// Offset and total
+	o, t int
+	// Cached labels
+	ls []*webapi.LabelInfo
+	// Cache index & cache size
+	li, lc int
+	// Update function
+	updater func(*labelIterator) error
+}
+
+func (i *labelIterator) Next() (err error) {
+	i.li += 1
+	if i.li < i.lc {
+		return
+	}
+	i.o += i.lc
+	if i.o >= i.t {
+		return webapi.ErrReachEnd
+	}
+	return i.updater(i)
+}
+
+func (i *labelIterator) Get(label *Label) error {
+	if i.li >= i.lc {
+		return webapi.ErrReachEnd
+	}
+	l := i.ls[i.li]
+	label.Id = l.Id
+	label.Name = l.Name
+	label.Color = LabelColor(webapi.LabelColorMap[l.Color])
+	return nil
+}
+
+func (a *Agent) LabelIterate() (it Iterator[Label], err error) {
+	li := &labelIterator{
+		updater: a.labelIterateInternal,
+	}
+	if err = a.labelIterateInternal(li); err == nil {
+		it = li
+	}
+	return
+}
+
+func (a *Agent) labelIterateInternal(i *labelIterator) (err error) {
 	qs := web.Params{}.
 		WithInt("user_id", a.uid).
 		With("sort", "create_time").
 		With("order", "desc").
-		WithInt("offset", 0).
-		WithInt("limit", 11500)
+		WithInt("offset", i.o).
+		WithInt("limit", 5)
 	resp := &webapi.BasicResponse{}
 	if err = a.wc.CallJsonApi(webapi.ApiLabelList, qs, nil, resp); err != nil {
 		return
 	}
 	data := &webapi.LabelListData{}
-	if err = resp.Decode(data); err != nil {
-		return
+	if err = resp.Decode(data); err == nil {
+		i.t = data.Total
+		i.li, i.lc = 0, len(data.List)
+		// Copy list
+		i.ls = make([]*webapi.LabelInfo, 0, i.lc)
+		i.ls = append(i.ls, data.List...)
 	}
 	return
-}*/
+}
 
 // LabelFind finds label whose name is name, and returns it.
 func (a *Agent) LabelFind(name string, label *Label) (err error) {
@@ -114,9 +161,9 @@ func (a *Agent) LabelDelete(labelId string) (err error) {
 	return a.wc.CallJsonApi(webapi.ApiLabelDelete, nil, form, &webapi.BasicResponse{})
 }
 
-// FileSetLabel sets labels for a file, you can also remove all labels from it
+// FileSetLabels sets labels for a file, you can also remove all labels from it
 // by not passing any labelId.
-func (a *Agent) FileSetLabel(fileId string, labelIds ...string) (err error) {
+func (a *Agent) FileSetLabels(fileId string, labelIds ...string) (err error) {
 	form := web.Params{}.
 		With("fid", fileId)
 	if len(labelIds) == 0 {

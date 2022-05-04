@@ -2,6 +2,12 @@ package webapi
 
 import "errors"
 
+const (
+	UploadMaxSize = 5 * 1024 * 1024 * 1024
+
+	UploadSimplyMaxSize = 200 * 1024 * 1024
+)
+
 type UploadToken struct {
 	AppId   string
 	AppVer  string

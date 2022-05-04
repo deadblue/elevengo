@@ -68,45 +68,30 @@ func (a *Agent) offlineCallApi(url string, form web.Params, resp web.ApiResp) (e
 	return a.wc.CallJsonApi(url, nil, form, resp)
 }
 
-type OfflineIterator interface {
-	Next() error
-	Get(*OfflineTask) error
-}
-
-type implOfflineIterator struct {
-	a *Agent
-	// Page index
-	pi int
-	// Page count
-	pc int
+type offlineIterator struct {
+	// Page index & count
+	pi, pc int
 	// Cached tasks
 	ts []*webapi.OfflineTask
-	// Task index
-	ti int
-	// Task count
-	tc int
+	// Task index & count
+	ti, tc int
+	// Update function
+	updater func(*offlineIterator) error
 }
 
-func (i *implOfflineIterator) Next() (err error) {
-	i.ti += 1
-	// If we reach the last record?
-	if i.ti == i.tc && i.pi == i.pc {
-		return webapi.ErrReachEnd
-	}
-	// Is cache available?
-	if i.ti < i.tc {
+func (i *offlineIterator) Next() (err error) {
+	if i.ti += 1; i.ti < i.tc {
 		return nil
 	}
-	// Fetch next page
-	if err = i.a.offlineGetTasks(i.pi+1, i); err == nil {
-		if i.tc == 0 {
-			err = webapi.ErrReachEnd
-		}
+	if i.pi >= i.pc {
+		return webapi.ErrReachEnd
 	}
-	return
+	// Fetch next page
+	i.pi += 1
+	return i.updater(i)
 }
 
-func (i *implOfflineIterator) Get(task *OfflineTask) (err error) {
+func (i *offlineIterator) Get(task *OfflineTask) (err error) {
 	if i.ti >= i.tc {
 		return webapi.ErrReachEnd
 	}
@@ -121,31 +106,34 @@ func (i *implOfflineIterator) Get(task *OfflineTask) (err error) {
 	return nil
 }
 
-// OfflineIterate returns an iterator for travelling offline tasks. it will
-// return io.EOF error when there are no tasks.
-func (a *Agent) OfflineIterate() (it OfflineIterator, err error) {
-	impl := &implOfflineIterator{
-		a: a,
+// OfflineIterate returns an iterator for travelling offline tasks, it will
+// return an error if there are no tasks.
+func (a *Agent) OfflineIterate() (it Iterator[OfflineTask], err error) {
+	oi := &offlineIterator{
+		pi:      1,
+		updater: a.offlineIterateInternal,
 	}
-	if err = a.offlineGetTasks(1, impl); err == nil {
-		if impl.tc == 0 {
-			err = webapi.ErrReachEnd
-		} else {
-			it = impl
-		}
+	if err = a.offlineIterateInternal(oi); err == nil {
+		it = oi
 	}
 	return
 }
 
-func (a Agent) offlineGetTasks(page int, it *implOfflineIterator) (err error) {
+func (a Agent) offlineIterateInternal(oi *offlineIterator) (err error) {
 	form := web.Params{}.
-		WithInt("page", page)
+		WithInt("page", oi.pi)
 	resp := &webapi.OfflineListResponse{}
 	if err = a.offlineCallApi(webapi.ApiOfflineList, form, resp); err != nil {
 		return
 	}
-	it.pc, it.pi = resp.PageCount, resp.PageIndex
-	it.ts, it.tc, it.ti = resp.Tasks, len(resp.Tasks), 0
+	oi.pi, oi.pc = resp.PageIndex, resp.PageCount
+	oi.ti, oi.tc = 0, len(resp.Tasks)
+	if oi.tc == 0 {
+		err = webapi.ErrReachEnd
+	} else {
+		oi.ts = make([]*webapi.OfflineTask, 0, oi.tc)
+		oi.ts = append(oi.ts, resp.Tasks...)
+	}
 	return
 }
 
