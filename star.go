@@ -13,14 +13,18 @@ func (a *Agent) FileStar(fileId string, star bool) (err error) {
 	return a.wc.CallJsonApi(webapi.ApiFileStar, nil, form, &webapi.BasicResponse{})
 }
 
-// FileListStared lists all started files.
-func (a *Agent) FileListStared(cursor *FileCursor, files []*File) (n int, err error) {
+// FileStared lists all stared files.
+func (a *Agent) FileStared(cursor *FileCursor, files []*File) (n int, err error) {
 	if n = len(files); n == 0 {
 		return
 	}
-	// Initialize cursor
-	if !cursor.init {
-		cursor.init = true
+	// Check cursor
+	if cursor == nil {
+		return 0, webapi.ErrInvalidCursor
+	}
+	tx := "file_stared"
+	if err = cursor.checkTransaction(tx); err != nil {
+		return
 	}
 	qs := web.Params{}.
 		With("aid", "1").
@@ -34,20 +38,5 @@ func (a *Agent) FileListStared(cursor *FileCursor, files []*File) (n int, err er
 	if err = a.wc.CallJsonApi(webapi.ApiFileList, qs, nil, resp); err != nil {
 		return
 	}
-	// Parse result
-	result := make([]*webapi.FileInfo, 0, n)
-	if err = resp.Decode(&result); err != nil {
-		return
-	}
-	// Fill result to files
-	if rn := len(result); rn < n {
-		n = rn
-	}
-	for i := 0; i < n; i++ {
-		files[i] = (&File{}).from(result[i])
-	}
-	// Update cursor
-	cursor.offset += n
-	cursor.total = resp.Count
-	return
+	return fileParseListResponse(resp, files, cursor)
 }

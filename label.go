@@ -29,6 +29,7 @@ type Label struct {
 	Color LabelColor
 }
 
+/*
 func (a *Agent) LabelList() (err error) {
 	qs := web.Params{}.
 		WithInt("user_id", a.uid).
@@ -44,9 +45,8 @@ func (a *Agent) LabelList() (err error) {
 	if err = resp.Decode(data); err != nil {
 		return
 	}
-	// TODO: How to return?
 	return
-}
+}*/
 
 // LabelFind finds label whose name is name, and returns it.
 func (a *Agent) LabelFind(name string, label *Label) (err error) {
@@ -125,4 +125,32 @@ func (a *Agent) FileSetLabel(fileId string, labelIds ...string) (err error) {
 		form.With("file_label", strings.Join(labelIds, ","))
 	}
 	return a.wc.CallJsonApi(webapi.ApiFileEdit, nil, form, &webapi.BasicResponse{})
+}
+
+// FileLabeled lists all files which has specific label.
+func (a *Agent) FileLabeled(labelId string, cursor *FileCursor, files []*File) (n int, err error) {
+	if n = len(files); n == 0 {
+		return
+	}
+	if cursor == nil {
+		return 0, webapi.ErrInvalidCursor
+	}
+	tx := fmt.Sprintf("file_labeled_%s", labelId)
+	if err = cursor.checkTransaction(tx); err != nil {
+		return
+	}
+	// Call API
+	qs := web.Params{}.
+		With("format", "json").
+		With("aid", "1").
+		With("cid", "0").
+		With("show_dir", "1").
+		With("file_label", labelId).
+		WithInt("offset", cursor.offset).
+		WithInt("limit", n)
+	resp := &webapi.FileListResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiFileSearch, qs, nil, resp); err != nil {
+		return
+	}
+	return fileParseListResponse(resp, files, cursor)
 }

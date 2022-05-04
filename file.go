@@ -1,6 +1,7 @@
 package elevengo
 
 import (
+	"fmt"
 	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
 	"time"
@@ -102,22 +103,24 @@ type FileInfo struct {
 	Parents []*DirInfo
 }
 
-type FileCursor struct {
-	init   bool
-	offset int
-	total  int
-	order  string
-	asc    int
-}
-
-func (c *FileCursor) HasMore() bool {
-	return !c.init || c.offset < c.total
-}
-func (c *FileCursor) Total() int {
-	return c.total
-}
-func (c *FileCursor) Remain() int {
-	return c.total - c.offset
+func fileParseListResponse(resp *webapi.FileListResponse, files []*File, cursor *FileCursor) (n int, err error) {
+	// Parse response data
+	n = len(files)
+	result := make([]*webapi.FileInfo, 0, n)
+	if err = resp.Decode(&result); err != nil {
+		return 0, err
+	}
+	// Fill files
+	if rn := len(result); rn < n {
+		n = rn
+	}
+	for i := 0; i < n; i++ {
+		files[i] = (&File{}).from(result[i])
+	}
+	// Update cursor
+	cursor.total = resp.Count
+	cursor.offset += n
+	return n, nil
 }
 
 // FileList lists files list under a directory whose id is parentId.
@@ -125,11 +128,13 @@ func (a *Agent) FileList(dirId string, cursor *FileCursor, files []*File) (n int
 	if n = len(files); n == 0 {
 		return
 	}
-	// Initialize cursor
-	if !cursor.init {
-		cursor.order = "user_ptime"
-		cursor.asc = 0
-		cursor.init = true
+	// Check cursor
+	if cursor == nil {
+		return 0, webapi.ErrInvalidCursor
+	}
+	tx := fmt.Sprintf("file_list_%s", dirId)
+	if err = cursor.checkTransaction(tx); err != nil {
+		return
 	}
 	// Prepare request
 	qs := web.Params{}.
@@ -137,7 +142,7 @@ func (a *Agent) FileList(dirId string, cursor *FileCursor, files []*File) (n int
 		With("show_dir", "1").
 		With("snap", "0").
 		With("natsort", "1").
-		With("fc_mix", "1").
+		With("fc_mix", "0").
 		With("format", "json").
 		With("cid", dirId).
 		With("o", cursor.order).
@@ -170,21 +175,7 @@ func (a *Agent) FileList(dirId string, cursor *FileCursor, files []*File) (n int
 	if dirId != string(resp.CategoryId) {
 		return 0, webapi.ErrNotExist
 	}
-	// Fill result
-	result := make([]*webapi.FileInfo, 0, n)
-	if err = resp.Decode(&result); err != nil {
-		return
-	}
-	if rn := len(result); rn < n {
-		n = rn
-	}
-	for i := 0; i < n; i++ {
-		files[i] = (&File{}).from(result[i])
-	}
-	// Update cursor
-	cursor.offset += n
-	cursor.total = resp.Count
-	return
+	return fileParseListResponse(resp, files, cursor)
 }
 
 // FileSearch recursively searches files, whose name contains the keyword and under the directory.
@@ -192,10 +183,13 @@ func (a *Agent) FileSearch(dirId, keyword string, cursor *FileCursor, files []*F
 	if n = len(files); n == 0 {
 		return
 	}
-	// Initialize cursor
-	if !cursor.init {
-		cursor.offset = 0
-		cursor.init = true
+	// Check cursor
+	if cursor == nil {
+		return 0, webapi.ErrInvalidCursor
+	}
+	tx := fmt.Sprintf("file_search_%s_%s", dirId, keyword)
+	if err = cursor.checkTransaction(tx); err != nil {
+		return
 	}
 	// Prepare request
 	qs := web.Params{}.
@@ -205,26 +199,11 @@ func (a *Agent) FileSearch(dirId, keyword string, cursor *FileCursor, files []*F
 		WithInt("offset", cursor.offset).
 		WithInt("limit", n).
 		With("format", "json")
-	resp := webapi.FileSearchResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiFileSearch, qs, nil, &resp); err != nil {
+	resp := &webapi.FileListResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiFileSearch, qs, nil, resp); err != nil {
 		return
 	}
-	// Parse response
-	result := make([]*webapi.FileInfo, 0, n)
-	if err = resp.Decode(&result); err != nil {
-		return
-	}
-	// Fill to files
-	if rn := len(result); rn < n {
-		n = rn
-	}
-	for i := 0; i < n; i++ {
-		files[i] = (&File{}).from(result[i])
-	}
-	// Update cursor
-	cursor.offset += n
-	cursor.total = resp.Count
-	return
+	return fileParseListResponse(resp, files, cursor)
 }
 
 // FileGet gets file information by its ID.

@@ -1,5 +1,12 @@
 package webapi
 
+const (
+	FileOrderByTime = "user_ptime"
+	FileOrderByType = "file_type"
+	FileOrderBySize = "file_size"
+	FileOrderByName = "file_name"
+)
+
 type FileInfo struct {
 	AreaId     IntString `json:"aid"`
 	CategoryId string    `json:"cid"`
@@ -56,17 +63,6 @@ type FileListResponse struct {
 
 	Offset   int `json:"offset"`
 	Limit    int `json:"limit"`
-	PageSize int `json:"page_size"`
-}
-
-type FileSearchResponse struct {
-	BasicResponse
-
-	Count int    `json:"count"`
-	Order string `json:"order"`
-	IsAsc int    `json:"is_asc"`
-
-	Offset   int `json:"offset"`
 	PageSize int `json:"page_size"`
 }
 
