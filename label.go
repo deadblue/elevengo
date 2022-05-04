@@ -37,7 +37,7 @@ type labelIterator struct {
 	// Cache index & cache size
 	li, lc int
 	// Update function
-	updater func(*labelIterator) error
+	uf func(*labelIterator) error
 }
 
 func (i *labelIterator) Next() (err error) {
@@ -49,7 +49,7 @@ func (i *labelIterator) Next() (err error) {
 	if i.o >= i.t {
 		return webapi.ErrReachEnd
 	}
-	return i.updater(i)
+	return i.uf(i)
 }
 
 func (i *labelIterator) Get(label *Label) error {
@@ -65,7 +65,7 @@ func (i *labelIterator) Get(label *Label) error {
 
 func (a *Agent) LabelIterate() (it Iterator[Label], err error) {
 	li := &labelIterator{
-		updater: a.labelIterateInternal,
+		uf: a.labelIterateInternal,
 	}
 	if err = a.labelIterateInternal(li); err == nil {
 		it = li
@@ -79,7 +79,7 @@ func (a *Agent) labelIterateInternal(i *labelIterator) (err error) {
 		With("sort", "create_time").
 		With("order", "desc").
 		WithInt("offset", i.o).
-		WithInt("limit", 5)
+		WithInt("limit", 30)
 	resp := &webapi.BasicResponse{}
 	if err = a.wc.CallJsonApi(webapi.ApiLabelList, qs, nil, resp); err != nil {
 		return
@@ -99,7 +99,7 @@ func (a *Agent) labelIterateInternal(i *labelIterator) (err error) {
 func (a *Agent) LabelFind(name string, label *Label) (err error) {
 	qs := web.Params{}.
 		With("keyword", name).
-		WithInt("limit", 11150)
+		WithInt("limit", 10)
 	resp := &webapi.BasicResponse{}
 	if err = a.wc.CallJsonApi(webapi.ApiLabelList, qs, nil, resp); err != nil {
 		return

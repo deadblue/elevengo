@@ -76,7 +76,7 @@ type offlineIterator struct {
 	// Task index & count
 	ti, tc int
 	// Update function
-	updater func(*offlineIterator) error
+	uf func(*offlineIterator) error
 }
 
 func (i *offlineIterator) Next() (err error) {
@@ -88,7 +88,7 @@ func (i *offlineIterator) Next() (err error) {
 	}
 	// Fetch next page
 	i.pi += 1
-	return i.updater(i)
+	return i.uf(i)
 }
 
 func (i *offlineIterator) Get(task *OfflineTask) (err error) {
@@ -110,8 +110,8 @@ func (i *offlineIterator) Get(task *OfflineTask) (err error) {
 // return an error if there are no tasks.
 func (a *Agent) OfflineIterate() (it Iterator[OfflineTask], err error) {
 	oi := &offlineIterator{
-		pi:      1,
-		updater: a.offlineIterateInternal,
+		pi: 1,
+		uf: a.offlineIterateInternal,
 	}
 	if err = a.offlineIterateInternal(oi); err == nil {
 		it = oi
@@ -119,7 +119,7 @@ func (a *Agent) OfflineIterate() (it Iterator[OfflineTask], err error) {
 	return
 }
 
-func (a Agent) offlineIterateInternal(oi *offlineIterator) (err error) {
+func (a *Agent) offlineIterateInternal(oi *offlineIterator) (err error) {
 	form := web.Params{}.
 		WithInt("page", oi.pi)
 	resp := &webapi.OfflineListResponse{}
