@@ -36,7 +36,7 @@ func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (e
 	// Prepare request
 	data, _ := json.Marshal(&webapi.DownloadRequest{Pickcode: pickcode})
 	qs := web.Params{}.WithNow("t")
-	form := web.Params{}.With("data", m115.Encode(data, key))
+	form := web.Params{}.With("data", m115.Encode(data, key)).ToForm()
 	// Send request
 	resp := &webapi.BasicResponse{}
 	if err = a.wc.CallJsonApi(webapi.ApiDownloadGetUrl, qs, form, resp); err != nil {

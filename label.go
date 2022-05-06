@@ -124,7 +124,8 @@ func (a *Agent) LabelCreate(name string, color LabelColor) (labelId string, err 
 		color = LabelNoColor
 	}
 	form := web.Params{}.
-		With("name[]", fmt.Sprintf("%s.%s", name, webapi.LabelColors[color]))
+		With("name[]", fmt.Sprintf("%s.%s", name, webapi.LabelColors[color])).
+		ToForm()
 	resp := &webapi.BasicResponse{}
 	if err = a.wc.CallJsonApi(webapi.ApiLabelAdd, nil, form, resp); err != nil {
 		return
@@ -148,7 +149,8 @@ func (a *Agent) LabelUpdate(label *Label) (err error) {
 	form := web.Params{}.
 		With("id", label.Id).
 		With("name", label.Name).
-		With("color", webapi.LabelColors[label.Color])
+		With("color", webapi.LabelColors[label.Color]).
+		ToForm()
 	return a.wc.CallJsonApi(webapi.ApiLabelEdit, nil, form, &webapi.BasicResponse{})
 }
 
@@ -157,21 +159,21 @@ func (a *Agent) LabelDelete(labelId string) (err error) {
 	if labelId == "" {
 		return
 	}
-	form := web.Params{}.With("id", labelId)
+	form := web.Params{}.With("id", labelId).ToForm()
 	return a.wc.CallJsonApi(webapi.ApiLabelDelete, nil, form, &webapi.BasicResponse{})
 }
 
 // FileSetLabels sets labels for a file, you can also remove all labels from it
 // by not passing any labelId.
 func (a *Agent) FileSetLabels(fileId string, labelIds ...string) (err error) {
-	form := web.Params{}.
+	params := web.Params{}.
 		With("fid", fileId)
 	if len(labelIds) == 0 {
-		form.With("file_label", "")
+		params.With("file_label", "")
 	} else {
-		form.With("file_label", strings.Join(labelIds, ","))
+		params.With("file_label", strings.Join(labelIds, ","))
 	}
-	return a.wc.CallJsonApi(webapi.ApiFileEdit, nil, form, &webapi.BasicResponse{})
+	return a.wc.CallJsonApi(webapi.ApiFileEdit, nil, params.ToForm(), &webapi.BasicResponse{})
 }
 
 // FileLabeled lists all files which has specific label.

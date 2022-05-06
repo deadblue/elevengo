@@ -99,6 +99,7 @@ func (a *Agent) CaptchaSubmit(session *CaptchaSession, code string) (err error) 
 		With("type", "web").
 		With("sign", resp.Sign).
 		With("code", code).
-		With("cb", session.callback)
+		With("cb", session.callback).
+		ToForm()
 	return a.wc.CallJsonApi(webapi.ApiCaptchaSubmit, nil, form, &webapi.BasicResponse{})
 }

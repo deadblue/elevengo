@@ -21,13 +21,13 @@ func (t *UploadToken) Available() bool {
 }
 
 type UploadResultData struct {
-	AreaId     IntString `json:"aid"`
-	CategoryId IntString `json:"cid"`
-	FileId     string    `json:"file_id"`
-	FileName   string    `json:"file_name"`
-	FileSize   int64     `json:"file_size"`
-	PickCode   string    `json:"pick_code"`
-	Sha1       string    `json:"sha1"`
+	AreaId     IntString   `json:"aid"`
+	CategoryId IntString   `json:"cid"`
+	FileId     string      `json:"file_id"`
+	FileName   string      `json:"file_name"`
+	FileSize   StringInt64 `json:"file_size"`
+	PickCode   string      `json:"pick_code"`
+	Sha1       string      `json:"sha1"`
 }
 
 type UploadInfoResponse struct {
@@ -96,7 +96,7 @@ type UploadSimpleInitResponse struct {
 	Object   string `json:"object"`
 	Callback string `json:"callback"`
 
-	AccessKeyId string `json:"access_id"`
+	AccessKeyId string `json:"accessid"`
 	Policy      string `json:"policy"`
 	Expire      int64  `json:"expire"`
 	Signature   string `json:"signature"`

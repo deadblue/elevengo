@@ -2,7 +2,6 @@ package web
 
 import (
 	"fmt"
-	"io"
 	"net/url"
 	"strconv"
 	"strings"
@@ -64,6 +63,25 @@ func (p Params) Encode() string {
 	return buf.String()
 }
 
-func (p Params) Reader() io.Reader {
-	return strings.NewReader(p.Encode())
+// ToForm converts Params into URL-Encoded form.
+func (p Params) ToForm() Payload {
+	return &urlEncodedForm{
+		r: strings.NewReader(p.Encode()),
+	}
+}
+
+type urlEncodedForm struct {
+	r *strings.Reader
+}
+
+func (f *urlEncodedForm) Read(p []byte) (int, error) {
+	return f.r.Read(p)
+}
+
+func (f *urlEncodedForm) ContentType() string {
+	return "application/x-www-form-urlencoded"
+}
+
+func (f *urlEncodedForm) ContentLength() int64 {
+	return f.r.Size()
 }

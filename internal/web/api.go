@@ -12,11 +12,11 @@ type ApiResp interface {
 }
 
 // CallJsonApi calls remote HTTP API, and parses its result as JSON.
-func (c *Client) CallJsonApi(url string, qs Params, form Params, resp ApiResp) (err error) {
+func (c *Client) CallJsonApi(url string, qs Params, payload Payload, resp ApiResp) (err error) {
 	// Prepare request
 	var body io.ReadCloser
-	if form != nil {
-		body, err = c.PostForm(url, qs, form)
+	if payload != nil {
+		body, err = c.Post(url, qs, payload)
 	} else {
 		body, err = c.Get(url, qs)
 	}

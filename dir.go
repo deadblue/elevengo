@@ -40,7 +40,8 @@ func (a *Agent) DirSetOrder(dirId string, order DirOrder, asc bool) (err error) 
 		With("file_id", dirId).
 		With("fc_mix", "0").
 		With("user_order", webapi.DirOrderModes[order]).
-		WithInt("user_asc", webapi.BoolToInt(asc))
+		WithInt("user_asc", webapi.BoolToInt(asc)).
+		ToForm()
 	return a.wc.CallJsonApi(webapi.ApiDirSetOrder, nil, form, &webapi.BasicResponse{})
 }
 

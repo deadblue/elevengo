@@ -53,19 +53,19 @@ func (a *Agent) offlineInitToken() (err error) {
 	return nil
 }
 
-func (a *Agent) offlineCallApi(url string, form web.Params, resp web.ApiResp) (err error) {
+func (a *Agent) offlineCallApi(url string, params web.Params, resp web.ApiResp) (err error) {
 	if a.ot.Time == 0 {
 		if err = a.offlineInitToken(); err != nil {
 			return
 		}
 	}
-	if form == nil {
-		form = web.Params{}
+	if params == nil {
+		params = web.Params{}
 	}
-	form.WithInt("uid", a.uid).
+	params.WithInt("uid", a.uid).
 		WithInt64("time", a.ot.Time).
 		With("sign", a.ot.Sign)
-	return a.wc.CallJsonApi(url, nil, form, resp)
+	return a.wc.CallJsonApi(url, nil, params.ToForm(), resp)
 }
 
 type offlineIterator struct {

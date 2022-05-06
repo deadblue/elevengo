@@ -1,6 +1,11 @@
 package util
 
-import "io"
+import (
+	"bytes"
+	"io"
+	"os"
+	"strings"
+)
 
 type WriterEx struct {
 	w io.Writer
@@ -39,4 +44,21 @@ func ConsumeReader(r io.ReadCloser) {
 
 func QuietlyClose(c io.Closer) {
 	_ = c.Close()
+}
+
+func GuessSize(r io.Reader) (size int64) {
+	size = -1
+	switch r.(type) {
+	case *bytes.Buffer:
+		size = int64(r.(*bytes.Buffer).Len())
+	case *bytes.Reader:
+		size = r.(*bytes.Reader).Size()
+	case *strings.Reader:
+		size = int64(r.(*strings.Reader).Len())
+	case *os.File:
+		if i, e := r.(*os.File).Stat(); e == nil {
+			size = i.Size()
+		}
+	}
+	return
 }

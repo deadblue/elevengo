@@ -43,7 +43,7 @@ More examples can be found in [reference](https://pkg.go.dev/github.com/deadblue
 * Login
   * [x] Import credential from cookies
   * [x] Login via QRCode
-  * [x] Get signed in user information
+  * [x] Get signed-in user information
 * File
   * [x] List
   * [x] Search
@@ -51,16 +51,17 @@ More examples can be found in [reference](https://pkg.go.dev/github.com/deadblue
   * [x] Move
   * [x] Copy
   * [x] Delete
-  * [x] Mkdir
-  * [x] Stat
-  * [x] Storage Stat
+  * [x] Get Information by ID
+  * [x] Stat File
   * [x] Download
   * [x] Upload
-  * [x] Video HLS
-  * [X] Image URL
+  * [x] Make Directory
+* Media
+  * [x] Get Video data
+  * [X] Get Image URL
 * Offline
   * [x] List tasks
-  * [x] Create URL task(s)
+  * [x] Create task by URL
   * [x] Delete tasks
   * [x] Clear tasks
 * Other

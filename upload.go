@@ -1,7 +1,6 @@
 package elevengo
 
 import (
-	"bytes"
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/hex"
@@ -9,13 +8,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/deadblue/elevengo/internal/crypto/hash"
+	"github.com/deadblue/elevengo/internal/multipart"
 	"github.com/deadblue/elevengo/internal/oss"
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
 	"io"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -73,7 +72,8 @@ func (a *Agent) uploadInit(
 		With("fileid", quickId).
 		With("filename", name).
 		WithInt64("filesize", size).
-		WithInt("userid", a.ut.UserId)
+		WithInt("userid", a.ut.UserId).
+		ToForm()
 	// Send request
 	resp := &webapi.UploadInitResponse{}
 	if err = a.wc.CallJsonApi(webapi.ApiUploadInit, qs, form, resp); err != nil {
@@ -162,41 +162,54 @@ func (a *Agent) UploadParseResult(content []byte, file *File) (err error) {
 	file.IsDirectory = false
 	file.FileId = data.FileId
 	file.Name = data.FileName
-	file.Size = data.FileSize
+	file.Size = int64(data.FileSize)
 	file.Sha1 = data.Sha1
 	file.PickCode = data.PickCode
 	return
 }
 
-func (a *Agent) UploadSimply(dirId, name string, size int64, r io.Reader) (err error) {
+// UploadSimply directly uploads data to cloud,
+func (a *Agent) UploadSimply(dirId, name string, size int64, r io.Reader) (fileId string, err error) {
 	if size == 0 {
-		// Try to inspect input size from r
-		switch r.(type) {
-		case *bytes.Buffer:
-			size = int64(r.(*bytes.Buffer).Len())
-		case *bytes.Reader:
-			size = r.(*bytes.Reader).Size()
-		case *strings.Reader:
-			size = int64(r.(*strings.Reader).Len())
-		case *os.File:
-			if i, e := r.(*os.File).Stat(); e == nil {
-				size = i.Size()
-			}
-		}
+		size = util.GuessSize(r)
 	}
-	if size == 0 {
-		return errors.New("upload size is zero")
+	// Check upload size
+	if size <= 0 {
+		// What the fuck?
+		return "", errors.New("upload size is zero")
+	} else if size > webapi.UploadSimplyMaxSize {
+		return "", webapi.ErrUploadTooLarge
 	}
 	form := web.Params{}.
 		WithInt("userid", a.ut.UserId).
 		With("filename", name).
 		WithInt64("filesize", size).
-		With("target", fmt.Sprintf("U_1_%s", dirId))
-	resp := &webapi.UploadSimpleInitResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiUploadSimpleInit, nil, form, resp); err != nil {
+		With("target", fmt.Sprintf("U_1_%s", dirId)).
+		ToForm()
+	initResp := &webapi.UploadSimpleInitResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiUploadSimpleInit, nil, form, initResp); err != nil {
 		return
 	}
-	// TODO: Unfinished
 
+	// Upload file
+	mf := multipart.Builder().
+		AddValue("success_action_status", "200").
+		AddValue("name", name).
+		AddValue("key", initResp.Object).
+		AddValue("callback", initResp.Callback).
+		AddValue("OSSAccessKeyId", initResp.AccessKeyId).
+		AddValue("policy", initResp.Policy).
+		AddValue("signature", initResp.Signature).
+		AddFile("file", name, r).
+		Build()
+	uploadResp := &webapi.BasicResponse{}
+	if err = a.wc.CallJsonApi(util.SecretUrl(initResp.Host), nil, mf, uploadResp); err != nil {
+		return
+	}
+	// Parse response
+	data := &webapi.UploadResultData{}
+	if err = uploadResp.Decode(data); err == nil {
+		fileId = data.FileId
+	}
 	return
 }

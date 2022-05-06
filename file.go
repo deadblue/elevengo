@@ -258,7 +258,8 @@ func (a *Agent) FileMove(dirId string, fileIds ...string) (err error) {
 	}
 	form := web.Params{}.
 		With("pid", dirId).
-		WithArray("fid", fileIds)
+		WithArray("fid", fileIds).
+		ToForm()
 	return a.wc.CallJsonApi(
 		webapi.ApiFileMove, nil, form, &webapi.BasicResponse{})
 }
@@ -270,7 +271,8 @@ func (a *Agent) FileCopy(dirId string, fileIds ...string) (err error) {
 	}
 	form := web.Params{}.
 		With("pid", dirId).
-		WithArray("fid", fileIds)
+		WithArray("fid", fileIds).
+		ToForm()
 	return a.wc.CallJsonApi(
 		webapi.ApiFileCopy, nil, form, &webapi.BasicResponse{})
 }
@@ -280,7 +282,7 @@ func (a *Agent) FileRename(fileId, newName string) (err error) {
 	form := web.Params{}.
 		WithMap("files_new_name", map[string]string{
 			fileId: newName,
-		})
+		}).ToForm()
 	return a.wc.CallJsonApi(
 		webapi.ApiFileRename, nil, form, &webapi.BasicResponse{})
 }
@@ -290,7 +292,7 @@ func (a *Agent) FileDelete(fileIds ...string) (err error) {
 	if len(fileIds) == 0 {
 		return
 	}
-	form := web.Params{}.WithArray("fid", fileIds)
+	form := web.Params{}.WithArray("fid", fileIds).ToForm()
 	return a.wc.CallJsonApi(
 		webapi.ApiFileDelete, nil, form, &webapi.BasicResponse{})
 }

@@ -10,9 +10,13 @@ import (
 )
 
 type ImportTicket struct {
-	Name    string
-	Size    int64
-	PreId   string
+	// File name to store
+	Name string
+	// File size
+	Size int64
+	// SHA1 hash of the first 128KB content, in upper-case HEX format
+	PreId string
+	// SHA1 hash of the whole file, in upper-case HEX format
 	QuickId string
 }
 

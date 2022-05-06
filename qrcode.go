@@ -34,7 +34,7 @@ func (s QrcodeStatus) IsCanceled() bool {
 	return s == -2
 }
 
-func (a *Agent) qrcodeCallApi(url string, qs web.Params, form web.Params, data interface{}) (err error) {
+func (a *Agent) qrcodeCallApi(url string, qs web.Params, form web.Payload, data interface{}) (err error) {
 	resp := &webapi.LoginBasicResponse{}
 	if err = a.wc.CallJsonApi(url, qs, form, resp); err != nil {
 		return err
@@ -88,7 +88,8 @@ func (a *Agent) QrcodeStatus(session *QrcodeSession) (status QrcodeStatus, err e
 func (a *Agent) QrcodeLogin(session *QrcodeSession) (err error) {
 	form := web.Params{}.
 		With("account", session.uid).
-		With("app", "web")
+		With("app", "web").
+		ToForm()
 	data := &webapi.LoginUserData{}
 	if err = a.qrcodeCallApi(webapi.ApiQrcodeLogin, nil, form, data); err == nil {
 		a.uid = data.Id
