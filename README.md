@@ -1,47 +1,53 @@
 # ElevenGo
 
-![Version](https://img.shields.io/badge/release-v0.1.5-brightgreen?style=flat-square)
+![Version](https://img.shields.io/badge/release-v0.2.1-brightgreen?style=flat-square)
 [![Reference](https://img.shields.io/badge/Go-Reference-blue.svg?style=flat-square)](https://pkg.go.dev/github.com/deadblue/elevengo)
 ![License](https://img.shields.io/:License-MIT-green.svg?style=flat-square)
 
-A Golang API wrapper for 115 Cloud Storage Service.
+An API client of 115 Cloud Storage Service.
+
+v0.2.x is in process.
 
 ## Example
 
 ```go
-import "github.com/deadblue/elevengo"
+package main
 
-// Create agent
-agent = elevengo.Default()
+import (
+    "github.com/deadblue/elevengo"
+    "log"
+)
 
-// Import credentials to login
-cr := &elevengo.Credential{
-    UID: "",
-    CID: "",
-    SEID: "",
-}
-if err := agent.CredentialImport(cr); err != nil {
-    panic(err)
-}
+func main()  {
+  agent := elevengo.Default()
+  credential := &elevengo.Credential{
+    UID: "", CID: "", SEID: "",
+  }
+  if err := agent.CredentialImport(credential); err != nil {
+    log.Fatalf("Import credentail error: %s", err)
+  }
 
-// List files under root.
-for cursor := elevengo.FileCursor(); cursor.HasMore(); cursor.Next() {
-    if files, err := agent.FileList("0", cursor); err != nil {
-        panic(err)
-    } else {
-        // TODO: deal with the files
+  files := make([]*elevengo.File, 10)
+  for cursor := new(elevengo.FileCursor); cursor.HasMore(); {
+    n, err := agent.FileList("0", cursor, files)
+    if err != nil {
+      log.Fatalf("List file failed: %s", err.Error())
     }
+    for i := 0; i < n; i++ {
+      log.Printf("File: %#v", files[i])
+    }
+  }  
 }
 ```
 
-You can find more examples from [reference](https://pkg.go.dev/github.com/deadblue/elevengo).
+More examples can be found in [reference](https://pkg.go.dev/github.com/deadblue/elevengo).
 
 ## Features
 
 * Login
   * [x] Import credential from cookies
   * [x] Login via QRCode
-  * [x] Get signed in user information
+  * [x] Get signed-in user information
 * File
   * [x] List
   * [x] Search
@@ -49,27 +55,21 @@ You can find more examples from [reference](https://pkg.go.dev/github.com/deadbl
   * [x] Move
   * [x] Copy
   * [x] Delete
-  * [x] Mkdir
-  * [x] Stat
-  * [x] Storage Stat
+  * [x] Get Information by ID
+  * [x] Stat File
   * [x] Download
   * [x] Upload
-  * [x] Video HLS
-  * [X] Image URL
+  * [x] Make Directory
+* Media
+  * [x] Get Video data
+  * [X] Get Image URL
 * Offline
   * [x] List tasks
-  * [x] Create URL task(s)
+  * [x] Create task by URL
   * [x] Delete tasks
   * [x] Clear tasks
 * Other
   * [x] Captcha
-
-## TODO list
-
-* ~~Implement download/upload method, with progress echo.~~
-* ~~Move example codes out of comment.~~
-* Handle more upstream errors.
-* Caller can swtich upstream API between HTTP/HTTPS.
 
 ## License
 

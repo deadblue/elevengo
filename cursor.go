@@ -1,82 +1,39 @@
 package elevengo
 
-/*
-Due to the upstream API restriction, some list methods can not get the whole data
-in one request. Cursor is design for these methods, to get data page-by-page.
-*/
-type Cursor interface {
+import "github.com/deadblue/elevengo/internal/webapi"
 
-	// Return true if the cursor has not been used or there is some data remain.
-	HasMore() bool
-
-	// Move cursor to the start of the remaining data.
-	Next()
-
-	// Return total amount of the data.
-	Total() int
-}
-
-/*
-File cursor for FileList and FileSearch, developer should
-create it through "FileCursor()".
-*/
-type fileCursor struct {
-	used   bool
-	order  string
-	asc    int
+type FileCursor struct {
+	// Transaction
+	tx string
+	// Cursor parameters
 	offset int
-	limit  int
 	total  int
+	// Sort parameters
+	order string
+	asc   int
 }
 
-func (c *fileCursor) HasMore() bool {
-	return !c.used || c.offset < c.total
+func (c *FileCursor) checkTransaction(tx string) error {
+	if c.tx != tx && c.tx != "" {
+		return webapi.ErrInvalidCursor
+	} else if c.tx == "" {
+		// Initialize cursor
+		c.tx = tx
+		c.offset = 0
+		c.order = "user_ptime"
+		c.asc = 0
+	}
+	return nil
 }
-func (c *fileCursor) Next() {
-	c.offset += c.limit
+
+func (c *FileCursor) HasMore() bool {
+	return c.tx == "" || c.offset < c.total
 }
-func (c *fileCursor) Total() int {
+
+func (c *FileCursor) Total() int {
 	return c.total
 }
 
-// Create a cursor for "Agent.FileList()" and "Agent.FileSearch()".
-func FileCursor() Cursor {
-	return &fileCursor{
-		used:   false,
-		order:  "user_ptime",
-		asc:    0,
-		offset: 0,
-		limit:  fileDefaultLimit,
-		total:  0,
-	}
-}
-
-/*
-File cursor for OfflineList, developer should create it through "OfflineCursor()".
-*/
-type offlineCursor struct {
-	used      bool
-	page      int
-	pageCount int
-	total     int
-}
-
-func (c *offlineCursor) HasMore() bool {
-	return !c.used || c.page < c.pageCount
-}
-func (c *offlineCursor) Next() {
-	c.page += 1
-}
-func (c *offlineCursor) Total() int {
-	return c.total
-}
-
-// Create a cursor for "Agent.OfflineList()".
-func OfflineCursor() Cursor {
-	return &offlineCursor{
-		used:      false,
-		page:      1,
-		pageCount: 0,
-		total:     0,
-	}
+func (c *FileCursor) Remain() int {
+	return c.total - c.offset
 }

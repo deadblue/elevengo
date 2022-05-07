@@ -2,91 +2,79 @@ package elevengo
 
 import (
 	"fmt"
-	"github.com/deadblue/elevengo/internal/core"
-	"github.com/deadblue/elevengo/internal/types"
+	"github.com/deadblue/elevengo/internal/web"
+	"github.com/deadblue/elevengo/internal/webapi"
 	"math/rand"
 	"time"
 )
 
-const (
-	cookieUrl    = "https://115.com"
-	cookieDomain = ".115.com"
-
-	cookieUid  = "UID"
-	cookieCid  = "CID"
-	cookieSeid = "SEID"
-
-	apiUserInfo = "https://my.115.com/"
-)
-
-/*
-Credential contains required information that the upstream server uses to
-authenticate a signed-in user.
-
-In detail, three cookies are required: "UID", "CID", "SEID", caller can find
-them from browser cookie storage.
-*/
+// Credential contains required information which upstream server uses to
+// authenticate a signed-in user.
+// In detail, three cookies are required: "UID", "CID", "SEID", caller can
+// find them from browser cookie storage.
 type Credential struct {
 	UID  string
 	CID  string
 	SEID string
 }
 
-// Basic information of the signed-in user.
+// UserInfo contains the basic information of a signed-in user.
 type UserInfo struct {
 	Id   int
 	Name string
 }
 
-// Import credentials into agent.
+// CredentialImport imports credentials into agent.
 func (a *Agent) CredentialImport(cr *Credential) (err error) {
 	cookies := map[string]string{
-		cookieUid:  cr.UID,
-		cookieCid:  cr.CID,
-		cookieSeid: cr.SEID,
+		webapi.CookieNameUid:  cr.UID,
+		webapi.CookieNameCid:  cr.CID,
+		webapi.CookieNameSeid: cr.SEID,
 	}
-	a.hc.SetCookies(cookieUrl, cookieDomain, cookies)
-	return a.getUserInfo()
-}
-
-// Export credentials from agent, caller can store it for future use.
-func (a *Agent) CredentialExport() (cr Credential, err error) {
-	if cookies := a.hc.Cookies(cookieUrl); cookies == nil || len(cookies) == 0 {
-		err = errCredentialsNotExist
-	} else {
-		cr = Credential{
-			UID:  cookies[cookieUid],
-			CID:  cookies[cookieCid],
-			SEID: cookies[cookieSeid],
-		}
+	a.wc.ImportCookies(cookies, webapi.CookieDomain115, webapi.CookieDomainAnxia)
+	if !a.LoginCheck() {
+		err = webapi.ErrCredentialInvalid
 	}
 	return
 }
 
-// A new and graceful way to get user information.
-func (a *Agent) getUserInfo() (err error) {
+// CredentialExport exports credentials for future-use.
+func (a *Agent) CredentialExport(cr *Credential) {
+	cookies := a.wc.ExportCookies(webapi.CookieUrl)
+	cr.UID = cookies[webapi.CookieNameUid]
+	cr.CID = cookies[webapi.CookieNameCid]
+	cr.SEID = cookies[webapi.CookieNameSeid]
+}
+
+func (a *Agent) LoginCheck() bool {
+	qs := web.Params{}.WithNowMilli("_")
+	resp := &webapi.LoginCheckResponse{}
+	if err := a.wc.CallJsonApi(webapi.ApiLoginCheck, qs, nil, resp); err != nil {
+		return false
+	}
+	data := &webapi.LoginCheckData{}
+	if err := resp.Decode(data); err == nil {
+		a.uid = data.UserId
+		return true
+	} else {
+		return false
+	}
+}
+
+// UserGet retrieves user information from cloud.
+func (a *Agent) UserGet(info *UserInfo) (err error) {
 	cb := fmt.Sprintf("jQuery%d_%d", rand.Uint64(), time.Now().Unix())
-	qs := core.NewQueryString().
-		WithString("ct", "ajax").
-		WithString("ac", "nav").
-		WithString("callback", cb).
-		WithInt64("_", time.Now().Unix())
-	result := &types.UserInfoResult{}
-	if err = a.hc.JsonpApi(apiUserInfo, qs, result); err != nil {
+	qs := web.Params{}.
+		With("callback", cb).
+		WithNow("_")
+	resp := webapi.BasicResponse{}
+	if err = a.wc.CallJsonpApi(webapi.ApiUserInfo, qs, &resp); err != nil {
 		return
 	}
-	if a.ui == nil {
-		a.ui = &UserInfo{}
-	}
-	a.ui.Id = result.Data.UserId
-	a.ui.Name = result.Data.UserName
-	return
-}
-
-// Get signed in user information.
-func (a *Agent) User() (info UserInfo) {
-	if a.ui != nil {
-		info = *a.ui
+	result := webapi.UserInfoData{}
+	if err = resp.Decode(&result); err == nil {
+		info.Id = result.UserId
+		info.Name = result.UserName
 	}
 	return
 }

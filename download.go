@@ -1,19 +1,17 @@
 package elevengo
 
 import (
-	"fmt"
-	"github.com/deadblue/elevengo/internal/core"
-	"github.com/deadblue/elevengo/internal/types"
-	"github.com/deadblue/elevengo/internal/util"
-	"github.com/deadblue/gostream/quietly"
+	"encoding/json"
+	"errors"
+	"github.com/deadblue/elevengo/internal/crypto/m115"
+	"github.com/deadblue/elevengo/internal/web"
+	"github.com/deadblue/elevengo/internal/webapi"
 	"io"
-	"net/http"
 	"strings"
-	"time"
 )
 
-const (
-	apiFileDownload = "https://webapi.115.com/files/download"
+var (
+	errDownloadNotResult = errors.New("download has no result")
 )
 
 // DownloadTicket contains all required information to download a file.
@@ -28,78 +26,69 @@ type DownloadTicket struct {
 	FileSize int64
 }
 
-/*
-DownloadCreateTicket creates ticket which contains all required information to
-download a file. Caller can use third-party tools/libraries to download file, such
-as wget/curl/aria2.
-*/
-func (a *Agent) DownloadCreateTicket(pickcode string) (ticket DownloadTicket, err error) {
-	// Get download information
-	qs := core.NewQueryString().
-		WithString("pickcode", pickcode).
-		WithInt64("_", time.Now().Unix())
-	result := &types.DownloadInfoResult{}
-	err = a.hc.JsonApi(apiFileDownload, qs, nil, result)
-	if err == nil && result.IsFailed() {
-		err = types.MakeFileError(result.MessageCode, result.Message)
+// DownloadCreateTicket creates ticket which contains all required information
+// to download a file. Caller can use third-party tools/libraries to download
+// file, such as wget/curl/aria2.
+func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (err error) {
+	// Generate key for encrypt/decrypt
+	key := m115.GenerateKey()
+
+	// Prepare request
+	data, _ := json.Marshal(&webapi.DownloadRequest{Pickcode: pickcode})
+	qs := web.Params{}.WithNow("t")
+	form := web.Params{}.With("data", m115.Encode(data, key)).ToForm()
+	// Send request
+	resp := &webapi.BasicResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiDownloadGetUrl, qs, form, resp); err != nil {
+		return
 	}
-	// Create download ticket
-	ticket = DownloadTicket{
-		Url:      result.FileUrl,
-		Headers:  make(map[string]string),
-		FileName: result.FileName,
-		FileSize: util.MustParseInt(result.FileSize),
+	// Parse response
+	var resultData string
+	if err = resp.Decode(&resultData); err != nil {
+		return
 	}
-	// Add user-agent header
-	ticket.Headers["User-Agent"] = a.name
-	// Add cookie header
-	sb := &strings.Builder{}
-	for name, value := range a.hc.Cookies(result.FileUrl) {
-		_, _ = fmt.Fprintf(sb, "%s=%s;", name, value)
+	if data, err = m115.Decode(resultData, key); err != nil {
+		return
 	}
-	ticket.Headers["Cookie"] = sb.String()
+	result := webapi.DownloadData{}
+	if err = json.Unmarshal(data, &result); err != nil {
+		return
+	}
+	if len(result) == 0 {
+		return errDownloadNotResult
+	}
+	for _, info := range result {
+		a.convertDownloadTicket(info, ticket)
+		break
+	}
 	return
 }
 
-/*
-Download downloads a file from cloud, writes its content into w. If w implements
-io.Closer, it will be closed automatically.
+func (a *Agent) convertDownloadTicket(info *webapi.DownloadInfo, ticket *DownloadTicket) {
+	ticket.FileName = info.FileName
+	ticket.FileSize = int64(info.FileSize)
+	ticket.Url = info.Url.Url
+	ticket.Headers = map[string]string{
+		"User-Agent": a.name,
+	}
+	// Serialize cookie
+	cookies := a.wc.ExportCookies(ticket.Url)
+	if len(cookies) > 0 {
+		buf, isFirst := strings.Builder{}, true
+		for ck, cv := range cookies {
+			if !isFirst {
+				buf.WriteString("; ")
+			}
+			buf.WriteString(ck)
+			buf.WriteRune('=')
+			buf.WriteString(cv)
+			isFirst = false
+		}
+		ticket.Headers["Cookie"] = buf.String()
+	}
+}
 
-This method DOSE NOT support multi-thread/resuming, if caller requires those,
-use thirdparty tools/libraries instead.
-
-To monitor the downloading progress, caller can wrap w by
-"github.com/deadblue/gostream/observe".
-*/
-func (a *Agent) Download(pickcode string, w io.Writer) (size int64, err error) {
-	if wc, ok := w.(io.WriteCloser); ok {
-		defer quietly.Close(wc)
-	}
-
-	// Get download ticket.
-	ticket, err := a.DownloadCreateTicket(pickcode)
-	if err != nil {
-		return
-	}
-	// Make download request
-	req, err := http.NewRequest(http.MethodGet, ticket.Url, nil)
-	if err != nil {
-		return
-	}
-	for name, value := range ticket.Headers {
-		req.Header.Set(name, value)
-	}
-	// Send download request
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return
-	}
-	defer quietly.Close(resp.Body)
-
-	// Transfer response body to w
-	size, err = io.Copy(w, resp.Body)
-	if err == nil && size != ticket.FileSize {
-		err = errUnexpectedTransferSize
-	}
-	return
+// Get gets content from url using agent underlying HTTP client.
+func (a *Agent) Get(url string) (body io.ReadCloser, err error) {
+	return a.wc.Get(url, nil)
 }

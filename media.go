@@ -1,53 +1,60 @@
 package elevengo
 
 import (
-	"github.com/deadblue/elevengo/internal/core"
-	"github.com/deadblue/elevengo/internal/types"
-	"time"
+	"github.com/deadblue/elevengo/internal/util"
+	"github.com/deadblue/elevengo/internal/web"
+	"github.com/deadblue/elevengo/internal/webapi"
 )
 
-const (
-	apiFileVideo = "https://webapi.115.com/files/video"
-	apiFileImage = "https://webapi.115.com/files/image"
-)
-
-/*
-Get HLS content of a video.
-
-For video file, the upstream server support HLS streaming. Caller can use this
-method to get the HLS content, then play it through thirdparty tools, such as "mpv".
-*/
-func (a *Agent) VideoHlsContent(pickcode string) (content []byte, err error) {
-	// Call video API
-	qs := core.NewQueryString().
-		WithString("pickcode", pickcode)
-	result := &types.FileVideoResult{}
-	err = a.hc.JsonApi(apiFileVideo, qs, nil, result)
-	if err == nil {
-		if result.IsFailed() {
-			err = types.MakeFileError(result.ErrorCode, result.Error)
-		} else if result.FileStatus != 1 {
-			err = errVideoNotReady
-		}
-	}
-	if err != nil {
-		return
-	}
-	return a.hc.Get(result.VideoUrl, nil)
+type Video struct {
+	FileId   string
+	FileName string
+	FileSize int64
+	FileSha1 string
+	PickCode string
+	Width    int
+	Height   int
+	Duration float64
+	PlayUrl  string
 }
 
-// Get a image URL which can be embedded into web page.
-func (a *Agent) ImageUrl(pickcode string) (link string, err error) {
-	qs := core.NewQueryString().
-		WithString("pickcode", pickcode).
-		WithInt64("_", time.Now().Unix())
-	result := &types.FileImageResult{}
-	err = a.hc.JsonApi(apiFileImage, qs, nil, result)
-	if err == nil && result.IsFailed() {
-		err = types.MakeFileError(result.ErrorCode, result.Error)
+func (a *Agent) VideoGetInfo(pickcode string, video *Video) (err error) {
+	// Call video API
+	qs := web.Params{}.
+		With("pickcode", pickcode).
+		With("share_id", "0")
+	resp := &webapi.VideoResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiFileVideo, qs, nil, resp); err != nil {
+		return
 	}
-	if err == nil {
-		link = result.Data.OriginUrl
+	if resp.FileStatus != 1 {
+		return webapi.ErrVideoNotReady
+	}
+	video.FileId = resp.FileId
+	video.FileName = resp.FileName
+	video.FileSize = int64(resp.FileSize)
+	video.FileSha1 = resp.Sha1
+	video.PickCode = resp.PickCode
+	video.Width = int(resp.Width)
+	video.Height = int(resp.Height)
+	video.Duration = float64(resp.Duration)
+	video.PlayUrl = util.SecretUrl(resp.VideoUrl)
+	return
+}
+
+// ImageGetUrl gets an accessible image URL of given pickcode, which is from an image file.
+func (a *Agent) ImageGetUrl(pickcode string) (imageUrl string, err error) {
+	qs := web.Params{}.
+		With("pickcode", pickcode).
+		WithNow("_")
+	resp := &webapi.BasicResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiFileImage, qs, nil, resp); err != nil {
+		return
+	}
+	// Parse response
+	data := &webapi.ImageData{}
+	if err = resp.Decode(data); err == nil {
+		imageUrl = data.OriginUrl
 	}
 	return
 }
