@@ -6,19 +6,33 @@ import (
 	"github.com/deadblue/elevengo/internal/webapi"
 )
 
+// Video contains information of a video file on cloud.
 type Video struct {
-	FileId   string
+
+	// File ID
+	FileId string
+	// File Name
 	FileName string
+	// File size in bytes
 	FileSize int64
-	FileSha1 string
+	// Pick code for downloading
 	PickCode string
-	Width    int
-	Height   int
+	// SHA-1 hash
+	Sha1 string
+
+	// Video width
+	Width int
+	// Video height
+	Height int
+	// Video duration in seconds
 	Duration float64
-	PlayUrl  string
+
+	// Play URL, usually is a m3u8 URL
+	PlayUrl string
 }
 
-func (a *Agent) VideoGetInfo(pickcode string, video *Video) (err error) {
+// VideoGet gets information of a video file by its pickcode.
+func (a *Agent) VideoGet(pickcode string, video *Video) (err error) {
 	// Call video API
 	qs := web.Params{}.
 		With("pickcode", pickcode).
@@ -33,8 +47,8 @@ func (a *Agent) VideoGetInfo(pickcode string, video *Video) (err error) {
 	video.FileId = resp.FileId
 	video.FileName = resp.FileName
 	video.FileSize = int64(resp.FileSize)
-	video.FileSha1 = resp.Sha1
 	video.PickCode = resp.PickCode
+	video.Sha1 = resp.Sha1
 	video.Width = int(resp.Width)
 	video.Height = int(resp.Height)
 	video.Duration = float64(resp.Duration)
@@ -42,7 +56,7 @@ func (a *Agent) VideoGetInfo(pickcode string, video *Video) (err error) {
 	return
 }
 
-// ImageGetUrl gets an accessible image URL of given pickcode, which is from an image file.
+// ImageGetUrl gets an accessible URL of an image file by its pickcode.
 func (a *Agent) ImageGetUrl(pickcode string) (imageUrl string, err error) {
 	qs := web.Params{}.
 		With("pickcode", pickcode).

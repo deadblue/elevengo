@@ -131,12 +131,12 @@ func ExampleAgent_UploadCreateTicket() {
 	}
 }
 
-func ExampleAgent_VideoGetInfo() {
+func ExampleAgent_VideoGet() {
 	agent := Default()
 
 	// Get video information
 	info := Video{}
-	err := agent.VideoGetInfo("pickcode", &info)
+	err := agent.VideoGet("pickcode", &info)
 	if err != nil {
 		log.Fatalf("Get video info failed: %s", err)
 	}
