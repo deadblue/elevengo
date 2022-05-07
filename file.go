@@ -123,7 +123,7 @@ func fileParseListResponse(resp *webapi.FileListResponse, files []*File, cursor 
 	return n, nil
 }
 
-// FileList lists files list under a directory whose id is parentId.
+// FileList lists files list under a directory whose ID is dirId.
 func (a *Agent) FileList(dirId string, cursor *FileCursor, files []*File) (n int, err error) {
 	if n = len(files); n == 0 {
 		return
@@ -206,7 +206,7 @@ func (a *Agent) FileSearch(dirId, keyword string, cursor *FileCursor, files []*F
 	return fileParseListResponse(resp, files, cursor)
 }
 
-// FileGet gets file information by its ID.
+// FileGet gets information of a file/directory by its ID.
 func (a *Agent) FileGet(fileId string, file *File) (err error) {
 	qs := web.Params{}.
 		With("file_id", fileId)
@@ -221,7 +221,7 @@ func (a *Agent) FileGet(fileId string, file *File) (err error) {
 	return
 }
 
-// FileStat gets information of a file/directory.
+// FileStat gets statistic information of a file/directory.
 func (a *Agent) FileStat(fileId string, info *FileInfo) (err error) {
 	qs := (web.Params{}).With("cid", fileId)
 	resp := &webapi.FileStatResponse{}

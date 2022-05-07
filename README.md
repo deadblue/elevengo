@@ -11,28 +11,32 @@ v0.2.x is in process.
 ## Example
 
 ```go
+package main
+
 import (
     "github.com/deadblue/elevengo"
     "log"
 )
 
-agent := elevengo.Default()
-credential := &elevengo.Credential{
+func main()  {
+  agent := elevengo.Default()
+  credential := &elevengo.Credential{
     UID: "", CID: "", SEID: "",
-}
-if err := agent.CredentialImport(credential); err != nil {
+  }
+  if err := agent.CredentialImport(credential); err != nil {
     log.Fatalf("Import credentail error: %s", err)
-}
+  }
 
-cursor, files := &elevengo.FileCursor{}, make([]*elevengo.File, 10)
-for cursor.HasMore() {
+  files := make([]*elevengo.File, 10)
+  for cursor := new(elevengo.FileCursor); cursor.HasMore(); {
     n, err := agent.FileList("0", cursor, files)
     if err != nil {
-        log.Fatalf("List file failed: %s", err.Error())
+      log.Fatalf("List file failed: %s", err.Error())
     }
     for i := 0; i < n; i++ {
-        log.Printf("File: %#v", files[i])
+      log.Printf("File: %#v", files[i])
     }
+  }  
 }
 ```
 

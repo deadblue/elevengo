@@ -21,6 +21,8 @@ import (
 
 // UploadTicket contains all required information to upload a file.
 type UploadTicket struct {
+	// Is file exists
+	Exist bool
 	// Request method
 	Verb string
 	// Remote URL which will receive the file content.
@@ -103,7 +105,7 @@ func (a *Agent) uploadCalculateSignature(targetId, fileId string) string {
 
 // UploadCreateTicket creates a ticket with all required information to upload a
 // file. Caller can use third-party tools/libraries to process it.
-func (a *Agent) UploadCreateTicket(dirId, name string, r io.Reader, ticket *UploadTicket) (exist bool, err error) {
+func (a *Agent) UploadCreateTicket(dirId, name string, r io.Reader, ticket *UploadTicket) (err error) {
 	// Digest content
 	dr := &hash.DigestResult{}
 	if err = hash.Digest(r, dr); err != nil {
@@ -111,7 +113,8 @@ func (a *Agent) UploadCreateTicket(dirId, name string, r io.Reader, ticket *Uplo
 	}
 	// Initialize uploading
 	params := &webapi.UploadOssParams{}
-	if exist, err = a.uploadInit(dirId, name, dr.Size, dr.PreId, dr.QuickId, params); exist || err != nil {
+	if ticket.Exist, err = a.uploadInit(
+		dirId, name, dr.Size, dr.PreId, dr.QuickId, params); ticket.Exist || err != nil {
 		return
 	}
 
@@ -145,9 +148,9 @@ func (a *Agent) UploadCreateTicket(dirId, name string, r io.Reader, ticket *Uplo
 }
 
 // UploadParseResult parses the raw upload response, and fills it to file.
-func (a *Agent) UploadParseResult(content []byte, file *File) (err error) {
-	resp := &webapi.BasicResponse{}
-	if err = json.Unmarshal(content, resp); err == nil {
+func (a *Agent) UploadParseResult(r io.Reader, file *File) (err error) {
+	decoder, resp := json.NewDecoder(r), &webapi.BasicResponse{}
+	if err = decoder.Decode(resp); err == nil {
 		err = resp.Err()
 	}
 	if err != nil || file == nil {

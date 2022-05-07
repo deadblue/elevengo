@@ -31,7 +31,7 @@ func (a *Agent) DirMake(parentId string, name string) (dirId string, err error) 
 	return
 }
 
-// DirSetOrder sets how files under it be ordered.
+// DirSetOrder sets how files under the directory be ordered.
 func (a *Agent) DirSetOrder(dirId string, order DirOrder, asc bool) (err error) {
 	if order < dirOrderMin || order > dirOrderMax {
 		order = DirOrderByTime
