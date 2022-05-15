@@ -74,5 +74,5 @@ func (c *Client) Post(url string, qs Params, payload Payload) (body io.ReadClose
 	if resp, err = c.do(req); err == nil {
 		body = resp.Body
 	}
-	return
+	return body, nil
 }
