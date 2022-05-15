@@ -37,7 +37,7 @@ func (c *Client) Get(url string, qs Params) (body io.ReadCloser, err error) {
 	if resp, err = c.do(req); err == nil {
 		body = resp.Body
 	}
-	return
+	return body,nil
 }
 
 func (c *Client) GetContent(url string, qs Params) (data []byte, err error) {
