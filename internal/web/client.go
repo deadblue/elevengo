@@ -25,6 +25,7 @@ func NewClient(hc plugin.HttpClient) *Client {
 		client.hc = defaultHttpClient(client.cj)
 		client.mc = false
 	} else {
+		client.hc = hc
 		switch hc.(type) {
 		case *http.Client:
 			client.cj = hc.(*http.Client).Jar
