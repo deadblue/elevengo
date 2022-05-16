@@ -13,7 +13,7 @@ func (v *StringInt) UnmarshalJSON(b []byte) (err error) {
 	if b[0] == '"' {
 		var s string
 		if err = json.Unmarshal(b, &s); err == nil {
-			i, err = strconv.Atoi(s)
+			i, _ = strconv.Atoi(s)
 		}
 	} else {
 		err = json.Unmarshal(b, &i)
