@@ -29,3 +29,29 @@ func (a *Agent) StorageStat(info *StorageInfo) (err error) {
 	info.Avail = int64(result.Space.Remain.Size)
 	return
 }
+
+// StorageFormatInfo describes storage space format usage.
+type StorageFormatInfo struct {
+	// Total size in bytes.
+	Size string
+	// Used size in bytes.
+	Used string
+	// Avail size in bytes.
+	Avail string
+}
+
+// StorageFormatStat gets storage size information format.
+func (a *Agent) StorageFormatStat(info *StorageFormatInfo) (err error) {
+	resp := &webapi.BasicResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiIndexInfo, nil, nil, resp); err != nil {
+		return err
+	}
+	result := webapi.IndexData{}
+	if err = resp.Decode(&result); err != nil {
+		return
+	}
+	info.Size = result.Space.Total.FormatSize
+	info.Used = result.Space.Used.FormatSize
+	info.Avail = result.Space.Remain.FormatSize
+	return
+}
