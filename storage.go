@@ -10,8 +10,15 @@ type StorageInfo struct {
 	Size int64
 	// Used size in bytes.
 	Used int64
-	// Avail size in bytes.
+	// Available size in bytes.
 	Avail int64
+
+	// Human-readable total size.
+	FormatSize string
+	// Human-readable used size.
+	FormatUsed string
+	// Human-readable remain size.
+	FormatAvail string
 }
 
 // StorageStat gets storage size information.
@@ -27,6 +34,9 @@ func (a *Agent) StorageStat(info *StorageInfo) (err error) {
 	info.Size = int64(result.Space.Total.Size)
 	info.Used = int64(result.Space.Used.Size)
 	info.Avail = int64(result.Space.Remain.Size)
+	info.FormatSize = result.Space.Total.FormatSize
+	info.FormatUsed = result.Space.Used.FormatSize
+	info.FormatAvail = result.Space.Remain.FormatSize
 	return
 }
 
