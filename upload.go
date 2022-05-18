@@ -103,13 +103,21 @@ func (a *Agent) uploadCalculateSignature(targetId, fileId string) string {
 	return strings.ToUpper(hex.EncodeToString(digester.Sum(nil)))
 }
 
-// UploadCreateTicket creates a ticket with all required information to upload a
-// file. Caller can use third-party tools/libraries to process it.
+// UploadCreateTicket creates a ticket which contains all required information
+// to upload file/data to cloud, the ticket should be used in 1 hour.
+//
+// To create ticket, r will be fully read to calculate SHA-1 hash and MD5
+// hash. If you want to re-use r, try to seek it to beginning.
+//
+// Now, you can not upload file larger than 5GB, it will be supported later.
 func (a *Agent) UploadCreateTicket(dirId, name string, r io.Reader, ticket *UploadTicket) (err error) {
 	// Digest content
 	dr := &hash.DigestResult{}
 	if err = hash.Digest(r, dr); err != nil {
 		return
+	}
+	if dr.Size > webapi.UploadMaxSize {
+		return webapi.ErrUploadTooLarge
 	}
 	// Initialize uploading
 	params := &webapi.UploadOssParams{}
@@ -171,7 +179,7 @@ func (a *Agent) UploadParseResult(r io.Reader, file *File) (err error) {
 	return
 }
 
-// UploadSimply directly uploads data to cloud,
+// UploadSimply directly uploads small file/data (smaller than 200MB) to cloud.
 func (a *Agent) UploadSimply(dirId, name string, size int64, r io.Reader) (fileId string, err error) {
 	if size == 0 {
 		size = util.GuessSize(r)
