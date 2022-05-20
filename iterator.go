@@ -8,6 +8,9 @@ type Iterator[T any] interface {
 	// Next move cursor to next.
 	Next() error
 
+	// Index returns the index of current item, starts from 0.
+	Index() int
+
 	// Get gets current item.
 	Get(*T) error
 

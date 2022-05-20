@@ -59,6 +59,10 @@ func (i *labelIterator) Next() (err error) {
 	return i.uf(i)
 }
 
+func (i *labelIterator) Index() int {
+	return i.offset + i.index
+}
+
 func (i *labelIterator) Get(label *Label) error {
 	if i.index >= i.size {
 		return webapi.ErrReachEnd

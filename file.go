@@ -103,11 +103,11 @@ type FileInfo struct {
 
 type fileIterator struct {
 	// Params
-	dirId  string
-	order  string
-	asc    int
-	search string
-	offset int
+	dirId   string
+	offset  int
+	order   string
+	asc     int
+	keyword string
 	// Total count
 	count int
 	// Cached files
@@ -131,6 +131,10 @@ func (i *fileIterator) Next() (err error) {
 	return i.uf(i)
 }
 
+func (i *fileIterator) Index() int {
+	return i.offset + i.index
+}
+
 func (i *fileIterator) Get(file *File) error {
 	if i.index >= i.size {
 		return webapi.ErrReachEnd
@@ -152,15 +156,15 @@ func (a *Agent) FileIterate(dirId string) (it Iterator[File], err error) {
 		order:  webapi.FileOrderByTime,
 		asc:    0,
 		offset: 0,
-		uf:     a.fileIterateInternal,
+		uf:     a.fileListInternal,
 	}
-	if err = a.fileIterateInternal(fi); err == nil {
+	if err = a.fileListInternal(fi); err == nil {
 		it = fi
 	}
 	return
 }
 
-func (a *Agent) fileIterateInternal(fi *fileIterator) (err error) {
+func (a *Agent) fileListInternal(fi *fileIterator) (err error) {
 	// Prepare request
 	qs := web.Params{}.
 		With("aid", "1").
@@ -201,13 +205,52 @@ func (a *Agent) fileIterateInternal(fi *fileIterator) (err error) {
 		return webapi.ErrNotExist
 	}
 	// Parse response
-	fi.count = resp.Count
-	fi.files = make([]*webapi.FileInfo, 0, webapi.FileListLimit)
-	if err = resp.Decode(&fi.files); err != nil {
+	if fi.count = resp.Count; fi.count > 0 {
+		fi.files = make([]*webapi.FileInfo, 0, webapi.FileListLimit)
+		if err = resp.Decode(&fi.files); err != nil {
+			return
+		}
+		fi.index, fi.size = 0, len(fi.files)
+	}
+	return
+}
+
+// FileSearch recursively searches files under dirId, whose name contains keyword.
+func (a *Agent) FileSearch(dirId, keyword string) (it Iterator[File], err error) {
+	fi := &fileIterator{
+		dirId:   dirId,
+		keyword: keyword,
+		offset:  0,
+		uf:      a.fileSearchInternal,
+	}
+	if err = a.fileSearchInternal(fi); err == nil {
+		it = fi
+	}
+	return
+}
+
+func (a *Agent) fileSearchInternal(fi *fileIterator) (err error) {
+	// Prepare request
+	qs := web.Params{}.
+		With("aid", "1").
+		With("cid", fi.dirId).
+		With("search_value", fi.keyword).
+		WithInt("offset", fi.offset).
+		WithInt("limit", webapi.FileListLimit).
+		With("format", "json")
+	resp := &webapi.FileListResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiFileSearch, qs, nil, resp); err != nil {
 		return
 	}
-	fi.index, fi.size = 0, len(fi.files)
-	return nil
+	// Parse response
+	if fi.count = resp.Count; fi.count > 0 {
+		fi.files = make([]*webapi.FileInfo, 0, webapi.FileListLimit)
+		if err = resp.Decode(&fi.files); err != nil {
+			return
+		}
+		fi.index, fi.size = 0, len(fi.files)
+	}
+	return
 }
 
 // FileGet gets information of a file/directory by its ID.

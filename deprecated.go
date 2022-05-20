@@ -119,31 +119,3 @@ func (a *Agent) FileList(dirId string, cursor *FileCursor, files []*File) (n int
 	}
 	return fileParseListResponse(resp, files, cursor)
 }
-
-// FileSearch recursively searches files, whose name contains the keyword and under the directory.
-func (a *Agent) FileSearch(dirId, keyword string, cursor *FileCursor, files []*File) (n int, err error) {
-	if n = len(files); n == 0 {
-		return
-	}
-	// Check cursor
-	if cursor == nil {
-		return 0, webapi.ErrInvalidCursor
-	}
-	tx := fmt.Sprintf("file_search_%s_%s", dirId, keyword)
-	if err = cursor.checkTransaction(tx); err != nil {
-		return
-	}
-	// Prepare request
-	qs := web.Params{}.
-		With("aid", "1").
-		With("cid", dirId).
-		With("search_value", keyword).
-		WithInt("offset", cursor.offset).
-		WithInt("limit", n).
-		With("format", "json")
-	resp := &webapi.FileListResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiFileSearch, qs, nil, resp); err != nil {
-		return
-	}
-	return fileParseListResponse(resp, files, cursor)
-}

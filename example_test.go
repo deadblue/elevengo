@@ -21,18 +21,17 @@ func ExampleAgent_CredentialImport() {
 	}
 }
 
-func ExampleAgent_FileList() {
+func ExampleAgent_FileIterate() {
 	agent := Default()
 
-	files := make([]*File, 10)
-	for cursor := new(FileCursor); cursor.HasMore(); {
-		n, err := agent.FileList("0", cursor, files)
-		if err != nil {
-			log.Fatalf("List file failed: %s", err.Error())
-		}
-		for i := 0; i < n; i++ {
-			log.Printf("File: %#v", files[i])
-		}
+	it, err := agent.FileIterate("0")
+	for ; err == nil; err = it.Next() {
+		file := &File{}
+		_ = it.Get(file)
+		log.Printf("File: %d => %#v", it.Index(), file)
+	}
+	if !IsIteratorEnd(err) {
+		log.Fatalf("Iterate file failed: %s", err.Error())
 	}
 }
 

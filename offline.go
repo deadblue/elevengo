@@ -71,8 +71,12 @@ func (a *Agent) offlineCallApi(url string, params web.Params, resp web.ApiResp) 
 type offlineIterator struct {
 	// Total task count
 	count int
-	// Page index & count
-	pi, pc int
+	// Page index
+	pi int
+	// Page count
+	pc int
+	// Page size
+	ps int
 
 	// Cached tasks
 	tasks []*webapi.OfflineTask
@@ -95,6 +99,10 @@ func (i *offlineIterator) Next() (err error) {
 	// Fetch next page
 	i.pi += 1
 	return i.uf(i)
+}
+
+func (i *offlineIterator) Index() int {
+	return (i.pi-1)*i.ps + i.index
 }
 
 func (i *offlineIterator) Get(task *OfflineTask) (err error) {
@@ -136,7 +144,9 @@ func (a *Agent) offlineIterateInternal(oi *offlineIterator) (err error) {
 	if err = a.offlineCallApi(webapi.ApiOfflineList, form, resp); err != nil {
 		return
 	}
-	oi.pi, oi.pc = resp.PageIndex, resp.PageCount
+	oi.pi = resp.PageIndex
+	oi.pc = resp.PageCount
+	oi.ps = resp.PageSize
 	oi.index, oi.size = 0, len(resp.Tasks)
 	if oi.size == 0 {
 		err = webapi.ErrReachEnd
