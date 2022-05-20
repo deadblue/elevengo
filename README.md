@@ -29,11 +29,11 @@ func main()  {
   for ; err == nil; err = it.Next() {
     file := &elevengo.File{}
     if err = it.Get(file); err == nil {
-		log.Printf("File: %d => %#v", it.Index(), file)
+      log.Printf("File: %d => %#v", it.Index(), file)
     }
   }
   if !elevengo.IsIteratorEnd(err) {
-	  log.Fatalf("Iterate files error: %s", err)
+    log.Fatalf("Iterate files error: %s", err)
   }
 }
 ```
