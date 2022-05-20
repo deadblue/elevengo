@@ -1,7 +1,6 @@
 package elevengo
 
 import (
-	"fmt"
 	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
 	"time"
@@ -9,7 +8,6 @@ import (
 
 // File describe a file or directory on cloud storage.
 type File struct {
-
 	// Marks is the file a directory.
 	IsDirectory bool
 	// Unique identifier of the file on the cloud storage.
@@ -103,39 +101,66 @@ type FileInfo struct {
 	Parents []*DirInfo
 }
 
-func fileParseListResponse(resp *webapi.FileListResponse, files []*File, cursor *FileCursor) (n int, err error) {
-	// Parse response data
-	n = len(files)
-	result := make([]*webapi.FileInfo, 0, n)
-	if err = resp.Decode(&result); err != nil {
-		return 0, err
-	}
-	// Fill files
-	if rn := len(result); rn < n {
-		n = rn
-	}
-	for i := 0; i < n; i++ {
-		files[i] = (&File{}).from(result[i])
-	}
-	// Update cursor
-	cursor.total = resp.Count
-	cursor.offset += n
-	return n, nil
+type fileIterator struct {
+	// Params
+	dirId  string
+	order  string
+	asc    int
+	search string
+	offset int
+	// Total count
+	count int
+	// Cached files
+	files []*webapi.FileInfo
+	// Cache index
+	index int
+	// Cache size
+	size int
+	// Update file
+	uf func(*fileIterator) error
 }
 
-// FileList lists files list under a directory whose ID is dirId.
-func (a *Agent) FileList(dirId string, cursor *FileCursor, files []*File) (n int, err error) {
-	if n = len(files); n == 0 {
+func (i *fileIterator) Next() (err error) {
+	if i.index += 1; i.index < i.size {
 		return
 	}
-	// Check cursor
-	if cursor == nil {
-		return 0, webapi.ErrInvalidCursor
+	i.offset += i.size
+	if i.offset >= i.count {
+		return webapi.ErrReachEnd
 	}
-	tx := fmt.Sprintf("file_list_%s", dirId)
-	if err = cursor.checkTransaction(tx); err != nil {
-		return
+	return i.uf(i)
+}
+
+func (i *fileIterator) Get(file *File) error {
+	if i.index >= i.size {
+		return webapi.ErrReachEnd
 	}
+	if file != nil {
+		file.from(i.files[i.index])
+	}
+	return nil
+}
+
+func (i *fileIterator) Count() int {
+	return i.count
+}
+
+// FileIterate returns an iterator.
+func (a *Agent) FileIterate(dirId string) (it Iterator[File], err error) {
+	fi := &fileIterator{
+		dirId:  dirId,
+		order:  webapi.FileOrderByTime,
+		asc:    0,
+		offset: 0,
+		uf:     a.fileIterateInternal,
+	}
+	if err = a.fileIterateInternal(fi); err == nil {
+		it = fi
+	}
+	return
+}
+
+func (a *Agent) fileIterateInternal(fi *fileIterator) (err error) {
 	// Prepare request
 	qs := web.Params{}.
 		With("aid", "1").
@@ -144,24 +169,24 @@ func (a *Agent) FileList(dirId string, cursor *FileCursor, files []*File) (n int
 		With("natsort", "1").
 		With("fc_mix", "0").
 		With("format", "json").
-		With("cid", dirId).
-		With("o", cursor.order).
-		WithInt("asc", cursor.asc).
-		WithInt("offset", cursor.offset).
-		WithInt("limit", n)
+		With("cid", fi.dirId).
+		With("o", fi.order).
+		WithInt("asc", fi.asc).
+		WithInt("offset", fi.offset).
+		WithInt("limit", webapi.FileListLimit)
 	resp := &webapi.FileListResponse{}
 	for retry := true; retry; {
 		// Select API URL
 		apiUrl := webapi.ApiFileList
-		if cursor.order == "file_name" {
+		if fi.order == webapi.FileOrderByName {
 			apiUrl = webapi.ApiFileListByName
 		}
 		// Call API
 		err = a.wc.CallJsonApi(apiUrl, qs, nil, resp)
 		if err == webapi.ErrOrderNotSupport {
-			cursor.order, cursor.asc = resp.Order, resp.IsAsc
-			qs.With("o", cursor.order).
-				WithInt("asc", cursor.asc)
+			// Update order & asc
+			fi.order, fi.asc = resp.Order, resp.IsAsc
+			qs.With("o", fi.order).WithInt("asc", fi.asc)
 			retry = true
 		} else {
 			retry = false
@@ -170,40 +195,19 @@ func (a *Agent) FileList(dirId string, cursor *FileCursor, files []*File) (n int
 	if err != nil {
 		return
 	}
-	// When dirId is not exists, 115 will return the file list under root dir,
-	// that should be considered as an error.
-	if dirId != string(resp.CategoryId) {
-		return 0, webapi.ErrNotExist
+	// When dirId not exists, 115 will return the files under root dir, that
+	// should be considered as an error.
+	if fi.dirId != string(resp.CategoryId) {
+		return webapi.ErrNotExist
 	}
-	return fileParseListResponse(resp, files, cursor)
-}
-
-// FileSearch recursively searches files, whose name contains the keyword and under the directory.
-func (a *Agent) FileSearch(dirId, keyword string, cursor *FileCursor, files []*File) (n int, err error) {
-	if n = len(files); n == 0 {
+	// Parse response
+	fi.count = resp.Count
+	fi.files = make([]*webapi.FileInfo, 0, webapi.FileListLimit)
+	if err = resp.Decode(&fi.files); err != nil {
 		return
 	}
-	// Check cursor
-	if cursor == nil {
-		return 0, webapi.ErrInvalidCursor
-	}
-	tx := fmt.Sprintf("file_search_%s_%s", dirId, keyword)
-	if err = cursor.checkTransaction(tx); err != nil {
-		return
-	}
-	// Prepare request
-	qs := web.Params{}.
-		With("aid", "1").
-		With("cid", dirId).
-		With("search_value", keyword).
-		WithInt("offset", cursor.offset).
-		WithInt("limit", n).
-		With("format", "json")
-	resp := &webapi.FileListResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiFileSearch, qs, nil, resp); err != nil {
-		return
-	}
-	return fileParseListResponse(resp, files, cursor)
+	fi.index, fi.size = 0, len(fi.files)
+	return nil
 }
 
 // FileGet gets information of a file/directory by its ID.

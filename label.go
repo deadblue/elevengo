@@ -29,38 +29,49 @@ type Label struct {
 	Color LabelColor
 }
 
+// labelIterator implements Iterator[Label].
 type labelIterator struct {
-	// Offset and total
-	o, t int
+	// Offset
+	offset int
+	// Count
+	count int
+
 	// Cached labels
-	ls []*webapi.LabelInfo
-	// Cache index & cache size
-	li, lc int
+	labels []*webapi.LabelInfo
+	// Cache index
+	index int
+	// Cache size
+	size int
+
 	// Update function
 	uf func(*labelIterator) error
 }
 
 func (i *labelIterator) Next() (err error) {
-	i.li += 1
-	if i.li < i.lc {
+	i.index += 1
+	if i.index < i.size {
 		return
 	}
-	i.o += i.lc
-	if i.o >= i.t {
+	i.offset += i.size
+	if i.offset >= i.count {
 		return webapi.ErrReachEnd
 	}
 	return i.uf(i)
 }
 
 func (i *labelIterator) Get(label *Label) error {
-	if i.li >= i.lc {
+	if i.index >= i.size {
 		return webapi.ErrReachEnd
 	}
-	l := i.ls[i.li]
+	l := i.labels[i.index]
 	label.Id = l.Id
 	label.Name = l.Name
 	label.Color = LabelColor(webapi.LabelColorMap[l.Color])
 	return nil
+}
+
+func (i *labelIterator) Count() int {
+	return i.count
 }
 
 func (a *Agent) LabelIterate() (it Iterator[Label], err error) {
@@ -78,7 +89,7 @@ func (a *Agent) labelIterateInternal(i *labelIterator) (err error) {
 		WithInt("user_id", a.uid).
 		With("sort", "create_time").
 		With("order", "desc").
-		WithInt("offset", i.o).
+		WithInt("offset", i.offset).
 		WithInt("limit", 30)
 	resp := &webapi.BasicResponse{}
 	if err = a.wc.CallJsonApi(webapi.ApiLabelList, qs, nil, resp); err != nil {
@@ -86,11 +97,11 @@ func (a *Agent) labelIterateInternal(i *labelIterator) (err error) {
 	}
 	data := &webapi.LabelListData{}
 	if err = resp.Decode(data); err == nil {
-		i.t = data.Total
-		i.li, i.lc = 0, len(data.List)
+		i.count = data.Total
+		i.index, i.size = 0, len(data.List)
 		// Copy list
-		i.ls = make([]*webapi.LabelInfo, 0, i.lc)
-		i.ls = append(i.ls, data.List...)
+		i.labels = make([]*webapi.LabelInfo, 0, i.size)
+		i.labels = append(i.labels, data.List...)
 	}
 	return
 }

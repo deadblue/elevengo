@@ -69,18 +69,24 @@ func (a *Agent) offlineCallApi(url string, params web.Params, resp web.ApiResp) 
 }
 
 type offlineIterator struct {
+	// Total task count
+	count int
 	// Page index & count
 	pi, pc int
+
 	// Cached tasks
-	ts []*webapi.OfflineTask
-	// Task index & count
-	ti, tc int
+	tasks []*webapi.OfflineTask
+	// Task index
+	index int
+	// Task size
+	size int
+
 	// Update function
 	uf func(*offlineIterator) error
 }
 
 func (i *offlineIterator) Next() (err error) {
-	if i.ti += 1; i.ti < i.tc {
+	if i.index += 1; i.index < i.size {
 		return nil
 	}
 	if i.pi >= i.pc {
@@ -92,10 +98,10 @@ func (i *offlineIterator) Next() (err error) {
 }
 
 func (i *offlineIterator) Get(task *OfflineTask) (err error) {
-	if i.ti >= i.tc {
+	if i.index >= i.size {
 		return webapi.ErrReachEnd
 	}
-	t := i.ts[i.ti]
+	t := i.tasks[i.index]
 	task.InfoHash = t.InfoHash
 	task.Name = t.Name
 	task.Size = t.Size
@@ -104,6 +110,10 @@ func (i *offlineIterator) Get(task *OfflineTask) (err error) {
 	task.Percent = t.Percent
 	task.FileId = t.FileId
 	return nil
+}
+
+func (i *offlineIterator) Count() int {
+	return i.count
 }
 
 // OfflineIterate returns an iterator for travelling offline tasks, it will
@@ -127,13 +137,14 @@ func (a *Agent) offlineIterateInternal(oi *offlineIterator) (err error) {
 		return
 	}
 	oi.pi, oi.pc = resp.PageIndex, resp.PageCount
-	oi.ti, oi.tc = 0, len(resp.Tasks)
-	if oi.tc == 0 {
+	oi.index, oi.size = 0, len(resp.Tasks)
+	if oi.size == 0 {
 		err = webapi.ErrReachEnd
 	} else {
-		oi.ts = make([]*webapi.OfflineTask, 0, oi.tc)
-		oi.ts = append(oi.ts, resp.Tasks...)
+		oi.tasks = make([]*webapi.OfflineTask, 0, oi.size)
+		oi.tasks = append(oi.tasks, resp.Tasks...)
 	}
+	oi.count = resp.TaskCount
 	return
 }
 

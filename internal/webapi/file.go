@@ -5,6 +5,8 @@ const (
 	FileOrderByType = "file_type"
 	FileOrderBySize = "file_size"
 	FileOrderByName = "file_name"
+
+	FileListLimit = 32
 )
 
 type FileInfo struct {
