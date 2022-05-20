@@ -51,6 +51,7 @@ type OfflineListResponse struct {
 
 	Tasks []*OfflineTask `json:"tasks"`
 
+	TaskCount int `json:"count"`
 	PageIndex int `json:"page"`
 	PageCount int `json:"page_count"`
 	PageSize  int `json:"page_row"`

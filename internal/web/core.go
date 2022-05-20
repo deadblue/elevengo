@@ -16,6 +16,7 @@ func (c *Client) do(req *http.Request) (resp *http.Response, err error) {
 	// Set user agent header
 	if c.ua != "" {
 		req.Header.Set(headerUserAgent, c.ua)
+		req.Header.Set("Accept", "*/*")
 	}
 	if c.mc {
 		// Add cookie

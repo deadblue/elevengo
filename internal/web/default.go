@@ -1,7 +1,6 @@
 package web
 
 import (
-	"crypto/tls"
 	"net"
 	"net/http"
 	"time"
@@ -19,13 +18,6 @@ func defaultHttpClient(jar http.CookieJar) *http.Client {
 		Timeout:   0,
 		KeepAlive: 30 * time.Second,
 	}).DialContext
-	if transport.TLSClientConfig != nil {
-		transport.TLSClientConfig.InsecureSkipVerify = true
-	} else {
-		transport.TLSClientConfig = &tls.Config{
-			InsecureSkipVerify: true,
-		}
-	}
 	// Make http.Client
 	return &http.Client{
 		Transport: transport,

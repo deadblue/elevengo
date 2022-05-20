@@ -1,12 +1,10 @@
 # ElevenGo
 
-![Version](https://img.shields.io/badge/release-v0.2.1-brightgreen?style=flat-square)
+![Version](https://img.shields.io/badge/release-v0.2.2-brightgreen?style=flat-square)
 [![Reference](https://img.shields.io/badge/Go-Reference-blue.svg?style=flat-square)](https://pkg.go.dev/github.com/deadblue/elevengo)
 ![License](https://img.shields.io/:License-MIT-green.svg?style=flat-square)
 
 An API client of 115 Cloud Storage Service.
-
-v0.2.x is in process.
 
 ## Example
 
@@ -27,16 +25,16 @@ func main()  {
     log.Fatalf("Import credentail error: %s", err)
   }
 
-  files := make([]*elevengo.File, 10)
-  for cursor := new(elevengo.FileCursor); cursor.HasMore(); {
-    n, err := agent.FileList("0", cursor, files)
-    if err != nil {
-      log.Fatalf("List file failed: %s", err.Error())
+  it, err := agent.FileIterate("dirId")
+  for ; err == nil; err = it.Next() {
+    file := &elevengo.File{}
+    if err = it.Get(file); err == nil {
+		log.Printf("File: %d => %#v", it.Index(), file)
     }
-    for i := 0; i < n; i++ {
-      log.Printf("File: %#v", files[i])
-    }
-  }  
+  }
+  if !elevengo.IsIteratorEnd(err) {
+	  log.Fatalf("Iterate files error: %s", err)
+  }
 }
 ```
 

@@ -5,6 +5,8 @@ const (
 	FileOrderByType = "file_type"
 	FileOrderBySize = "file_size"
 	FileOrderByName = "file_name"
+
+	FileListLimit = 32
 )
 
 type FileInfo struct {
@@ -82,4 +84,11 @@ type FileStatResponse struct {
 
 	FileCount StringInt `json:"count"`
 	DirCount  StringInt `json:"folder_count"`
+}
+
+func (r *FileStatResponse) Err() error {
+	if r.PickCode != "" {
+		return nil
+	}
+	return r.BasicResponse.Err()
 }
