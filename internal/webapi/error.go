@@ -42,6 +42,8 @@ var (
 		// Offline errors
 		10004: ErrOfflineInvalidLink,
 		10008: ErrOfflineTaskExisted,
+		// Dir errors
+		20004: ErrExist,
 		// Label errors
 		21003: ErrExist,
 		// File errors
