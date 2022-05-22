@@ -21,11 +21,11 @@ const (
 
 // DirMake makes directory under parentId, and returns its ID.
 func (a *Agent) DirMake(parentId string, name string) (dirId string, err error) {
-	qs := web.Params{}.
+	form := web.Params{}.
 		With("pid", parentId).
-		With("cname", name)
+		With("cname", name).ToForm()
 	resp := &webapi.DirMakeResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiDirAdd, qs, nil, resp); err == nil {
+	if err = a.wc.CallJsonApi(webapi.ApiDirAdd, nil, form, resp); err == nil {
 		dirId = resp.CategoryId
 	}
 	return
