@@ -261,9 +261,9 @@ func (a *Agent) FileGet(fileId string, file *File) (err error) {
 	if err = a.wc.CallJsonApi(webapi.ApiFileInfo, qs, nil, resp); err != nil {
 		return
 	}
-	data := &webapi.FileInfo{}
-	if err = resp.Decode(data); err == nil {
-		file.from(data)
+	data := make([]*webapi.FileInfo, 0, 1)
+	if err = resp.Decode(&data); err == nil {
+		file.from(data[0])
 	}
 	return
 }
