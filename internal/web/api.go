@@ -35,6 +35,27 @@ func (c *Client) CallJsonApi(url string, qs Params, payload Payload, resp ApiRes
 	return
 }
 
+func (c *Client) CallSha1Api(url string, qs Params, payload Payload, resp ApiResp) (err error) {
+	// Prepare request
+	var body io.ReadCloser
+
+	body, err = c.Sha1Post(url, qs, payload)
+
+	if err != nil {
+		return
+	}
+	defer util.QuietlyClose(body)
+	// Parse response
+	if resp == nil {
+		return
+	}
+	decoder := json.NewDecoder(body)
+	if err = decoder.Decode(resp); err == nil {
+		err = resp.Err()
+	}
+	return
+}
+
 func (c *Client) CallJsonpApi(url string, qs Params, resp ApiResp) (err error) {
 	body, err := c.Get(url, qs)
 	if err != nil {

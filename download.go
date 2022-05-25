@@ -64,6 +64,44 @@ func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (e
 	return
 }
 
+// DownloadCreateSha1Ticket creates ticket which contains all required information
+// to download a 128K Sha1 file. Caller can use third-party tools/libraries to download
+// file, such as wget/curl/aria2.
+func (a *Agent) DownloadCreateSha1Ticket(pickcode string, ticket *DownloadTicket) (err error) {
+	// Generate key for encrypt/decrypt
+	key := m115.GenerateKey()
+
+	// Prepare request
+	data, _ := json.Marshal(&webapi.DownloadRequest{Pickcode: pickcode})
+	qs := web.Params{}.WithNow("t")
+	form := web.Params{}.With("data", m115.Encode(data, key)).ToForm()
+	// Send request
+	resp := &webapi.BasicResponse{}
+	if err = a.wc.CallSha1Api(webapi.ApiDownloadGetUrl, qs, form, resp); err != nil {
+		return
+	}
+	// Parse response
+	var resultData string
+	if err = resp.Decode(&resultData); err != nil {
+		return
+	}
+	if data, err = m115.Decode(resultData, key); err != nil {
+		return
+	}
+	result := webapi.DownloadData{}
+	if err = json.Unmarshal(data, &result); err != nil {
+		return
+	}
+	if len(result) == 0 {
+		return errDownloadNotResult
+	}
+	for _, info := range result {
+		a.convertDownloadTicket(info, ticket)
+		break
+	}
+	return
+}
+
 func (a *Agent) convertDownloadTicket(info *webapi.DownloadInfo, ticket *DownloadTicket) {
 	ticket.FileName = info.FileName
 	ticket.FileSize = int64(info.FileSize)

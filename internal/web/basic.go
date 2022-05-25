@@ -76,3 +76,23 @@ func (c *Client) Post(url string, qs Params, payload Payload) (body io.ReadClose
 	}
 	return
 }
+
+func (c *Client) Sha1Post(url string, qs Params, payload Payload) (body io.ReadCloser, err error) {
+	if qs != nil {
+		url = appendQueryString(url, qs)
+	}
+	req, err := http.NewRequest(http.MethodPost, url, payload)
+	if err != nil {
+		return
+	}
+	req.Header.Set(headerContentType, payload.ContentType())
+	req.Header.Add("Range", "bytes=0-131071")
+	if size := payload.ContentLength(); size > 0 {
+		req.ContentLength = size
+	}
+	var resp *http.Response
+	if resp, err = c.do(req); err == nil {
+		body = resp.Body
+	}
+	return
+}
