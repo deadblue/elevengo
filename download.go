@@ -2,7 +2,6 @@ package elevengo
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/deadblue/elevengo/internal/crypto/m115"
 	"github.com/deadblue/elevengo/internal/web"
@@ -12,8 +11,6 @@ import (
 )
 
 var (
-	errDownloadNotResult = errors.New("download has no result")
-
 	headerRange = "Range"
 )
 
@@ -57,11 +54,15 @@ func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (e
 	if err = json.Unmarshal(data, &result); err != nil {
 		return
 	}
-	if len(result) == 0 {
-		return errDownloadNotResult
+	if !result.IsValid() {
+		return webapi.ErrDownloadEmpty
 	}
 	for _, info := range result {
-		a.convertDownloadTicket(info, ticket)
+		if info.FileSize == 0 {
+			err = webapi.ErrDownloadDirectory
+		} else {
+			a.convertDownloadTicket(info, ticket)
+		}
 		break
 	}
 	return

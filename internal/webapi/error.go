@@ -33,6 +33,12 @@ var (
 
 	ErrUploadTooLarge = errors.New("upload reach the limit")
 
+	ErrImportDirectory = errors.New("can not import directory")
+
+	ErrDownloadEmpty = errors.New("can not get download URL")
+
+	ErrDownloadDirectory = errors.New("can not download directory")
+
 	ErrVideoNotReady = errors.New("video is not ready")
 
 	errMap = map[int]error{
