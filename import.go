@@ -26,6 +26,12 @@ func (t *ImportTicket) FromFile(name string) (err error) {
 	if err != nil {
 		return
 	}
+	info, err := file.Stat()
+	if err != nil {
+		return
+	} else if info.IsDir() {
+		return webapi.ErrImportDirectory
+	}
 	defer util.QuietlyClose(file)
 	return t.From(path.Base(name), file)
 }
@@ -50,5 +56,37 @@ func (a *Agent) Import(dirId string, ticket *ImportTicket) (err error) {
 	if err == nil && !exist {
 		err = webapi.ErrNotExist
 	}
+	return
+}
+
+// ImportCreateTicket creates an ImportTicket from fileId.
+func (a *Agent) ImportCreateTicket(fileId string, ticket *ImportTicket) (err error) {
+	// Get file information
+	file := &File{}
+	if err = a.FileGet(fileId, file); err != nil {
+		return err
+	}
+	if file.IsDirectory {
+		return webapi.ErrImportDirectory
+	}
+	// Fill ImportTicket
+	ticket.Name = file.Name
+	ticket.Size = file.Size
+	ticket.QuickId = file.Sha1
+	if file.Size <= webapi.UploadPreSize {
+		ticket.PreId = file.Sha1
+		return
+	}
+	// Get first 128K data of the file
+	dt := &DownloadTicket{}
+	if err = a.DownloadCreateTicket(file.PickCode, dt); err != nil {
+		return
+	}
+	preBody, err := a.GetRange(dt.Url, webapi.UploadPreSize, 0)
+	if err != nil {
+		return
+	}
+	defer util.QuietlyClose(preBody)
+	ticket.PreId = hash.Sha1HexUpper(preBody)
 	return
 }

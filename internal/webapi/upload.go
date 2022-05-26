@@ -6,6 +6,8 @@ const (
 	UploadMaxSize = 5 * 1024 * 1024 * 1024
 
 	UploadSimplyMaxSize = 200 * 1024 * 1024
+
+	UploadPreSize = 128 * 1024
 )
 
 type UploadToken struct {
