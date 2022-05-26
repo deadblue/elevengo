@@ -18,7 +18,7 @@ func (c *Client) CallJsonApi(url string, qs Params, payload Payload, resp ApiRes
 	if payload != nil {
 		body, err = c.Post(url, qs, payload)
 	} else {
-		body, err = c.Get(url, qs)
+		body, err = c.Get(url, qs, nil)
 	}
 	if err != nil {
 		return
@@ -36,7 +36,7 @@ func (c *Client) CallJsonApi(url string, qs Params, payload Payload, resp ApiRes
 }
 
 func (c *Client) CallJsonpApi(url string, qs Params, resp ApiResp) (err error) {
-	body, err := c.Get(url, qs)
+	body, err := c.Get(url, qs, nil)
 	if err != nil {
 		return
 	}
