@@ -80,6 +80,20 @@ func (v *IntString) UnmarshalJSON(b []byte) (err error) {
 	return
 }
 
+type BoolInt int
+
+func (v *BoolInt) UnmarshalJSON(b []byte) (err error) {
+	if b[0] == 'f' || b[0] == 'F' {
+		*v = -1
+	} else {
+		var i int
+		if err = json.Unmarshal(b, &i); err == nil {
+			*v = BoolInt(i)
+		}
+	}
+	return
+}
+
 func BoolToInt(b bool) int {
 	if b {
 		return 1

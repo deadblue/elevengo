@@ -47,8 +47,8 @@ type UploadInitResponse struct {
 	ErrorCode int    `json:"statuscode"`
 	ErrorMsg  string `json:"statusmsg"`
 
-	Status   int    `json:"status"`
-	PickCode string `json:"pickcode"`
+	Status   BoolInt `json:"status"`
+	PickCode string  `json:"pickcode"`
 
 	// OSS upload fields
 	Bucket   string `json:"bucket"`
