@@ -327,9 +327,7 @@ func (a *Agent) FileCopy(dirId string, fileIds ...string) (err error) {
 // FileRename renames file to new name.
 func (a *Agent) FileRename(fileId, newName string) (err error) {
 	form := web.Params{}.
-		WithMap("files_new_name", map[string]string{
-			fileId: newName,
-		}).ToForm()
+		With("files_new_name["+fileId+"]", newName).ToForm()
 	return a.wc.CallJsonApi(
 		webapi.ApiFileRename, nil, form, &webapi.BasicResponse{})
 }
