@@ -12,9 +12,4 @@ type UserInfoData struct {
 	VipForever  int   `json:"forever"`
 	Global      int   `json:"global"`
 	IsPrivilege bool  `json:"is_privilege"`
-	Privilege   struct {
-		State  bool `json:"state"`
-		Start  int  `json:"start"`
-		Expire int  `json:"expire"`
-	} `json:"privilege"`
 }
