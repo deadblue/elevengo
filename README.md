@@ -1,6 +1,6 @@
 # ElevenGo
 
-![Version](https://img.shields.io/badge/release-v0.2.2-brightgreen?style=flat-square)
+![Version](https://img.shields.io/badge/release-v0.3.1-brightgreen?style=flat-square)
 [![Reference](https://img.shields.io/badge/Go-Reference-blue.svg?style=flat-square)](https://pkg.go.dev/github.com/deadblue/elevengo)
 ![License](https://img.shields.io/:License-MIT-green.svg?style=flat-square)
 
