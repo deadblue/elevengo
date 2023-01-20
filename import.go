@@ -1,12 +1,20 @@
 package elevengo
 
 import (
+	"fmt"
 	"github.com/deadblue/elevengo/internal/crypto/hash"
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/internal/webapi"
 	"io"
+	"net/url"
 	"os"
 	"path"
+	"regexp"
+	"strconv"
+)
+
+var (
+	regexpImportURI = regexp.MustCompile(`115://\|(\w+)\|(\d+)\|(\w+)\|(\w+)\|/`)
 )
 
 type ImportTicket struct {
@@ -47,6 +55,26 @@ func (t *ImportTicket) From(name string, r io.Reader) (err error) {
 	t.PreId = dr.PreId
 	t.QuickId = dr.QuickId
 	return
+}
+
+func (t *ImportTicket) FromURI(uri string) error {
+	fields := regexpImportURI.FindStringSubmatch(uri)
+	if fields == nil || len(fields) == 0 {
+		return webapi.ErrInvalidImportURI
+	}
+	var err error
+	if t.Name, err = url.QueryUnescape(fields[1]); err != nil {
+		t.Name = ""
+		return webapi.ErrInvalidImportURI
+	}
+	t.Size, _ = strconv.ParseInt(fields[2], 10, 64)
+	t.QuickId, t.PreId = fields[3], fields[4]
+	return nil
+}
+
+func (t *ImportTicket) ToURI() string {
+	return fmt.Sprintf("115://|%s|%d|%s|%s|/",
+		url.QueryEscape(t.Name), t.Size, t.QuickId, t.PreId)
 }
 
 // Import imports file which already exists on cloud to your account.

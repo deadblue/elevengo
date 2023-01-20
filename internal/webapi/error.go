@@ -41,6 +41,8 @@ var (
 
 	ErrVideoNotReady = errors.New("video is not ready")
 
+	ErrInvalidImportURI = errors.New("invalid import URI")
+
 	errMap = map[int]error{
 		// Normal errors
 		99:     ErrNotLogin,
