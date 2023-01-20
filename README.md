@@ -1,6 +1,6 @@
 # ElevenGo
 
-![Version](https://img.shields.io/badge/release-v0.2.2-brightgreen?style=flat-square)
+![Version](https://img.shields.io/badge/release-v0.3.1-brightgreen?style=flat-square)
 [![Reference](https://img.shields.io/badge/Go-Reference-blue.svg?style=flat-square)](https://pkg.go.dev/github.com/deadblue/elevengo)
 ![License](https://img.shields.io/:License-MIT-green.svg?style=flat-square)
 
@@ -29,11 +29,11 @@ func main()  {
   for ; err == nil; err = it.Next() {
     file := &elevengo.File{}
     if err = it.Get(file); err == nil {
-		log.Printf("File: %d => %#v", it.Index(), file)
+      log.Printf("File: %d => %#v", it.Index(), file)
     }
   }
   if !elevengo.IsIteratorEnd(err) {
-	  log.Fatalf("Iterate files error: %s", err)
+    log.Fatalf("Iterate files error: %s", err)
   }
 }
 ```

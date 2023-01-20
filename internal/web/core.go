@@ -5,19 +5,25 @@ import (
 )
 
 const (
-	headerUserAgent = "User-Agent"
+	defaultUserAgent = "Mozilla/5.0"
 )
 
 func (c *Client) SetUserAgent(name string) {
 	c.ua = name
 }
 
+func (c *Client) GetUserAgent() string {
+	return c.ua
+}
+
 func (c *Client) do(req *http.Request) (resp *http.Response, err error) {
-	// Set user agent header
-	if c.ua != "" {
-		req.Header.Set(headerUserAgent, c.ua)
-		req.Header.Set("Accept", "*/*")
+	req.Header.Set("Accept", "*/*")
+	// Always override user-agent
+	ua := c.ua
+	if ua == "" {
+		ua = defaultUserAgent
 	}
+	req.Header.Set("User-Agent", ua)
 	if c.mc {
 		// Add cookie
 		for _, cookie := range c.cj.Cookies(req.URL) {

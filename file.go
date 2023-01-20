@@ -102,12 +102,13 @@ type FileInfo struct {
 }
 
 type fileIterator struct {
-	// Params
-	dirId   string
-	offset  int
-	order   string
-	asc     int
-	keyword string
+	// Common parameters
+	dirId  string
+	offset int
+	order  string
+	asc    int
+	// Function parameters
+	params map[string]string
 	// Total count
 	count int
 	// Cached files
@@ -116,8 +117,8 @@ type fileIterator struct {
 	index int
 	// Cache size
 	size int
-	// Update file
-	uf func(*fileIterator) error
+	// Update function
+	update func(*fileIterator) error
 }
 
 func (i *fileIterator) Next() (err error) {
@@ -128,7 +129,7 @@ func (i *fileIterator) Next() (err error) {
 	if i.offset >= i.count {
 		return webapi.ErrReachEnd
 	}
-	return i.uf(i)
+	return i.update(i)
 }
 
 func (i *fileIterator) Index() int {
@@ -156,7 +157,25 @@ func (a *Agent) FileIterate(dirId string) (it Iterator[File], err error) {
 		order:  webapi.FileOrderByTime,
 		asc:    0,
 		offset: 0,
-		uf:     a.fileListInternal,
+		update: a.fileListInternal,
+	}
+	if err = a.fileListInternal(fi); err == nil {
+		it = fi
+	}
+	return
+}
+
+// FileStared lists all stared files.
+func (a *Agent) FileStared() (it Iterator[File], err error) {
+	fi := &fileIterator{
+		dirId:  "0",
+		order:  webapi.FileOrderByName,
+		asc:    0,
+		offset: 0,
+		params: map[string]string{
+			"star": "1",
+		},
+		update: a.fileListInternal,
 	}
 	if err = a.fileListInternal(fi); err == nil {
 		it = fi
@@ -178,6 +197,9 @@ func (a *Agent) fileListInternal(fi *fileIterator) (err error) {
 		WithInt("asc", fi.asc).
 		WithInt("offset", fi.offset).
 		WithInt("limit", webapi.FileListLimit)
+	for pn, pv := range fi.params {
+		qs.With(pn, pv)
+	}
 	resp := &webapi.FileListResponse{}
 	for retry := true; retry; {
 		// Select API URL
@@ -218,10 +240,28 @@ func (a *Agent) fileListInternal(fi *fileIterator) (err error) {
 // FileSearch recursively searches files under dirId, whose name contains keyword.
 func (a *Agent) FileSearch(dirId, keyword string) (it Iterator[File], err error) {
 	fi := &fileIterator{
-		dirId:   dirId,
-		keyword: keyword,
-		offset:  0,
-		uf:      a.fileSearchInternal,
+		dirId:  dirId,
+		offset: 0,
+		params: map[string]string{
+			"search_value": keyword,
+		},
+		update: a.fileSearchInternal,
+	}
+	if err = a.fileSearchInternal(fi); err == nil {
+		it = fi
+	}
+	return
+}
+
+// FileLabeled lists all files which has specific label.
+func (a *Agent) FileLabeled(labelId string) (it Iterator[File], err error) {
+	fi := &fileIterator{
+		dirId:  "0",
+		offset: 0,
+		params: map[string]string{
+			"file_label": labelId,
+		},
+		update: a.fileSearchInternal,
 	}
 	if err = a.fileSearchInternal(fi); err == nil {
 		it = fi
@@ -234,10 +274,12 @@ func (a *Agent) fileSearchInternal(fi *fileIterator) (err error) {
 	qs := web.Params{}.
 		With("aid", "1").
 		With("cid", fi.dirId).
-		With("search_value", fi.keyword).
 		WithInt("offset", fi.offset).
 		WithInt("limit", webapi.FileListLimit).
 		With("format", "json")
+	for pn, pv := range fi.params {
+		qs.With(pn, pv)
+	}
 	resp := &webapi.FileListResponse{}
 	if err = a.wc.CallJsonApi(webapi.ApiFileSearch, qs, nil, resp); err != nil {
 		return
@@ -261,9 +303,9 @@ func (a *Agent) FileGet(fileId string, file *File) (err error) {
 	if err = a.wc.CallJsonApi(webapi.ApiFileInfo, qs, nil, resp); err != nil {
 		return
 	}
-	data := &webapi.FileInfo{}
-	if err = resp.Decode(data); err == nil {
-		file.from(data)
+	data := make([]*webapi.FileInfo, 0, 1)
+	if err = resp.Decode(&data); err == nil {
+		file.from(data[0])
 	}
 	return
 }

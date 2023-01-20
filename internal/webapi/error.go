@@ -33,7 +33,15 @@ var (
 
 	ErrUploadTooLarge = errors.New("upload reach the limit")
 
+	ErrImportDirectory = errors.New("can not import directory")
+
+	ErrDownloadEmpty = errors.New("can not get download URL")
+
+	ErrDownloadDirectory = errors.New("can not download directory")
+
 	ErrVideoNotReady = errors.New("video is not ready")
+
+	ErrInvalidImportURI = errors.New("invalid import URI")
 
 	errMap = map[int]error{
 		// Normal errors
@@ -42,6 +50,8 @@ var (
 		// Offline errors
 		10004: ErrOfflineInvalidLink,
 		10008: ErrOfflineTaskExisted,
+		// Dir errors
+		20004: ErrExist,
 		// Label errors
 		21003: ErrExist,
 		// File errors

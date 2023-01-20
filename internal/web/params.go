@@ -43,7 +43,7 @@ func (p Params) WithArray(name string, values []string) Params {
 func (p Params) WithMap(name string, value map[string]string) Params {
 	for ik, iv := range value {
 		ik = fmt.Sprintf("%s[%s]", name, ik)
-		p.With(iv, iv)
+		p.With(ik, iv)
 	}
 	return p
 }

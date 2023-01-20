@@ -6,6 +6,10 @@ const (
 	UploadMaxSize = 5 * 1024 * 1024 * 1024
 
 	UploadSimplyMaxSize = 200 * 1024 * 1024
+
+	UploadPreSize = 128 * 1024
+
+	UploadTokenPrefix = "Qclm8MGWUv59TnrR0XPg"
 )
 
 type UploadToken struct {
@@ -45,8 +49,8 @@ type UploadInitResponse struct {
 	ErrorCode int    `json:"statuscode"`
 	ErrorMsg  string `json:"statusmsg"`
 
-	Status   int    `json:"status"`
-	PickCode string `json:"pickcode"`
+	Status   BoolInt `json:"status"`
+	PickCode string  `json:"pickcode"`
 
 	// OSS upload fields
 	Bucket   string `json:"bucket"`

@@ -1,6 +1,7 @@
 package elevengo
 
 import (
+	"crypto/md5"
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/hex"
@@ -17,6 +18,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // UploadTicket contains all required information to upload a file.
@@ -51,29 +53,32 @@ func (a *Agent) uploadInitToken() (err error) {
 func (a *Agent) uploadInit(
 	dirId string, name string, size int64,
 	preId string, quickId string,
-	params *webapi.UploadOssParams) (exist bool, err error) {
+	params *webapi.UploadOssParams,
+) (exist bool, err error) {
 	if !a.ut.Available() {
 		if err = a.uploadInitToken(); err != nil {
 			return
 		}
 	}
 	// Prepare request
+	now := time.Now().Unix()
 	targetId := fmt.Sprintf("U_1_%s", dirId)
 	qs := web.Params{}.
 		With("appid", a.ut.AppId).
-		With("appversion", a.ut.AppVer).
+		With("appversion", webapi.AppVersion).
 		WithInt("isp", a.ut.IspType).
+		With("rt", "0").
+		With("topupload", "0").
+		With("token", a.uploadCalculateToken(quickId, size, preId, now)).
 		With("sig", a.uploadCalculateSignature(targetId, quickId)).
 		With("format", "json").
-		WithNow("t")
+		WithInt64("t", now)
 	form := web.Params{}.
-		With("app_ver", a.ut.AppVer).
-		With("preid", preId).
-		With("quickid", quickId).
-		With("target", targetId).
 		With("fileid", quickId).
 		With("filename", name).
 		WithInt64("filesize", size).
+		With("preid", preId).
+		With("target", targetId).
 		WithInt("userid", a.ut.UserId).
 		ToForm()
 	// Send request
@@ -95,12 +100,27 @@ func (a *Agent) uploadInit(
 func (a *Agent) uploadCalculateSignature(targetId, fileId string) string {
 	digester := sha1.New()
 	wx := util.UpgradeWriter(digester)
-	wx.MustWriteString(strconv.Itoa(a.uid), fileId, fileId, targetId, "0")
+	wx.MustWriteString(strconv.Itoa(a.ut.UserId), fileId, targetId, "0")
 	h := hex.EncodeToString(digester.Sum(nil))
 	// Second pass
 	digester.Reset()
 	wx.MustWriteString(a.ut.UserKey, h, "000000")
 	return strings.ToUpper(hex.EncodeToString(digester.Sum(nil)))
+}
+
+func (a *Agent) uploadCalculateToken(
+	fileId string, fileSize int64,
+	preId string, timestamp int64,
+) string {
+	userId := strconv.Itoa(a.ut.UserId)
+	userHash := hash.Md5Hex(userId)
+	digester := md5.New()
+	wx := util.UpgradeWriter(digester)
+	wx.MustWriteString(webapi.UploadTokenPrefix,
+		fileId, strconv.FormatInt(fileSize, 10), preId,
+		userId, strconv.FormatInt(timestamp, 10), userHash,
+		webapi.AppVersion)
+	return hex.EncodeToString(digester.Sum(nil))
 }
 
 // UploadCreateTicket creates a ticket which contains all required information

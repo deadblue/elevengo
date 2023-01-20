@@ -1,8 +1,8 @@
 package webapi
 
-const (
-	DefaultUserAgent = "Mozilla/5.0"
+import "fmt"
 
+const (
 	CookieDomain115   = ".115.com"
 	CookieDomainAnxia = ".anxia.com"
 
@@ -10,4 +10,18 @@ const (
 	CookieNameUid  = "UID"
 	CookieNameCid  = "CID"
 	CookieNameSeid = "SEID"
+
+	defaultName = "Mozilla/5.0"
+	appName     = "115Desktop"
 )
+
+var (
+	AppVersion = ""
+)
+
+func MakeUserAgent(name string) string {
+	if name == "" {
+		name = defaultName
+	}
+	return fmt.Sprintf("%s %s/%s", name, appName, AppVersion)
+}

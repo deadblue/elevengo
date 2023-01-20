@@ -3,74 +3,86 @@ package m115
 import (
 	"bytes"
 	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
-	"encoding/pem"
+	"io"
+	"math/big"
 )
 
 var (
-	rsaPrivateKey = []byte("-----BEGIN RSA PRIVATE KEY-----\n" +
-		"MIICXAIBAAKBgQCMgUJLwWb0kYdW6feyLvqgNHmwgeYYlocst8UckQ1+waTOKHFC\n" +
-		"TVyRSb1eCKJZWaGa08mB5lEu/asruNo/HjFcKUvRF6n7nYzo5jO0li4IfGKdxso6\n" +
-		"FJIUtAke8rA2PLOubH7nAjd/BV7TzZP2w0IlanZVS76n8gNDe75l8tonQQIDAQAB\n" +
-		"AoGANwTasA2Awl5GT/t4WhbZX2iNClgjgRdYwWMI1aHbVfqADZZ6m0rt55qng63/\n" +
-		"3NsjVByAuNQ2kB8XKxzMoZCyJNvnd78YuW3Zowqs6HgDUHk6T5CmRad0fvaVYi6t\n" +
-		"viOkxtiPIuh4QrQ7NUhsLRtbH6d9s1KLCRDKhO23pGr9vtECQQDpjKYssF+kq9iy\n" +
-		"A9WvXRjbY9+ca27YfarD9WVzWS2rFg8MsCbvCo9ebXcmju44QhCghQFIVXuebQ7Q\n" +
-		"pydvqF0lAkEAmgLnib1XonYOxjVJM2jqy5zEGe6vzg8aSwKCYec14iiJKmEYcP4z\n" +
-		"DSRms43hnQsp8M2ynjnsYCjyiegg+AZ87QJANuwwmAnSNDOFfjeQpPDLy6wtBeft\n" +
-		"5VOIORUYiovKRZWmbGFwhn6BQL+VaafrNaezqUweBRi1PYiAF2l3yLZbUQJAf/nN\n" +
-		"4Hz/pzYmzLlWnGugP5WCtnHKkJWoKZBqO2RfOBCq+hY4sxvn3BHVbXqGcXLnZPvo\n" +
-		"YuaK7tTXxZSoYLEzeQJBAL8Mt3AkF1Gci5HOug6jT4s4Z+qDDrUXo9BlTwSWP90v\n" +
-		"wlHF+mkTJpKd5Wacef0vV+xumqNorvLpIXWKwxNaoHM=\n" +
-		"-----END RSA PRIVATE KEY-----")
-	rsaPublicKey = []byte("-----BEGIN RSA PUBLIC KEY-----\n" +
-		"MIGJAoGBANHetaZ5idEKXAsEHRGrR2Wbwys+ZakvkjbdLMIUCg2klfoOfvh19vrL\n" +
-		"TZgfXl47peZ4Ed1zt6QQUlQiL6zCBqdOiREhVFGv/PXr/eiHvJrbZ1wCqDX3XL53\n" +
-		"pgOvggaD9DnnztQokyPfnJBVdp4VeYuUU+iQWLPi4/GGsHsEapltAgMBAAE=\n" +
-		"-----END RSA PUBLIC KEY-----")
+	_N, _ = big.NewInt(0).SetString(
+		"8686980c0f5a24c4b9d43020cd2c22703ff3f450756529058b1cf88f09b86021"+
+			"36477198a6e2683149659bd122c33592fdb5ad47944ad1ea4d36c6b172aad633"+
+			"8c3bb6ac6227502d010993ac967d1aef00f0c8e038de2e4d3bc2ec368af2e9f1"+
+			"0a6f1eda4f7262f136420c07c331b871bf139f74f3010e3c4fe57df3afb71683", 16)
+	_E, _ = big.NewInt(0).SetString("10001", 16)
 
-	/* Client Key */
-	rsaClientKey *rsa.PrivateKey
-	/* Server Key */
-	rsaServerKey *rsa.PublicKey
+	_KeyLength = _N.BitLen() / 8
 )
 
 func rsaEncrypt(input []byte) []byte {
-	plainSize, blockSize := len(input), rsaServerKey.Size()-11
-	buf := bytes.Buffer{}
-	for offset := 0; offset < plainSize; offset += blockSize {
-		sliceSize := blockSize
-		if offset+sliceSize > plainSize {
-			sliceSize = plainSize - offset
+	buf := &bytes.Buffer{}
+	for remainSize := len(input); remainSize > 0; {
+		sliceSize := _KeyLength - 11
+		if sliceSize > remainSize {
+			sliceSize = remainSize
 		}
-		slice, _ := rsa.EncryptPKCS1v15(
-			rand.Reader, rsaServerKey, input[offset:offset+sliceSize])
-		buf.Write(slice)
+		rsaEncryptSlice(input[:sliceSize], buf)
+
+		input = input[sliceSize:]
+		remainSize -= sliceSize
 	}
 	return buf.Bytes()
 }
 
-func rsaDecrypt(input []byte) []byte {
-	output := make([]byte, 0)
-	cipherSize, blockSize := len(input), rsaServerKey.Size()
-	for offset := 0; offset < cipherSize; offset += blockSize {
-		sliceSize := blockSize
-		if offset+sliceSize > cipherSize {
-			sliceSize = cipherSize - offset
-		}
-		slice, _ := rsa.DecryptPKCS1v15(
-			rand.Reader, rsaClientKey, input[offset:offset+sliceSize])
-		output = append(output, slice...)
+func rsaEncryptSlice(input []byte, w io.Writer) {
+	// Padding
+	padSize := _KeyLength - len(input) - 3
+	padData := make([]byte, padSize)
+	_, _ = rand.Read(padData)
+	// Prepare message
+	buf := make([]byte, _KeyLength)
+	buf[0], buf[1] = 0, 2
+	for i, b := range padData {
+		buf[2+i] = b%0xff + 0x01
 	}
-	return output
+	buf[padSize+2] = 0
+	copy(buf[padSize+3:], input)
+	msg := big.NewInt(0).SetBytes(buf)
+	// RSA Encrypt
+	ret := big.NewInt(0).Exp(msg, _E, _N).Bytes()
+	// Fill zeros at beginning
+	if fillSize := _KeyLength - len(ret); fillSize > 0 {
+		zeros := make([]byte, fillSize)
+		_, _ = w.Write(zeros)
+	}
+	_, _ = w.Write(ret)
 }
 
-func init() {
-	// Parse client private key
-	block, _ := pem.Decode(rsaPrivateKey)
-	rsaClientKey, _ = x509.ParsePKCS1PrivateKey(block.Bytes)
-	// Parse server public key
-	block, _ = pem.Decode(rsaPublicKey)
-	rsaServerKey, _ = x509.ParsePKCS1PublicKey(block.Bytes)
+func rsaDecrypt(input []byte) []byte {
+	buf := &bytes.Buffer{}
+	for remainSize := len(input); remainSize > 0; {
+		sliceSize := _KeyLength
+		if sliceSize > remainSize {
+			sliceSize = remainSize
+		}
+		rsaDecryptSlice(input[:sliceSize], buf)
+
+		input = input[sliceSize:]
+		remainSize -= sliceSize
+	}
+	return buf.Bytes()
+}
+
+func rsaDecryptSlice(input []byte, w io.Writer) {
+	// RSA Decrypt
+	msg := big.NewInt(0).SetBytes(input)
+	ret := big.NewInt(0).Exp(msg, _E, _N).Bytes()
+	// Un-padding
+	for i, b := range ret {
+		// Find the beginning of plaintext
+		if b == 0 && i != 0 {
+			_, _ = w.Write(ret[i+1:])
+			break
+		}
+	}
+	return
 }

@@ -26,14 +26,20 @@ func appendQueryString(url string, qs Params) string {
 	return url
 }
 
-func (c *Client) Get(url string, qs Params) (body io.ReadCloser, err error) {
-	var req, resp = (*http.Request)(nil), (*http.Response)(nil)
+func (c *Client) Get(url string, qs Params, headers map[string]string) (body io.ReadCloser, err error) {
 	if qs != nil {
 		url = appendQueryString(url, qs)
 	}
+	var req *http.Request = nil
 	if req, err = http.NewRequest(http.MethodGet, url, nil); err != nil {
-		return nil, err
+		return
 	}
+	if headers != nil && len(headers) > 0 {
+		for name, value := range headers {
+			req.Header.Add(name, value)
+		}
+	}
+	var resp *http.Response = nil
 	if resp, err = c.do(req); err == nil {
 		body = resp.Body
 	}
@@ -41,7 +47,7 @@ func (c *Client) Get(url string, qs Params) (body io.ReadCloser, err error) {
 }
 
 func (c *Client) GetContent(url string, qs Params) (data []byte, err error) {
-	body, err := c.Get(url, qs)
+	body, err := c.Get(url, qs, nil)
 	if err != nil {
 		return
 	}
@@ -50,7 +56,7 @@ func (c *Client) GetContent(url string, qs Params) (data []byte, err error) {
 }
 
 func (c *Client) Touch(url string, qs Params) error {
-	if body, err := c.Get(url, qs); err == nil {
+	if body, err := c.Get(url, qs, nil); err == nil {
 		util.ConsumeReader(body)
 		return nil
 	} else {

@@ -2,7 +2,7 @@ package elevengo
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"github.com/deadblue/elevengo/internal/crypto/m115"
 	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	errDownloadNotResult = errors.New("download has no result")
+	headerRange = "Range"
 )
 
 // DownloadTicket contains all required information to download a file.
@@ -54,11 +54,15 @@ func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (e
 	if err = json.Unmarshal(data, &result); err != nil {
 		return
 	}
-	if len(result) == 0 {
-		return errDownloadNotResult
+	if !result.IsValid() {
+		return webapi.ErrDownloadEmpty
 	}
 	for _, info := range result {
-		a.convertDownloadTicket(info, ticket)
+		if info.FileSize == 0 {
+			err = webapi.ErrDownloadDirectory
+		} else {
+			a.convertDownloadTicket(info, ticket)
+		}
 		break
 	}
 	return
@@ -69,7 +73,7 @@ func (a *Agent) convertDownloadTicket(info *webapi.DownloadInfo, ticket *Downloa
 	ticket.FileSize = int64(info.FileSize)
 	ticket.Url = info.Url.Url
 	ticket.Headers = map[string]string{
-		"User-Agent": a.name,
+		"User-Agent": a.wc.GetUserAgent(),
 	}
 	// Serialize cookie
 	cookies := a.wc.ExportCookies(ticket.Url)
@@ -90,5 +94,31 @@ func (a *Agent) convertDownloadTicket(info *webapi.DownloadInfo, ticket *Downloa
 
 // Get gets content from url using agent underlying HTTP client.
 func (a *Agent) Get(url string) (body io.ReadCloser, err error) {
-	return a.wc.Get(url, nil)
+	return a.wc.Get(url, nil, nil)
+}
+
+// GetRange gets a part of content from url, which is located by length and offset.
+//
+// You can use length and offset in 3 cases:
+//   - length > 0 and offset < 0: You will get the last length bytes.
+//   - length > 0 and offset >= 0: You will get bytes from offset, and at most length bytes.
+//   - length < 0 and offset > 0: You will get bytes from offset to the end.
+//
+// In all other cases, this API equals to Get()
+func (a *Agent) GetRange(url string, length, offset int64) (body io.ReadCloser, err error) {
+	headers := make(map[string]string)
+	// Generate Range header.
+	// Reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Range#syntax
+	if length > 0 {
+		if offset < 0 {
+			headers[headerRange] = fmt.Sprintf("bytes=-%d", length)
+		} else {
+			headers[headerRange] = fmt.Sprintf("bytes=%d-%d", offset, offset+length-1)
+		}
+	} else if length < 0 {
+		if offset > 0 {
+			headers[headerRange] = fmt.Sprintf("bytes=%d-", offset)
+		}
+	}
+	return a.wc.Get(url, nil, headers)
 }
