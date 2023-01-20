@@ -65,4 +65,6 @@ const (
 	ApiCaptchaOneKeyImage = "https://captchaapi.115.com/?ct=index&ac=code&t=single"
 	ApiCaptchaSign        = "https://captchaapi.115.com/?ac=code&t=sign"
 	ApiCaptchaSubmit      = "https://webapi.115.com/user/captcha"
+
+	ApiGetVersion = "https://appversion.115.com/1/web/1.0/api/chrome"
 )

@@ -73,7 +73,7 @@ func (a *Agent) convertDownloadTicket(info *webapi.DownloadInfo, ticket *Downloa
 	ticket.FileSize = int64(info.FileSize)
 	ticket.Url = info.Url.Url
 	ticket.Headers = map[string]string{
-		"User-Agent": a.name,
+		"User-Agent": a.wc.GetUserAgent(),
 	}
 	// Serialize cookie
 	cookies := a.wc.ExportCookies(ticket.Url)

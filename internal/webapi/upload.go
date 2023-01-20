@@ -8,6 +8,8 @@ const (
 	UploadSimplyMaxSize = 200 * 1024 * 1024
 
 	UploadPreSize = 128 * 1024
+
+	UploadTokenPrefix = "Qclm8MGWUv59TnrR0XPg"
 )
 
 type UploadToken struct {

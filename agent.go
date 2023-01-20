@@ -7,12 +7,8 @@ import (
 )
 
 // Agent holds signed-in user's credentials, and provides methods to access upstream
-//server's features, such as file management, offline download, etc.
+// server's features, such as file management, offline download, etc.
 type Agent struct {
-
-	// Agent name, used info "User-Agent" header.
-	name string
-
 	// wc is the underlying web client
 	wc *web.Client
 
@@ -24,15 +20,30 @@ type Agent struct {
 	ut webapi.UploadToken
 }
 
+// getAppVersion gets desktop client version from 115.
+func (a *Agent) getAppVersion() (ver string, err error) {
+	qs := web.Params{}.
+		With("callback", "get_version")
+	resp := webapi.BasicResponse{}
+	if err = a.wc.CallJsonpApi(webapi.ApiGetVersion, qs, &resp); err != nil {
+		return
+	}
+	data := webapi.VersionData{}
+	if err = resp.Decode(&data); err != nil {
+		return
+	}
+	ver = data.LinuxApp.VersionCode
+	return
+}
+
 // New creates Agent with customized options.
 func New(options ...option.Option) *Agent {
-	agent := &Agent{
-		name: webapi.DefaultUserAgent,
-	}
+	agent, name := &Agent{}, ""
+	// Apply options
 	for _, opt := range options {
 		switch opt.(type) {
 		case option.NameOption:
-			agent.name = string(opt.(option.NameOption))
+			name = string(opt.(option.NameOption))
 		case *option.HttpOption:
 			agent.wc = web.NewClient(opt.(*option.HttpOption).Client)
 		}
@@ -40,7 +51,10 @@ func New(options ...option.Option) *Agent {
 	if agent.wc == nil {
 		agent.wc = web.NewClient(nil)
 	}
-	agent.wc.SetUserAgent(agent.name)
+
+	// TODO: Disable upload functions when getAppVersion failed.
+	webapi.AppVersion, _ = agent.getAppVersion()
+	agent.wc.SetUserAgent(webapi.MakeUserAgent(name))
 	return agent
 }
 
