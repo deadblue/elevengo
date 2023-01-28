@@ -1,24 +1,21 @@
 package elevengo
 
 import (
-	"crypto/md5"
-	"crypto/sha1"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"strconv"
+	"time"
+
 	"github.com/deadblue/elevengo/internal/crypto/hash"
 	"github.com/deadblue/elevengo/internal/multipart"
 	"github.com/deadblue/elevengo/internal/oss"
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
-	"io"
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
 )
 
 // UploadTicket contains all required information to upload a file.
@@ -62,15 +59,15 @@ func (a *Agent) uploadInit(
 	}
 	// Prepare request
 	now := time.Now().Unix()
-	targetId := fmt.Sprintf("U_1_%s", dirId)
+	userId, targetId := strconv.Itoa(a.ut.UserId), fmt.Sprintf("U_1_%s", dirId)
 	qs := web.Params{}.
 		With("appid", a.ut.AppId).
 		With("appversion", webapi.AppVersion).
 		WithInt("isp", a.ut.IspType).
 		With("rt", "0").
 		With("topupload", "0").
-		With("token", a.uploadCalculateToken(quickId, size, preId, now)).
-		With("sig", a.uploadCalculateSignature(targetId, quickId)).
+		With("token", webapi.UploadCalculateToken(userId, quickId, preId, size, now)).
+		With("sig", webapi.UploadCalculateSignature(userId, a.ut.UserKey, quickId, targetId)).
 		With("format", "json").
 		WithInt64("t", now)
 	form := web.Params{}.
@@ -95,32 +92,6 @@ func (a *Agent) uploadInit(
 		params.CallbackVar = resp.Callback.CallbackVar
 	}
 	return
-}
-
-func (a *Agent) uploadCalculateSignature(targetId, fileId string) string {
-	digester := sha1.New()
-	wx := util.UpgradeWriter(digester)
-	wx.MustWriteString(strconv.Itoa(a.ut.UserId), fileId, targetId, "0")
-	h := hex.EncodeToString(digester.Sum(nil))
-	// Second pass
-	digester.Reset()
-	wx.MustWriteString(a.ut.UserKey, h, "000000")
-	return strings.ToUpper(hex.EncodeToString(digester.Sum(nil)))
-}
-
-func (a *Agent) uploadCalculateToken(
-	fileId string, fileSize int64,
-	preId string, timestamp int64,
-) string {
-	userId := strconv.Itoa(a.ut.UserId)
-	userHash := hash.Md5Hex(userId)
-	digester := md5.New()
-	wx := util.UpgradeWriter(digester)
-	wx.MustWriteString(webapi.UploadTokenPrefix,
-		fileId, strconv.FormatInt(fileSize, 10), preId,
-		userId, strconv.FormatInt(timestamp, 10), userHash,
-		webapi.AppVersion)
-	return hex.EncodeToString(digester.Sum(nil))
 }
 
 // UploadCreateTicket creates a ticket which contains all required information
@@ -153,7 +124,7 @@ func (a *Agent) UploadCreateTicket(dirId, name string, r io.Reader, ticket *Uplo
 	}
 	// Fill UploadTicket
 	ticket.Verb = http.MethodPut
-	ticket.Url = fmt.Sprintf("https://%s.%s/%s", params.Bucket, oss.Endpoint, params.Object)
+	ticket.Url = oss.GetPutObjectUrl(params.Bucket, params.Object)
 	if ticket.Header == nil {
 		ticket.Header = make(map[string]string)
 	}

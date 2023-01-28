@@ -1,6 +1,16 @@
 package webapi
 
-import "errors"
+import (
+	"crypto/md5"
+	"crypto/sha1"
+	"encoding/hex"
+	"errors"
+	"strconv"
+	"strings"
+
+	"github.com/deadblue/elevengo/internal/crypto/hash"
+	"github.com/deadblue/elevengo/internal/util"
+)
 
 const (
 	UploadMaxSize = 5 * 1024 * 1024 * 1024
@@ -9,7 +19,7 @@ const (
 
 	UploadPreSize = 128 * 1024
 
-	UploadTokenPrefix = "Qclm8MGWUv59TnrR0XPg"
+	uploadTokenPrefix = "Qclm8MGWUv59TnrR0XPg"
 )
 
 type UploadToken struct {
@@ -108,4 +118,35 @@ type UploadSimpleInitResponse struct {
 
 func (r *UploadSimpleInitResponse) Err() error {
 	return nil
+}
+
+func UploadCalculateToken(
+	userId, fileId, preId string, 
+	fileSize, timestamp int64,
+) string {
+	userHash := hash.Md5Hex(userId)
+	digester := md5.New()
+	wx := util.UpgradeWriter(digester)
+	wx.MustWriteString(
+		uploadTokenPrefix,
+		fileId, 
+		strconv.FormatInt(fileSize, 10), 
+		preId,
+		userId, 
+		strconv.FormatInt(timestamp, 10), 
+		userHash, 
+		AppVersion)
+	return hex.EncodeToString(digester.Sum(nil))
+}
+
+func UploadCalculateSignature(userId, userKey, fileId, targetId string) string {
+	digester := sha1.New()
+	wx := util.UpgradeWriter(digester)
+	// First pass
+	wx.MustWriteString(userId, fileId, targetId, "0")
+	h := hex.EncodeToString(digester.Sum(nil))
+	// Second pass
+	digester.Reset()
+	wx.MustWriteString(userKey, h, "000000")
+	return strings.ToUpper(hex.EncodeToString(digester.Sum(nil)))
 }
