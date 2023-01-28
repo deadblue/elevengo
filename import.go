@@ -2,15 +2,16 @@ package elevengo
 
 import (
 	"fmt"
-	"github.com/deadblue/elevengo/internal/crypto/hash"
-	"github.com/deadblue/elevengo/internal/util"
-	"github.com/deadblue/elevengo/internal/webapi"
 	"io"
 	"net/url"
 	"os"
 	"path"
 	"regexp"
 	"strconv"
+
+	"github.com/deadblue/elevengo/internal/crypto/hash"
+	"github.com/deadblue/elevengo/internal/util"
+	"github.com/deadblue/elevengo/internal/webapi"
 )
 
 var (
@@ -59,7 +60,7 @@ func (t *ImportTicket) From(name string, r io.Reader) (err error) {
 
 func (t *ImportTicket) FromURI(uri string) error {
 	fields := regexpImportURI.FindStringSubmatch(uri)
-	if fields == nil || len(fields) == 0 {
+	if len(fields) == 0 {
 		return webapi.ErrInvalidImportURI
 	}
 	var err error
