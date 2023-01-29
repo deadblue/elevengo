@@ -81,7 +81,7 @@ func (t *ImportTicket) ToURI() string {
 // Import imports file which already exists on cloud to your account.
 func (a *Agent) Import(dirId string, ticket *ImportTicket) (err error) {
 	var exist bool
-	exist, err = a.uploadInit(dirId, ticket.Name, ticket.Size, ticket.PreId, ticket.QuickId, nil)
+	exist, err = a.uploadInit(ticket.Name, ticket.Size, dirId, ticket.QuickId, ticket.PreId, nil)
 	if err == nil && !exist {
 		err = webapi.ErrNotExist
 	}
