@@ -283,7 +283,7 @@ Example:
 		ticket := &UploadOssTicket{}
 		if err = agent.UploadCreateOssTicket(
 			"dirId", 
-			path.Base(file.Name()), 
+			filepath.Base(file.Name()), 
 			file, 
 			ticket, 
 		); err != nil {
