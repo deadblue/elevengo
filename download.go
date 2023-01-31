@@ -3,15 +3,12 @@ package elevengo
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"strings"
+
 	"github.com/deadblue/elevengo/internal/crypto/m115"
 	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
-	"io"
-	"strings"
-)
-
-var (
-	headerRange = "Range"
 )
 
 // DownloadTicket contains all required information to download a file.
@@ -97,28 +94,64 @@ func (a *Agent) Get(url string) (body io.ReadCloser, err error) {
 	return a.wc.Get(url, nil, nil)
 }
 
-// GetRange gets a part of content from url, which is located by length and offset.
-//
-// You can use length and offset in 3 cases:
-//   - length > 0 and offset < 0: You will get the last length bytes.
-//   - length > 0 and offset >= 0: You will get bytes from offset, and at most length bytes.
-//   - length < 0 and offset > 0: You will get bytes from offset to the end.
-//
-// In all other cases, this API equals to Get()
-func (a *Agent) GetRange(url string, length, offset int64) (body io.ReadCloser, err error) {
-	headers := make(map[string]string)
+// Range is used in Agent.GetRange().
+type Range struct {
+	start, end int64
+}
+
+func (r *Range) headerValue() string {
 	// Generate Range header.
 	// Reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Range#syntax
-	if length > 0 {
-		if offset < 0 {
-			headers[headerRange] = fmt.Sprintf("bytes=-%d", length)
-		} else {
-			headers[headerRange] = fmt.Sprintf("bytes=%d-%d", offset, offset+length-1)
+	if r.start < 0 {
+		return fmt.Sprintf("bytes=%d", r.start)
+	} else {
+		if r.end < 0 {
+			return fmt.Sprintf("bytes=%d-", r.start)
+		} else if r.end > r.start {
+			return fmt.Sprintf("bytes=%d-%d", r.start, r.end)
 		}
-	} else if length < 0 {
-		if offset > 0 {
-			headers[headerRange] = fmt.Sprintf("bytes=%d-", offset)
-		}
+	}
+	// (r.start >= 0 && r.end <= r.start) is an invalid range
+	return ""
+}
+
+// RangeFirst makes a Range parameter to request the first `length` bytes.
+func RangeFirst(length int64) Range {
+	return Range{
+		start: 0, 
+		end: length - 1,
+	}
+}
+
+// RangeLast makes a Range parameter to request the last `length` bytes.
+func RangeLast(length int64) Range {
+	return Range{
+		start: 0 - length, 
+		end: 0,
+	}
+}
+
+// RangeMiddle makes a Range parameter to request content starts from `offset`, 
+// and has `length` bytes (at most).
+// 
+// You can pass a negative number in `length`, to request content starts from 
+// `offset` to the end.
+func RangeMiddle(offset, length int64) Range {
+	end := offset + length - 1
+	if length < 0 {
+		end = -1
+	}
+	return Range{
+		start: offset, 
+		end: end,
+	}
+}
+
+// GetRange gets partial content from |url|, which is located by |rng|.
+func (a *Agent) GetRange(url string, rng Range) (body io.ReadCloser, err error) {
+	headers := make(map[string]string)
+	if value := rng.headerValue(); value != "" {
+		headers["Range"] = value
 	}
 	return a.wc.Get(url, nil, headers)
 }

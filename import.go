@@ -2,15 +2,16 @@ package elevengo
 
 import (
 	"fmt"
-	"github.com/deadblue/elevengo/internal/crypto/hash"
-	"github.com/deadblue/elevengo/internal/util"
-	"github.com/deadblue/elevengo/internal/webapi"
 	"io"
 	"net/url"
 	"os"
 	"path"
 	"regexp"
 	"strconv"
+
+	"github.com/deadblue/elevengo/internal/crypto/hash"
+	"github.com/deadblue/elevengo/internal/util"
+	"github.com/deadblue/elevengo/internal/webapi"
 )
 
 var (
@@ -59,7 +60,7 @@ func (t *ImportTicket) From(name string, r io.Reader) (err error) {
 
 func (t *ImportTicket) FromURI(uri string) error {
 	fields := regexpImportURI.FindStringSubmatch(uri)
-	if fields == nil || len(fields) == 0 {
+	if len(fields) == 0 {
 		return webapi.ErrInvalidImportURI
 	}
 	var err error
@@ -80,7 +81,7 @@ func (t *ImportTicket) ToURI() string {
 // Import imports file which already exists on cloud to your account.
 func (a *Agent) Import(dirId string, ticket *ImportTicket) (err error) {
 	var exist bool
-	exist, err = a.uploadInit(dirId, ticket.Name, ticket.Size, ticket.PreId, ticket.QuickId, nil)
+	exist, err = a.uploadInit(ticket.Name, ticket.Size, dirId, ticket.QuickId, ticket.PreId, nil)
 	if err == nil && !exist {
 		err = webapi.ErrNotExist
 	}
@@ -110,7 +111,7 @@ func (a *Agent) ImportCreateTicket(fileId string, ticket *ImportTicket) (err err
 	if err = a.DownloadCreateTicket(file.PickCode, dt); err != nil {
 		return
 	}
-	preBody, err := a.GetRange(dt.Url, webapi.UploadPreSize, 0)
+	preBody, err := a.GetRange(dt.Url, RangeFirst(webapi.UploadPreSize))
 	if err != nil {
 		return
 	}

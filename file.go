@@ -1,9 +1,10 @@
 package elevengo
 
 import (
+	"time"
+
 	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
-	"time"
 )
 
 // File describe a file or directory on cloud storage.
@@ -29,10 +30,15 @@ type File struct {
 	// File labels
 	Labels []*Label
 
-	// Create time of the file.
+	// Deprecated
+	// Create time of the file. 
 	CreateTime time.Time
+	// Deprecated
 	// Update time of the file.
 	UpdateTime time.Time
+
+	// Last modified time
+	ModifiedTime time.Time
 }
 
 func (f *File) from(info *webapi.FileInfo) *File {
@@ -60,8 +66,11 @@ func (f *File) from(info *webapi.FileInfo) *File {
 		}
 	}
 
-	f.CreateTime = time.Unix(int64(info.CreateTime), 0)
-	f.UpdateTime = time.Unix(int64(info.UpdateTime), 0)
+	if info.UpdatedTime != "" {
+		f.ModifiedTime = webapi.ParseFileTime(info.UpdatedTime)
+	} else {
+		f.ModifiedTime = webapi.ParseFileTime(info.ModifiedTime)
+	}
 
 	return f
 }

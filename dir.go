@@ -1,10 +1,11 @@
 package elevengo
 
 import (
-	"github.com/deadblue/elevengo/internal/web"
-	"github.com/deadblue/elevengo/internal/webapi"
 	"os"
 	"strings"
+
+	"github.com/deadblue/elevengo/internal/web"
+	"github.com/deadblue/elevengo/internal/webapi"
 )
 
 type DirOrder int
@@ -47,9 +48,7 @@ func (a *Agent) DirSetOrder(dirId string, order DirOrder, asc bool) (err error) 
 
 // DirGetId retrieves directory ID from full path.
 func (a *Agent) DirGetId(path string) (dirId string, err error) {
-	if strings.HasPrefix(path, "/") {
-		path = path[1:]
-	}
+	path = strings.TrimPrefix(path, "/")
 	qs := web.Params{}.With("path", path)
 	resp := &webapi.DirLocateResponse{}
 	if err = a.wc.CallJsonApi(webapi.ApiDirGetId, qs, nil, resp); err != nil {

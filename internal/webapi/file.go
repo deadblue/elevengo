@@ -24,8 +24,9 @@ type FileInfo struct {
 	IsStar StringInt    `json:"m"`
 	Labels []*LabelInfo `json:"fl"`
 
-	CreateTime StringInt64 `json:"tp"`
-	UpdateTime StringInt64 `json:"te"`
+	CreatedTime  string `json:"tp"`
+	UpdatedTime  string `json:"te"`
+	ModifiedTime string `json:"t"`
 
 	// MediaDuration describes duration in seconds for audio / video.
 	MediaDuration float64 `json:"play_long"`

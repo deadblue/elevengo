@@ -41,11 +41,11 @@ func New(options ...option.Option) *Agent {
 	agent, name := &Agent{}, ""
 	// Apply options
 	for _, opt := range options {
-		switch opt.(type) {
+		switch opt := opt.(type) {
 		case option.NameOption:
-			name = string(opt.(option.NameOption))
+			name = string(opt)
 		case *option.HttpOption:
-			agent.wc = web.NewClient(opt.(*option.HttpOption).Client)
+			agent.wc = web.NewClient(opt.Client)
 		}
 	}
 	if agent.wc == nil {

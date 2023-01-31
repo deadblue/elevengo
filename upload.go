@@ -1,28 +1,26 @@
 package elevengo
 
 import (
-	"crypto/md5"
-	"crypto/sha1"
-	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"strconv"
+	"time"
+
 	"github.com/deadblue/elevengo/internal/crypto/hash"
 	"github.com/deadblue/elevengo/internal/multipart"
 	"github.com/deadblue/elevengo/internal/oss"
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
-	"io"
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
 )
 
 // UploadTicket contains all required information to upload a file.
 type UploadTicket struct {
+	// Expiration time
+	Expiration time.Time
 	// Is file exists
 	Exist bool
 	// Request method
@@ -51,8 +49,8 @@ func (a *Agent) uploadInitToken() (err error) {
 }
 
 func (a *Agent) uploadInit(
-	dirId string, name string, size int64,
-	preId string, quickId string,
+	name string, size int64,
+	dirId, quickId, preId string,
 	params *webapi.UploadOssParams,
 ) (exist bool, err error) {
 	if !a.ut.Available() {
@@ -62,15 +60,15 @@ func (a *Agent) uploadInit(
 	}
 	// Prepare request
 	now := time.Now().Unix()
-	targetId := fmt.Sprintf("U_1_%s", dirId)
+	userId, targetId := strconv.Itoa(a.ut.UserId), fmt.Sprintf("U_1_%s", dirId)
 	qs := web.Params{}.
 		With("appid", a.ut.AppId).
 		With("appversion", webapi.AppVersion).
 		WithInt("isp", a.ut.IspType).
 		With("rt", "0").
 		With("topupload", "0").
-		With("token", a.uploadCalculateToken(quickId, size, preId, now)).
-		With("sig", a.uploadCalculateSignature(targetId, quickId)).
+		With("token", webapi.UploadCalculateToken(userId, quickId, preId, size, now)).
+		With("sig", webapi.UploadCalculateSignature(userId, a.ut.UserKey, quickId, targetId)).
 		With("format", "json").
 		WithInt64("t", now)
 	form := web.Params{}.
@@ -97,40 +95,18 @@ func (a *Agent) uploadInit(
 	return
 }
 
-func (a *Agent) uploadCalculateSignature(targetId, fileId string) string {
-	digester := sha1.New()
-	wx := util.UpgradeWriter(digester)
-	wx.MustWriteString(strconv.Itoa(a.ut.UserId), fileId, targetId, "0")
-	h := hex.EncodeToString(digester.Sum(nil))
-	// Second pass
-	digester.Reset()
-	wx.MustWriteString(a.ut.UserKey, h, "000000")
-	return strings.ToUpper(hex.EncodeToString(digester.Sum(nil)))
-}
-
-func (a *Agent) uploadCalculateToken(
-	fileId string, fileSize int64,
-	preId string, timestamp int64,
-) string {
-	userId := strconv.Itoa(a.ut.UserId)
-	userHash := hash.Md5Hex(userId)
-	digester := md5.New()
-	wx := util.UpgradeWriter(digester)
-	wx.MustWriteString(webapi.UploadTokenPrefix,
-		fileId, strconv.FormatInt(fileSize, 10), preId,
-		userId, strconv.FormatInt(timestamp, 10), userHash,
-		webapi.AppVersion)
-	return hex.EncodeToString(digester.Sum(nil))
-}
-
-// UploadCreateTicket creates a ticket which contains all required information
+// UploadCreateTicket creates a ticket which contains all required parameters
 // to upload file/data to cloud, the ticket should be used in 1 hour.
 //
-// To create ticket, r will be fully read to calculate SHA-1 hash and MD5
-// hash. If you want to re-use r, try to seek it to beginning.
-//
-// Now, you can not upload file larger than 5GB, it will be supported later.
-func (a *Agent) UploadCreateTicket(dirId, name string, r io.Reader, ticket *UploadTicket) (err error) {
+// To create ticket, r will be fully read to calculate SHA-1 and MD5 hash value. 
+// If you want to re-use r, try to seek it to beginning.
+// 
+// To upload a file larger than 5G bytes, use `UploadCreateOssTicket`.
+func (a *Agent) UploadCreateTicket(
+	dirId, name string, 
+	r io.Reader, 
+	ticket *UploadTicket,
+) (err error) {
 	// Digest content
 	dr := &hash.DigestResult{}
 	if err = hash.Digest(r, dr); err != nil {
@@ -142,7 +118,8 @@ func (a *Agent) UploadCreateTicket(dirId, name string, r io.Reader, ticket *Uplo
 	// Initialize uploading
 	params := &webapi.UploadOssParams{}
 	if ticket.Exist, err = a.uploadInit(
-		dirId, name, dr.Size, dr.PreId, dr.QuickId, params); ticket.Exist || err != nil {
+		name, dr.Size, dirId, dr.QuickId, dr.PreId, params,
+	); ticket.Exist || err != nil {
 		return
 	}
 
@@ -152,8 +129,9 @@ func (a *Agent) UploadCreateTicket(dirId, name string, r io.Reader, ticket *Uplo
 		return
 	}
 	// Fill UploadTicket
+	ticket.Expiration, _ = time.Parse(time.RFC3339, resp.Expiration)
 	ticket.Verb = http.MethodPut
-	ticket.Url = fmt.Sprintf("https://%s.%s/%s", params.Bucket, oss.Endpoint, params.Object)
+	ticket.Url = oss.GetPutObjectUrl(params.Bucket, params.Object)
 	if ticket.Header == nil {
 		ticket.Header = make(map[string]string)
 	}
@@ -161,8 +139,8 @@ func (a *Agent) UploadCreateTicket(dirId, name string, r io.Reader, ticket *Uplo
 		header(oss.HeaderContentLength, strconv.FormatInt(dr.Size, 10)).
 		header(oss.HeaderContentType, util.DetermineMimeType(name)).
 		header(oss.HeaderContentMd5, dr.MD5).
-		header(oss.HeaderOssCallback, base64.StdEncoding.EncodeToString([]byte(params.Callback))).
-		header(oss.HeaderOssCallbackVar, base64.StdEncoding.EncodeToString([]byte(params.CallbackVar))).
+		header(oss.HeaderOssCallback, util.Base64Encode(params.Callback)).
+		header(oss.HeaderOssCallbackVar, util.Base64Encode(params.CallbackVar)).
 		header(oss.HeaderOssSecurityToken, resp.SecurityToken)
 
 	authorization := oss.CalculateAuthorization(&oss.RequestMetadata{
@@ -242,5 +220,145 @@ func (a *Agent) UploadSimply(dirId, name string, size int64, r io.Reader) (fileI
 	if err = uploadResp.Decode(data); err == nil {
 		fileId = data.FileId
 	}
+	return
+}
+
+// UploadOssTicket contains all required paramters to upload a file through
+// aliyun-oss-sdk(https://github.com/aliyun/aliyun-oss-go-sdk).
+type UploadOssTicket struct {
+	// Expiration time
+	Expiration time.Time
+	// Is file already exists
+	Exist bool
+	// Client parameters
+	Client struct {
+		Endpoint        string
+		AccessKeyId     string
+		AccessKeySecret string
+		SecurityToken   string
+	}
+	// Bucket name
+	Bucket string
+	// Object key
+	Object string
+	// Callback option
+	Callback string
+	// CallbackVar option
+	CallbackVar string
+}
+
+/*
+UploadCreateOssTicket creates ticket to upload file through aliyun-oss-sdk. Use 
+this method if you want to upload a file larger than 5G bytes.
+
+To create ticket, r will be fully read to calculate SHA-1 and MD5 hash value. 
+If you want to re-use r, try to seek it to beginning.
+
+Example:
+
+    import (
+        "github.com/aliyun/aliyun-oss-go-sdk/oss"
+        "github.com/deadblue/elevengo"
+    )
+    
+	func main() {
+		filePath := "/file/to/upload"
+
+		var err error
+
+		file, err := os.Open(filePath)
+		if err != nil {
+			log.Fatalf("Open file failed: %s", err)
+		}
+		defer file.Close()
+
+		// Create 115 agent
+		agent := elevengo.Default()
+		if err = agent.CredentialImport(&elevengo.Credential{
+			UID: "", CID: "", SEID: "",
+		}); err != nil {
+			log.Fatalf("Login failed: %s", err)
+		}
+		// Prepare OSS upload ticket
+		ticket := &UploadOssTicket{}
+		if err = agent.UploadCreateOssTicket(
+			"dirId", 
+			filepath.Base(file.Name()), 
+			file, 
+			ticket, 
+		); err != nil {
+			log.Fatalf("Create OSS ticket failed: %s", err)
+		}
+		if ticket.Exist {
+			log.Printf("File has been fast-uploaded!")
+			return
+		}
+
+		// Create OSS client
+		oc, err := oss.New(
+			ticket.Client.Endpoint, 
+			ticket.Client.AccessKeyId,
+			ticket.Client.AccessKeySecret,
+			oss.SecurityToken(ticket.Client.SecurityToken)
+		)
+		if err != nil {
+			log.Fatalf("Create OSS client failed: %s", err)
+		}
+		bucket, err := oc.Bucket(ticket.Bucket)
+		if err != nil {
+			log.Fatalf("Get OSS bucket failed: %s", err)
+		}
+		// Upload file in multipart.
+		err = bucket.UploadFile(
+			ticket.Object, 
+			filePath, 
+			100 * 1024 * 1024,	// 100 Megabytes per part
+			oss.Callback(ticket.Callback),
+			oss.CallbackVar(ticket.CallbackVar),
+		)
+		// Until now (2023-01-29), there is a bug in aliyun-oss-go-sdk:
+		// When set Callback option, the response from CompleteMultipartUpload API 
+		// is returned by callback host, which is not the standard XML. But SDK
+		// always tries to parse it as CompleteMultipartUploadResult, and returns 
+		// `io.EOF` error, just ignore it!
+		if err != nil && err != io.EOF {
+			log.Fatalf("Upload file failed: %s", err)
+		} else {
+			log.Print("Upload done!")
+		}
+	}
+*/
+func (a *Agent) UploadCreateOssTicket(
+	dirId, name string, 
+	r io.Reader, 
+	ticket *UploadOssTicket,
+) (err error) {
+	// Digest content
+	dr := &hash.DigestResult{}
+	if err = hash.Digest(r, dr); err != nil {
+		return
+	}
+	// Prepare OSS upload parameters
+	params := &webapi.UploadOssParams{}
+	if ticket.Exist, err = a.uploadInit(
+		name, dr.Size, dirId, dr.QuickId, dr.PreId, params,
+	); ticket.Exist || err != nil {
+		return
+	}
+	// Get OSS token
+	resp := &webapi.UploadOssTokenResponse{}
+	if err = a.wc.CallJsonApi(webapi.ApiUploadOssToken, nil, nil, resp); err != nil {
+		return
+	}
+	// Fill ticket
+	ticket.Expiration, _ = time.Parse(time.RFC3339, resp.Expiration)
+	ticket.Client.Endpoint = oss.GetEndpointUrl()
+	ticket.Client.AccessKeyId = resp.AccessKeyId
+	ticket.Client.AccessKeySecret = resp.AccessKeySecret
+	ticket.Client.SecurityToken = resp.SecurityToken
+	ticket.Bucket = params.Bucket
+	ticket.Object = params.Object
+	ticket.Callback = util.Base64Encode(params.Callback)
+	ticket.CallbackVar = util.Base64Encode(params.CallbackVar)
 	return
 }
