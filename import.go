@@ -111,7 +111,7 @@ func (a *Agent) ImportCreateTicket(fileId string, ticket *ImportTicket) (err err
 	if err = a.DownloadCreateTicket(file.PickCode, dt); err != nil {
 		return
 	}
-	preBody, err := a.GetRange(dt.Url, webapi.UploadPreSize, 0)
+	preBody, err := a.GetRange(dt.Url, RangeFirst(webapi.UploadPreSize))
 	if err != nil {
 		return
 	}
