@@ -5,6 +5,8 @@ import "errors"
 var (
 	ErrNotLogin = errors.New("user not login")
 
+	ErrCaptchaRequired = errors.New("please resolve captcha")
+
 	ErrOfflineInvalidLink = errors.New("invalid download link")
 	ErrOfflineTaskExisted = errors.New("offline task existed")
 
@@ -29,8 +31,6 @@ var (
 	// ErrReachEnd means there are no more item.
 	ErrReachEnd = errors.New("reach the end")
 
-	ErrInvalidCursor = errors.New("invalid cursor")
-
 	ErrUploadTooLarge = errors.New("upload reach the limit")
 
 	ErrImportDirectory = errors.New("can not import directory")
@@ -43,9 +43,12 @@ var (
 
 	ErrInvalidImportURI = errors.New("invalid import URI")
 
+	ErrEmptyList = errors.New("list is empty")
+
 	errMap = map[int]error{
 		// Normal errors
 		99:     ErrNotLogin,
+		911:    ErrCaptchaRequired,
 		990001: ErrNotLogin,
 		// Offline errors
 		10004: ErrOfflineInvalidLink,

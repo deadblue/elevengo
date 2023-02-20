@@ -45,11 +45,12 @@ const (
 	ApiFileImage = "https://webapi.115.com/files/image"
 	ApiFileVideo = "https://v.anxia.com/webapi/files/video"
 
-	ApiOfflineSpace  = "https://115.com/?ct=offline&ac=space"
-	ApiOfflineList   = "https://115.com/web/lixian/?ct=lixian&ac=task_lists"
-	ApiOfflineAddUrl = "https://115.com/web/lixian/?ct=lixian&ac=add_task_url"
-	ApiOfflineDelete = "https://115.com/web/lixian/?ct=lixian&ac=task_del"
-	ApiOfflineClear  = "https://115.com/web/lixian/?ct=lixian&ac=task_clear"
+	ApiOfflineSpace   = "https://115.com/?ct=offline&ac=space"
+	ApiOfflineList    = "https://115.com/web/lixian/?ct=lixian&ac=task_lists"
+	ApiOfflineAddUrl  = "https://115.com/web/lixian/?ct=lixian&ac=add_task_url"
+	ApiOfflineAddUrls = "https://115.com/web/lixian/?ct=lixian&ac=add_task_urls"
+	ApiOfflineDelete  = "https://115.com/web/lixian/?ct=lixian&ac=task_del"
+	ApiOfflineClear   = "https://115.com/web/lixian/?ct=lixian&ac=task_clear"
 
 	ApiDownloadGetUrl = "https://proapi.115.com/app/chrome/downurl"
 

@@ -1,12 +1,19 @@
 package elevengo
 
 import (
+	"errors"
 	"fmt"
-	"github.com/deadblue/elevengo/internal/web"
-	"github.com/deadblue/elevengo/internal/webapi"
 	"math/rand"
 	"time"
+
+	"github.com/deadblue/elevengo/internal/web"
+	"github.com/deadblue/elevengo/internal/webapi"
 )
+
+// IsCaptchaRequired indicates whether err requires user to solve a captcha.
+func IsCaptchaRequired(err error) bool {
+	return errors.Is(err, webapi.ErrCaptchaRequired)
+}
 
 /*
 CaptchaSession holds CAPTCHA images and session information during a CAPTCHA process.
