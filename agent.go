@@ -16,8 +16,8 @@ type Agent struct {
 	uid int
 	// Offline token
 	ot webapi.OfflineToken
-	// Upload token
-	ut webapi.UploadToken
+	// Upload helper
+	uh webapi.UploadHelper
 }
 
 // getAppVersion gets desktop client version from 115.

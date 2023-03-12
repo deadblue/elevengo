@@ -1,9 +1,11 @@
 package web
 
 import (
-	"github.com/deadblue/elevengo/plugin"
 	"net/http"
 	"net/http/cookiejar"
+
+	"github.com/deadblue/elevengo/internal/crypto/ec115"
+	"github.com/deadblue/elevengo/plugin"
 )
 
 type Client struct {
@@ -16,21 +18,26 @@ type Client struct {
 
 	// User agent
 	ua string
+
+	// EC cipher
+	ecc *ec115.Cipher
 }
 
 func NewClient(hc plugin.HttpClient) *Client {
-	client := &Client{}
+	client := &Client{
+		ecc: ec115.New(),
+	}
 	if hc == nil {
 		client.cj, _ = cookiejar.New(nil)
 		client.hc = defaultHttpClient(client.cj)
 		client.mc = false
 	} else {
 		client.hc = hc
-		switch hc.(type) {
+		switch hc := hc.(type) {
 		case *http.Client:
-			client.cj = hc.(*http.Client).Jar
+			client.cj = hc.Jar
 		case plugin.HttpClientWithJar:
-			client.cj = hc.(plugin.HttpClientWithJar).Jar()
+			client.cj = hc.Jar()
 		}
 		if client.cj != nil {
 			client.mc = false

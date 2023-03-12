@@ -158,18 +158,56 @@ func (a *Agent) offlineIterateInternal(oi *offlineIterator) (err error) {
 	return
 }
 
+type OfflineAddResult struct {
+	InfoHash string
+	Name     string
+	Error    error
+}
+
+func (r *OfflineAddResult) IsExist() bool {
+	return r.Error == webapi.ErrOfflineTaskExisted
+}
+
 // OfflineAdd adds an offline task with url, and saves the downloaded files at
 // directory whose ID is dirId.
 // You can pass empty string as dirId, to save the downloaded files at default
 // directory.
-func (a *Agent) OfflineAdd(url string, dirId string) (err error) {
+func (a *Agent) OfflineAdd(url string, dirId string) (result OfflineAddResult) {
 	form := web.Params{}.
 		With("url", url)
 	if dirId != "" {
 		form.With("wp_path_id", dirId)
 	}
 	resp := &webapi.OfflineAddUrlResponse{}
-	return a.offlineCallApi(webapi.ApiOfflineAddUrl, form, resp)
+	result.Error = a.offlineCallApi(webapi.ApiOfflineAddUrl, form, resp)
+	result.InfoHash, result.Name = resp.InfoHash, resp.Name
+	return 
+}
+
+// OfflineBatchAdd adds many offline tasks in one request.
+func (a *Agent) OfflineBatchAdd(urls []string, dirId string) (results []OfflineAddResult, err error) {
+	if urlCount := len(urls); urlCount == 0 {
+		err = webapi.ErrEmptyList
+		return
+	} else {
+		results = make([]OfflineAddResult, urlCount)
+	}
+
+	form := web.Params{}.
+		WithArray("url", urls)
+	if dirId != "" {
+		form.With("wp_path_id", dirId)
+	}
+	resp := &webapi.OfflineAddUrlsResponse{}
+	if err = a.offlineCallApi(webapi.ApiOfflineAddUrls, form, resp); err != nil {
+		return
+	}
+	for i, result := range(resp.Result) {
+		results[i].InfoHash = result.InfoHash
+		results[i].Name = result.Name
+		results[i].Error = result.Err()
+	}
+	return
 }
 
 // OfflineDelete deletes tasks.

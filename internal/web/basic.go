@@ -1,10 +1,11 @@
 package web
 
 import (
-	"github.com/deadblue/elevengo/internal/util"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/deadblue/elevengo/internal/util"
 )
 
 const (
@@ -18,7 +19,7 @@ type Payload interface {
 }
 
 func appendQueryString(url string, qs Params) string {
-	if strings.IndexRune(url, '?') < 0 {
+	if !strings.ContainsRune(url, '?') {
 		url = url + "?" + qs.Encode()
 	} else {
 		url = url + "&" + qs.Encode()
@@ -34,7 +35,7 @@ func (c *Client) Get(url string, qs Params, headers map[string]string) (body io.
 	if req, err = http.NewRequest(http.MethodGet, url, nil); err != nil {
 		return
 	}
-	if headers != nil && len(headers) > 0 {
+	if len(headers) > 0 {
 		for name, value := range headers {
 			req.Header.Add(name, value)
 		}

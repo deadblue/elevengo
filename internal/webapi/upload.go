@@ -3,10 +3,10 @@ package webapi
 import (
 	"crypto/md5"
 	"crypto/sha1"
-	"encoding/hex"
 	"errors"
+	"fmt"
+	"io"
 	"strconv"
-	"strings"
 
 	"github.com/deadblue/elevengo/internal/crypto/hash"
 	"github.com/deadblue/elevengo/internal/util"
@@ -19,7 +19,7 @@ const (
 
 	UploadPreSize = 128 * 1024
 
-	uploadTokenPrefix = "Qclm8MGWUv59TnrR0XPg"
+	uploadTokenSalt = "Qclm8MGWUv59TnrR0XPg"
 )
 
 type UploadToken struct {
@@ -56,11 +56,16 @@ type UploadInfoResponse struct {
 
 type UploadInitResponse struct {
 	Request   string `json:"request"`
+	Version   string `json:"version"`
 	ErrorCode int    `json:"statuscode"`
 	ErrorMsg  string `json:"statusmsg"`
 
 	Status   BoolInt `json:"status"`
 	PickCode string  `json:"pickcode"`
+
+	// New fields in upload v4.0
+	SignKey   string `json:"sign_key"`
+	SignCheck string `json:"sign_check"`
 
 	// OSS upload fields
 	Bucket   string `json:"bucket"`
@@ -77,7 +82,8 @@ type UploadInitResponse struct {
 }
 
 func (r *UploadInitResponse) Err() error {
-	if r.ErrorCode == 0 {
+	// Ignore 701 error
+	if r.ErrorCode == 0 || r.ErrorCode == 701 {
 		return nil
 	}
 	return errors.New(r.ErrorMsg)
@@ -120,33 +126,87 @@ func (r *UploadSimpleInitResponse) Err() error {
 	return nil
 }
 
-func UploadCalculateToken(
-	userId, fileId, preId string, 
-	fileSize, timestamp int64,
-) string {
-	userHash := hash.Md5Hex(userId)
-	digester := md5.New()
-	wx := util.UpgradeWriter(digester)
-	wx.MustWriteString(
-		uploadTokenPrefix,
-		fileId, 
-		strconv.FormatInt(fileSize, 10), 
-		preId,
-		userId, 
-		strconv.FormatInt(timestamp, 10), 
-		userHash, 
-		AppVersion)
-	return hex.EncodeToString(digester.Sum(nil))
+// UploadHelper is a helper object for upload function.
+type UploadHelper struct {
+	userId   string
+	userKey  string
+	userHash string
 }
 
-func UploadCalculateSignature(userId, userKey, fileId, targetId string) string {
+func (h *UploadHelper) IsReady() bool {
+	return h.userKey != ""
+}
+
+func (h *UploadHelper) UserId() string {
+	return h.userId
+}
+
+func (h *UploadHelper) Init(userId int, userKey string) {
+	h.userId = strconv.Itoa(userId)
+	h.userKey = userKey
+	// Calculate user hash only once
+	h.userHash = hash.Md5Hex(h.userId)
+}
+
+func (h *UploadHelper) CalculateSignature(fileId, targetId string) string {
 	digester := sha1.New()
 	wx := util.UpgradeWriter(digester)
 	// First pass
-	wx.MustWriteString(userId, fileId, targetId, "0")
-	h := hex.EncodeToString(digester.Sum(nil))
+	wx.MustWriteString(h.userId, fileId, targetId, "0")
+	result := hash.ToHex(digester)
 	// Second pass
 	digester.Reset()
-	wx.MustWriteString(userKey, h, "000000")
-	return strings.ToUpper(hex.EncodeToString(digester.Sum(nil)))
+	wx.MustWriteString(h.userKey, result, "000000")
+	return hash.ToHexUpper(digester)
+}
+
+func (h *UploadHelper) CalculateToken(
+	fileId string, fileSize int64, 
+	signKey, signValue string,
+	timestamp int64,
+) string {
+	digester := md5.New()
+	wx := util.UpgradeWriter(digester)
+	wx.MustWriteString(
+		uploadTokenSalt,
+		fileId, 
+		strconv.FormatInt(fileSize, 10), 
+		signKey,
+		signValue,
+		h.userId,
+		strconv.FormatInt(timestamp, 10), 
+		h.userHash,
+		AppVersion,
+	)
+	return hash.ToHex(digester)
+}
+
+type UploadDigestResult struct {
+	FileId   string
+	FileSize int64
+	MD5      string
+}
+
+func UploadDigest(r io.Reader, result *UploadDigestResult) (err error) {
+	hs, hm := sha1.New(), md5.New()
+	w := io.MultiWriter(hs, hm)
+	// Write remain data.
+	if result.FileSize, err = io.Copy(w, r); err != nil {
+		return
+	}
+	result.FileId, result.MD5 = hash.ToHexUpper(hs), hash.ToBase64(hm)
+	return nil
+}
+
+func UploadDigestRange(r io.ReadSeeker, rangeSpec string) (result string, err error) {
+	var start, end int64
+	if _, err = fmt.Sscanf(rangeSpec, "%d-%d", &start, &end); err != nil {
+		return
+	}
+	h := sha1.New()
+	r.Seek(start, io.SeekStart)
+	if _, err = io.CopyN(h, r, end - start + 1); err == nil {
+		result = hash.ToHexUpper(h)
+	}
+	return
 }

@@ -70,18 +70,6 @@ func ExampleAgent_DownloadCreateTicket() {
 	}
 }
 
-func ExampleAgent_Import() {
-	agent := Default()
-
-	ticket, err := &ImportTicket{}, error(nil)
-	if err = ticket.FromFile("/path/to/local-file"); err != nil {
-		log.Fatalf("Init import ticket failed: %s", err.Error())
-	}
-	if err = agent.Import("0", ticket); err != nil {
-		log.Fatalf("Import file to cloud failed: %s", err.Error())
-	}
-}
-
 func ExampleAgent_UploadCreateTicket() {
 	agent := Default()
 

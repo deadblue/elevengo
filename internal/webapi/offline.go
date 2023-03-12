@@ -63,7 +63,14 @@ type OfflineListResponse struct {
 type OfflineAddUrlResponse struct {
 	OfflineBasicResponse
 
-	InfoHash string `json:"info_hash"`
-	Name     string `json:"name"`
-	Url      string `json:"url"`
+	ErrorType string `json:"errtype"`
+	InfoHash  string `json:"info_hash"`
+	Name      string `json:"name"`
+	Url       string `json:"url"`
+}
+
+type OfflineAddUrlsResponse struct {
+	OfflineBasicResponse
+
+	Result []*OfflineAddUrlResponse `json:"result"`
 }
