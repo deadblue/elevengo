@@ -48,15 +48,15 @@ func QuietlyClose(c io.Closer) {
 
 func GuessSize(r io.Reader) (size int64) {
 	size = -1
-	switch r.(type) {
+	switch r := r.(type) {
 	case *bytes.Buffer:
-		size = int64(r.(*bytes.Buffer).Len())
+		size = int64(r.Len())
 	case *bytes.Reader:
-		size = r.(*bytes.Reader).Size()
+		size = r.Size()
 	case *strings.Reader:
-		size = int64(r.(*strings.Reader).Len())
+		size = int64(r.Len())
 	case *os.File:
-		if i, e := r.(*os.File).Stat(); e == nil {
+		if i, e := r.Stat(); e == nil {
 			size = i.Size()
 		}
 	}

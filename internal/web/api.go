@@ -3,8 +3,9 @@ package web
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/deadblue/elevengo/internal/util"
 	"io"
+
+	"github.com/deadblue/elevengo/internal/util"
 )
 
 type ApiResp interface {
@@ -12,7 +13,10 @@ type ApiResp interface {
 }
 
 // CallJsonApi calls remote HTTP API, and parses its result as JSON.
-func (c *Client) CallJsonApi(url string, qs Params, payload Payload, resp ApiResp) (err error) {
+func (c *Client) CallJsonApi(
+	url string, qs Params, payload Payload, 
+	resp ApiResp,
+) (err error) {
 	// Prepare request
 	var body io.ReadCloser
 	if payload != nil {
@@ -50,6 +54,45 @@ func (c *Client) CallJsonpApi(url string, qs Params, resp ApiResp) (err error) {
 		return &json.SyntaxError{Offset: 0}
 	}
 	if err = json.Unmarshal(data[left+1:right], resp); err == nil {
+		err = resp.Err()
+	}
+	return
+}
+
+// CallSecretJsonApi calls JSON API with EC cryptography.
+func (c *Client) CallSecretJsonApi(
+	url string, qs Params, payload Payload, 
+	resp ApiResp, timestamp int64,
+) (err error) {
+	var data []byte
+	var body io.ReadCloser
+	// Append EC key in querystring
+	if qs == nil {
+		qs = Params{}
+	}
+	qs.With("k_ec", c.ecc.EncodeToken(timestamp))
+	// Encrypt payload
+	if data, err = io.ReadAll(payload); err != nil {
+		return
+	}
+	payload = makePayload(c.ecc.Encode(data), payload.ContentType())
+	// Call API
+	if body, err = c.Post(url, qs, payload); err != nil {
+		return
+	}
+	defer util.QuietlyClose(body)
+	if resp == nil {
+		return
+	}
+	// Decrypt body
+	if data, err = io.ReadAll(body); err != nil {
+		return
+	}
+	if data, err = c.ecc.Decode(data); err != nil {
+		return
+	}
+	// Parse result
+	if err = json.Unmarshal(data, resp); err == nil {
 		err = resp.Err()
 	}
 	return

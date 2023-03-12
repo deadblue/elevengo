@@ -56,7 +56,7 @@ const (
 
 	ApiUploadInfo     = "https://proapi.115.com/app/uploadinfo"
 	ApiUploadOssToken = "https://uplb.115.com/3.0/gettoken.php"
-	ApiUploadInit     = "https://uplb.115.com/3.0/initupload.php"
+	ApiUploadInit     = "https://uplb.115.com/4.0/initupload.php"
 
 	ApiUploadSimpleInit = "https://uplb.115.com/3.0/sampleinitupload.php"
 
