@@ -14,10 +14,11 @@ import (
 
 const (
 	UploadMaxSize = 5 * 1024 * 1024 * 1024
-
 	UploadSimplyMaxSize = 200 * 1024 * 1024
 
-	UploadPreSize = 128 * 1024
+	UploadStatusNormal = 1
+	UploadStatusExist = 2
+	UploadStatusDoubleCheck = 7
 
 	uploadTokenSalt = "Qclm8MGWUv59TnrR0XPg"
 )

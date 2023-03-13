@@ -85,17 +85,20 @@ func (a *Agent) uploadInit(
 		); err != nil {
 			return
 		}
-		if resp.Status == 7 {
+		if resp.Status == webapi.UploadStatusDoubleCheck {
 			// Update signKey & signVal
 			signKey = resp.SignKey
-			signVal, _ = webapi.UploadDigestRange(r, resp.SignCheck)
+			signVal, err = webapi.UploadDigestRange(r, resp.SignCheck)
+			if err != nil {
+				return
+			}
 		} else {
 			retry = false
 		}
 	}
 	// Parse response
-	exist = resp.Status == 2
-	if !exist && op != nil {
+	exist = resp.Status == webapi.UploadStatusExist
+	if resp.Status == webapi.UploadStatusNormal && op != nil {
 		op.Bucket = resp.Bucket
 		op.Object = resp.Object
 		op.Callback = resp.Callback.Callback
