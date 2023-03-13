@@ -62,15 +62,17 @@ func (c *Cipher) Decode(input []byte) (output []byte, err error) {
 	block, _ := aes.NewCipher(c.aesKey)
 	dec := cipher.NewCBCDecrypter(block, c.aesIv)
 	// Decrypt
-	cryptoSize := len(input) - 12	// The last 12 bytes can be ignored
-	cryptotext := input[:cryptoSize]
+	cryptoSize := len(input) - 12
+	cryptotext, tail := input[:cryptoSize], input[cryptoSize:]
 	plaintext := make([]byte, cryptoSize)
 	dec.CryptBlocks(plaintext, cryptotext)
 	// Decompress
-	srcSize, dstSize := binary.LittleEndian.Uint16(plaintext[0:2]), 0
-	buf := make([]byte, 0x2000)
-	if dstSize, err = lz4.UncompressBlock(plaintext[2:srcSize+2], buf); err == nil {
-		output = buf[0:dstSize]
+	for i := 0; i < 4; i++ {
+		tail[i] ^= tail[7]
 	}
+	dstSize := binary.LittleEndian.Uint32(tail[0:4])
+	srcSize := binary.LittleEndian.Uint16(plaintext[0:2])
+	output = make([]byte, dstSize)
+	_, err = lz4.UncompressBlock(plaintext[2:srcSize+2], output)
 	return
 }
