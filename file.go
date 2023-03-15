@@ -30,13 +30,6 @@ type File struct {
 	// File labels
 	Labels []*Label
 
-	// Deprecated
-	// Create time of the file. 
-	CreateTime time.Time
-	// Deprecated
-	// Update time of the file.
-	UpdateTime time.Time
-
 	// Last modified time
 	ModifiedTime time.Time
 }
