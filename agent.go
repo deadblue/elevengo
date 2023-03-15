@@ -52,9 +52,11 @@ func New(options ...option.Option) *Agent {
 		agent.wc = web.NewClient(nil)
 	}
 
-	// TODO: Disable upload functions when getAppVersion failed.
-	webapi.AppVersion, _ = agent.getAppVersion()
-	agent.wc.SetUserAgent(webapi.MakeUserAgent(name))
+	// Get latest app version from cloud
+	appVer, _ := agent.getAppVersion()
+	agent.uh.SetAppVersion(appVer)
+	agent.wc.SetUserAgent(webapi.MakeUserAgent(name, appVer))
+	
 	return agent
 }
 

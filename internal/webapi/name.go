@@ -15,13 +15,9 @@ const (
 	appName     = "115Desktop"
 )
 
-var (
-	AppVersion = ""
-)
-
-func MakeUserAgent(name string) string {
+func MakeUserAgent(name, appVer string) string {
 	if name == "" {
 		name = defaultName
 	}
-	return fmt.Sprintf("%s %s/%s", name, appName, AppVersion)
+	return fmt.Sprintf("%s %s/%s", name, appName, appVer)
 }
