@@ -14,25 +14,14 @@ import (
 
 const (
 	UploadMaxSize = 5 * 1024 * 1024 * 1024
-
 	UploadSimplyMaxSize = 200 * 1024 * 1024
 
-	UploadPreSize = 128 * 1024
+	UploadStatusNormal = 1
+	UploadStatusExist = 2
+	UploadStatusRequireCheck = 7
 
 	uploadTokenSalt = "Qclm8MGWUv59TnrR0XPg"
 )
-
-type UploadToken struct {
-	AppId   string
-	AppVer  string
-	IspType int
-	UserId  int
-	UserKey string
-}
-
-func (t *UploadToken) Available() bool {
-	return t.UserKey != ""
-}
 
 type UploadResultData struct {
 	AreaId     IntString   `json:"aid"`
@@ -89,7 +78,22 @@ func (r *UploadInitResponse) Err() error {
 	return errors.New(r.ErrorMsg)
 }
 
-type UploadOssParams struct {
+// UploadInitData contains IN/OUT parameters during initupload.
+type UploadInitData struct {
+	// File metadata
+	FileId   string
+	FileName string
+	FileSize int64
+	// Target directory
+	Target string
+	// Upload signature
+	Signature string
+	// Sign parameters
+	SignKey   string
+	SignValue string
+}
+
+type UploadOssData struct {
 	Bucket      string
 	Object      string
 	Callback    string
@@ -128,31 +132,40 @@ func (r *UploadSimpleInitResponse) Err() error {
 
 // UploadHelper is a helper object for upload function.
 type UploadHelper struct {
+	appVer   string
 	userId   string
 	userKey  string
 	userHash string
 }
 
 func (h *UploadHelper) IsReady() bool {
-	return h.userKey != ""
+	return h.appVer != "" && h.userKey != ""
 }
 
-func (h *UploadHelper) UserId() string {
-	return h.userId
+func (h *UploadHelper) SetAppVersion(appVer string) {
+	h.appVer = appVer
 }
 
-func (h *UploadHelper) Init(userId int, userKey string) {
+func (h *UploadHelper) AppVersion() string {
+	return h.appVer
+}
+
+func (h *UploadHelper) SetUserData(userId int, userKey string) {
 	h.userId = strconv.Itoa(userId)
 	h.userKey = userKey
 	// Calculate user hash only once
 	h.userHash = hash.Md5Hex(h.userId)
 }
 
-func (h *UploadHelper) CalculateSignature(fileId, targetId string) string {
+func (h *UploadHelper) UserId() string {
+	return h.userId
+}
+
+func (h *UploadHelper) CalculateSignature(fileId, target string) string {
 	digester := sha1.New()
 	wx := util.UpgradeWriter(digester)
 	// First pass
-	wx.MustWriteString(h.userId, fileId, targetId, "0")
+	wx.MustWriteString(h.userId, fileId, target, "0")
 	result := hash.ToHex(digester)
 	// Second pass
 	digester.Reset()
@@ -176,25 +189,25 @@ func (h *UploadHelper) CalculateToken(
 		h.userId,
 		strconv.FormatInt(timestamp, 10), 
 		h.userHash,
-		AppVersion,
+		h.appVer,
 	)
 	return hash.ToHex(digester)
 }
 
 type UploadDigestResult struct {
-	FileId   string
-	FileSize int64
-	MD5      string
+	Size int64
+	SHA1 string
+	MD5  string
 }
 
 func UploadDigest(r io.Reader, result *UploadDigestResult) (err error) {
 	hs, hm := sha1.New(), md5.New()
 	w := io.MultiWriter(hs, hm)
 	// Write remain data.
-	if result.FileSize, err = io.Copy(w, r); err != nil {
+	if result.Size, err = io.Copy(w, r); err != nil {
 		return
 	}
-	result.FileId, result.MD5 = hash.ToHexUpper(hs), hash.ToBase64(hm)
+	result.SHA1, result.MD5 = hash.ToHexUpper(hs), hash.ToBase64(hm)
 	return nil
 }
 

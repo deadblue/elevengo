@@ -41,65 +41,85 @@ func (a *Agent) uploadInitHelper() (err error) {
 	}
 	resp := &webapi.UploadInfoResponse{}
 	if err = a.wc.CallJsonApi(webapi.ApiUploadInfo, nil, nil, resp); err == nil {
-		a.uh.Init(resp.UserId, resp.UserKey)
+		a.uh.SetUserData(resp.UserId, resp.UserKey)
+	}
+	return
+}
+
+func (a *Agent) uploadInitInternal(
+	initData *webapi.UploadInitData,
+	ossData *webapi.UploadOssData,
+) (exist bool, checkRange string, err error) {
+	now := time.Now().Unix()
+	// Prepare parameters
+	form := web.Params{}.
+		With("appid", "0").
+		With("appversion", a.uh.AppVersion()).
+		With("userid", a.uh.UserId()).
+		With("filename", initData.FileName).
+		WithInt64("filesize", initData.FileSize).
+		With("fileid", initData.FileId).
+		With("target", initData.Target).
+		With("sig", initData.Signature).
+		WithInt64("t", now).
+		With("token", a.uh.CalculateToken(
+			initData.FileId, initData.FileSize, 
+			initData.SignKey, initData.SignValue, now,
+		))
+	if initData.SignKey != "" && initData.SignValue != "" {
+		form.With("sign_key", initData.SignKey).
+			With("sign_val", initData.SignValue)
+	}
+	resp := &webapi.UploadInitResponse{}
+	if err = a.wc.CallSecretJsonApi(
+		webapi.ApiUploadInit, nil, form.ToForm(), resp, now,
+	); err != nil {
+		return
+	}
+	switch int(resp.Status) {
+	case webapi.UploadStatusNormal:
+		if ossData != nil {
+			ossData.Bucket = resp.Bucket
+			ossData.Object = resp.Object
+			ossData.Callback = resp.Callback.Callback
+			ossData.CallbackVar = resp.Callback.CallbackVar
+		}
+	case webapi.UploadStatusExist:
+		exist = true
+	case webapi.UploadStatusRequireCheck:
+		initData.SignKey = resp.SignKey
+		checkRange = resp.SignCheck
+	default:
+		err = webapi.ErrInitUploadUnknowStatus
 	}
 	return
 }
 
 func (a *Agent) uploadInit(
 	dirId, name string, 
-	r io.ReadSeeker,
+	rs io.ReadSeeker,
 	dr *webapi.UploadDigestResult,
-	op *webapi.UploadOssParams,
+	od *webapi.UploadOssData,
 ) (exist bool, err error) {
-	if err = webapi.UploadDigest(r, dr); err != nil {
-		return
-	}
 	if err = a.uploadInitHelper(); err != nil {
 		return
 	}
-	// Prepare request parameters
-	signKey, signVal := "", ""
-	targetId := fmt.Sprintf("U_1_%s", dirId)
-	form := web.Params{}.
-		With("appid", "0").
-		With("appversion", webapi.AppVersion).
-		With("userid", a.uh.UserId()).
-		With("filename", name).
-		WithInt64("filesize", dr.FileSize).
-		With("fileid", dr.FileId).
-		With("target", targetId).
-		With("sig", a.uh.CalculateSignature(dr.FileId, targetId))
-	// Send request
-	resp := &webapi.UploadInitResponse{}
-	for retry := true; retry; {
-		now := time.Now().Unix()
-		form.WithInt64("t", now).
-			With("token", a.uh.CalculateToken(dr.FileId, dr.FileSize, signKey, signVal, now))
-		if signKey != "" && signVal != "" {
-			form.With("sign_key", signKey).
-				With("sign_val", signVal)
-		}
-		if err = a.wc.CallSecretJsonApi(
-			webapi.ApiUploadInit, nil, form.ToForm(), resp, now,
-		); err != nil {
-			return
-		}
-		if resp.Status == 7 {
-			// Update signKey & signVal
-			signKey = resp.SignKey
-			signVal, _ = webapi.UploadDigestRange(r, resp.SignCheck)
-		} else {
-			retry = false
-		}
+	if err = webapi.UploadDigest(rs, dr); err != nil {
+		return
 	}
-	// Parse response
-	exist = resp.Status == 2
-	if !exist && op != nil {
-		op.Bucket = resp.Bucket
-		op.Object = resp.Object
-		op.Callback = resp.Callback.Callback
-		op.CallbackVar = resp.Callback.CallbackVar
+	target := fmt.Sprintf("U_1_%s", dirId)
+	initData := &webapi.UploadInitData{
+		FileId: dr.SHA1,
+		FileName: name,
+		FileSize: dr.Size,
+		Target: target,
+		Signature: a.uh.CalculateSignature(dr.SHA1, target),
+	}
+	for checkRange := "" ; (!exist && err == nil); {
+		exist, checkRange, err = a.uploadInitInternal(initData, od)
+		if checkRange != "" {
+			initData.SignValue, err = webapi.UploadDigestRange(rs, checkRange)
+		}
 	}
 	return
 }
@@ -116,14 +136,14 @@ func (a *Agent) UploadCreateTicket(
 	ticket *UploadTicket,
 ) (err error) {
 	// Initialize uploading
-	dr, op := &webapi.UploadDigestResult{}, &webapi.UploadOssParams{}
+	dr, od := &webapi.UploadDigestResult{}, &webapi.UploadOssData{}
 	if ticket.Exist, err = a.uploadInit(
-		dirId, name, r, dr, op,
+		dirId, name, r, dr, od,
 	); ticket.Exist || err != nil {
 		return
 	}
 	// Check file size
-	if dr.FileSize > webapi.UploadMaxSize {
+	if dr.Size > webapi.UploadMaxSize {
 		return webapi.ErrUploadTooLarge
 	}
 	// Get OSS token
@@ -134,23 +154,23 @@ func (a *Agent) UploadCreateTicket(
 	// Fill UploadTicket
 	ticket.Expiration, _ = time.Parse(time.RFC3339, resp.Expiration)
 	ticket.Verb = http.MethodPut
-	ticket.Url = oss.GetPutObjectUrl(op.Bucket, op.Object)
+	ticket.Url = oss.GetPutObjectUrl(od.Bucket, od.Object)
 	if ticket.Header == nil {
 		ticket.Header = make(map[string]string)
 	}
 	ticket.header(oss.HeaderDate, oss.Date()).
-		header(oss.HeaderContentLength, strconv.FormatInt(dr.FileSize, 10)).
+		header(oss.HeaderContentLength, strconv.FormatInt(dr.Size, 10)).
 		header(oss.HeaderContentType, util.DetermineMimeType(name)).
 		header(oss.HeaderContentMd5, dr.MD5).
-		header(oss.HeaderOssCallback, util.Base64Encode(op.Callback)).
-		header(oss.HeaderOssCallbackVar, util.Base64Encode(op.CallbackVar)).
+		header(oss.HeaderOssCallback, util.Base64Encode(od.Callback)).
+		header(oss.HeaderOssCallbackVar, util.Base64Encode(od.CallbackVar)).
 		header(oss.HeaderOssSecurityToken, resp.SecurityToken)
 
 	authorization := oss.CalculateAuthorization(&oss.RequestMetadata{
 		Verb:   ticket.Verb,
 		Header: ticket.Header,
-		Bucket: op.Bucket,
-		Object: op.Object,
+		Bucket: od.Bucket,
+		Object: od.Object,
 	}, resp.AccessKeyId, resp.AccessKeySecret)
 	ticket.header(oss.HeaderAuthorization, authorization)
 	return
@@ -337,9 +357,9 @@ func (a *Agent) UploadCreateOssTicket(
 	ticket *UploadOssTicket,
 ) (err error) {
 	// Initialize upload
-	dr, op := &webapi.UploadDigestResult{}, &webapi.UploadOssParams{}
+	dr, od := &webapi.UploadDigestResult{}, &webapi.UploadOssData{}
 	if ticket.Exist, err = a.uploadInit(
-		dirId, name, r, dr, op,
+		dirId, name, r, dr, od,
 	); ticket.Exist || err != nil {
 		return
 	}
@@ -354,9 +374,9 @@ func (a *Agent) UploadCreateOssTicket(
 	ticket.Client.AccessKeyId = resp.AccessKeyId
 	ticket.Client.AccessKeySecret = resp.AccessKeySecret
 	ticket.Client.SecurityToken = resp.SecurityToken
-	ticket.Bucket = op.Bucket
-	ticket.Object = op.Object
-	ticket.Callback = util.Base64Encode(op.Callback)
-	ticket.CallbackVar = util.Base64Encode(op.CallbackVar)
+	ticket.Bucket = od.Bucket
+	ticket.Object = od.Object
+	ticket.Callback = util.Base64Encode(od.Callback)
+	ticket.CallbackVar = util.Base64Encode(od.CallbackVar)
 	return
 }

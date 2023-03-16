@@ -31,7 +31,11 @@ var (
 	// ErrReachEnd means there are no more item.
 	ErrReachEnd = errors.New("reach the end")
 
+	ErrUploadDisabled = errors.New("upload function is disabled")
+	
 	ErrUploadTooLarge = errors.New("upload reach the limit")
+
+	ErrInitUploadUnknowStatus = errors.New("unknown status from initupload")
 
 	ErrImportDirectory = errors.New("can not import directory")
 
@@ -40,8 +44,6 @@ var (
 	ErrDownloadDirectory = errors.New("can not download directory")
 
 	ErrVideoNotReady = errors.New("video is not ready")
-
-	ErrInvalidImportURI = errors.New("invalid import URI")
 
 	ErrEmptyList = errors.New("list is empty")
 

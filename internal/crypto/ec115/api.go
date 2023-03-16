@@ -46,6 +46,10 @@ func (c *Cipher) Encode(input []byte) (output []byte) {
 	if padSize := aes.BlockSize - (plainSize % aes.BlockSize); padSize != aes.BlockSize {
 		plaintext = make([]byte, plainSize + padSize)
 		copy(plaintext, input)
+		// Make sure all padding bytes are zero
+		for i := 0; i < padSize; i++ {
+			plaintext[plainSize+i] = 0
+		}
 		plainSize += padSize
 	}
 	// Initialize encrypter
@@ -58,19 +62,22 @@ func (c *Cipher) Encode(input []byte) (output []byte) {
 }
 
 func (c *Cipher) Decode(input []byte) (output []byte, err error) {
+	cryptoSize := len(input) - 12
+	cryptotext, tail := input[:cryptoSize], input[cryptoSize:]
+	// Get output size
+	for i := 0; i < 4; i++ {
+		tail[i] ^= tail[7]
+	}
+	outputSize := binary.LittleEndian.Uint32(tail[0:4])
+	output = make([]byte, outputSize)
 	// Initialize decrypter
 	block, _ := aes.NewCipher(c.aesKey)
 	dec := cipher.NewCBCDecrypter(block, c.aesIv)
 	// Decrypt
-	cryptoSize := len(input) - 12	// The last 12 bytes can be ignored
-	cryptotext := input[:cryptoSize]
 	plaintext := make([]byte, cryptoSize)
 	dec.CryptBlocks(plaintext, cryptotext)
 	// Decompress
-	srcSize, dstSize := binary.LittleEndian.Uint16(plaintext[0:2]), 0
-	buf := make([]byte, 0x2000)
-	if dstSize, err = lz4.UncompressBlock(plaintext[2:srcSize+2], buf); err == nil {
-		output = buf[0:dstSize]
-	}
+	srcSize := binary.LittleEndian.Uint16(plaintext[0:2])
+	_, err = lz4.UncompressBlock(plaintext[2:srcSize+2], output)
 	return
 }

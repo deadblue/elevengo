@@ -38,12 +38,15 @@ func (a *Agent) getAppVersion() (ver string, err error) {
 
 // New creates Agent with customized options.
 func New(options ...option.Option) *Agent {
-	agent, name := &Agent{}, ""
+	agent := &Agent{}
+	name, appVer := "", ""
 	// Apply options
 	for _, opt := range options {
 		switch opt := opt.(type) {
 		case option.NameOption:
 			name = string(opt)
+		case option.AppVersionOption:
+			appVer = string(opt)
 		case *option.HttpOption:
 			agent.wc = web.NewClient(opt.Client)
 		}
@@ -51,10 +54,13 @@ func New(options ...option.Option) *Agent {
 	if agent.wc == nil {
 		agent.wc = web.NewClient(nil)
 	}
-
-	// TODO: Disable upload functions when getAppVersion failed.
-	webapi.AppVersion, _ = agent.getAppVersion()
-	agent.wc.SetUserAgent(webapi.MakeUserAgent(name))
+	if appVer == "" {
+		// Get latest app version from cloud
+		appVer, _ = agent.getAppVersion()
+	}
+	agent.uh.SetAppVersion(appVer)
+	agent.wc.SetUserAgent(webapi.MakeUserAgent(name, appVer))
+	
 	return agent
 }
 
