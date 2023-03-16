@@ -1,17 +1,21 @@
 package elevengo
 
 import (
+	"crypto/sha1"
 	"fmt"
+	"io"
 
+	"github.com/deadblue/elevengo/internal/crypto/hash"
+	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/internal/webapi"
 )
 
-type errImportRequireCheck struct {
-	signKey   string
-	signRange string
+type ErrImportNeedCheck struct {
+	SignKey   string
+	SignRange Range
 }
 
-func (e *errImportRequireCheck) Error() string {
+func (e *ErrImportNeedCheck) Error() string {
 	return ""
 }
 
@@ -30,28 +34,8 @@ type ImportTicket struct {
 	SignValue string
 }
 
-/*
-Import tries to import a file to your 115 cloud storage.
-
-Example:
-	agent := Default()
-	ticket := &ImportTicket{
-		FileName: "hello.mp4",
-		FileSize: 12345678,
-		FileSha1: "0123456789ABCDEF0123456789ABCDEF01234567"
-	}
-	err := agent.Import("0", ticket)
-	if ok, key, rng := IsImportCheckRequired(err); ok {
-		ticket.SignKey = key
-		// TODO: Implement CalculateHashRange
-		ticket.SignValue = CalculateHashRange(file, rng)
-		err = agnet.Import("0", ticket)
-	}
-	if err != nil {
-		log.Fatal
-	}
-
-*/
+// Import imports(aka. fast-upload) a file to your 115 cloud storage.
+// Please check example code for detailed usage.
 func (a *Agent) Import(dirId string, ticket *ImportTicket) (err error) {
 	if err = a.uploadInitHelper(); err != nil {
 		return
@@ -69,9 +53,14 @@ func (a *Agent) Import(dirId string, ticket *ImportTicket) (err error) {
 	exist, checkRange := false, ""
 	if exist, checkRange, err = a.uploadInitInternal(initData, nil); err == nil {
 		if checkRange != "" {
-			err = &errImportRequireCheck{
-				signKey: initData.SignKey,
-				signRange: checkRange,
+			var start, end int
+			fmt.Sscanf(checkRange, "%d-%d", &start, &end)
+			err = &ErrImportNeedCheck{
+				SignKey: initData.SignKey,
+				SignRange: Range{
+					start: int64(start),
+					end: int64(end),
+				},
 			}
 		} else if !exist {
 			err = webapi.ErrNotExist
@@ -80,11 +69,23 @@ func (a *Agent) Import(dirId string, ticket *ImportTicket) (err error) {
 	return
 }
 
-// IsImportCheckRequired
-func IsImportCheckRequired(err error) (ok bool, key, rng string) {
-	e, ok := err.(*errImportRequireCheck)
-	if ok {
-		key, rng = e.signKey, e.signRange
+// ImportCalculateSignValue calculates a sign value of a file on cloud storage.
+// Please check example code for detailed usage.
+func (a *Agent) ImportCalculateSignValue(pickcode string, rng Range) (value string, err error) {
+	// Get download URL
+	ticket := &DownloadTicket{}
+	if err = a.DownloadCreateTicket(pickcode, ticket); err != nil {
+		return 
+	}
+	// Get range content
+	var body io.ReadCloser
+	if body, err = a.GetRange(ticket.Url, rng); err != nil {
+		return
+	}
+	defer util.QuietlyClose(body)
+	h := sha1.New()
+	if _, err = io.Copy(h, body); err == nil {
+		value = hash.ToHexUpper(h)
 	}
 	return
 }

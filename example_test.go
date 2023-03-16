@@ -202,3 +202,59 @@ func ExampleAgent_QrcodeStart() {
 	}
 
 }
+
+func ExampleAgent_Import() {
+	var err error
+
+	// Initialize two agent for sender and receiver
+	sender, receiver := Default(), Default()
+	// Import sender's cookie
+	sender.CredentialImport(&Credential{
+		UID: "", CID: "", SEID: "",
+	})
+	// Import receiver's cookie
+	receiver.CredentialImport(&Credential{
+		UID: "", CID: "", SEID: "",
+	})
+
+	// File to send on sender's storage
+	fileId := "12345678"
+	// Create import ticket by sender
+	file := File{}
+	if err = sender.FileGet(fileId, &file); err != nil {
+		log.Fatalf("Get file info failed: %s", err)
+	}
+	ticket := &ImportTicket{
+		FileName: file.Name,
+		FileSize: file.Size,
+		FileSha1: file.Sha1,
+	}
+
+	// Directory to save file on receiver's storage
+	dirId := "0"
+	
+	// Import first time
+	if err = receiver.Import(dirId, ticket); err != nil {
+		// First time 
+		if ie, ok := err.(*ErrImportNeedCheck); ok {
+			// Calculate sign value by sender
+			signValue, err := sender.ImportCalculateSignValue(file.PickCode, ie.SignRange)
+			if err != nil {
+				log.Fatalf("Calculate sign value failed: %s", err)
+			}
+
+			// Update ticket and import again
+			ticket.SignKey = ie.SignKey
+			ticket.SignValue = signValue
+			if err = receiver.Import(dirId, ticket); err != nil {
+				log.Fatalf("Import failed: %s", err)
+			} else {
+				log.Print("Import succeeded!")
+			}
+		} else {
+			log.Fatalf("Import failed: %s", err)
+		}
+	} else {
+		log.Print("Import succeeded!")
+	}
+}
