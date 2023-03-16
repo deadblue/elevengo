@@ -12,11 +12,11 @@ import (
 
 type ErrImportNeedCheck struct {
 	SignKey   string
-	SignRange Range
+	SignRange string
 }
 
 func (e *ErrImportNeedCheck) Error() string {
-	return ""
+	return "import requires sign check"
 }
 
 // ImportTicket container reqiured fields to import(aka. quickly upload) a file
@@ -30,12 +30,12 @@ type ImportTicket struct {
 	FileSha1  string
 	// Sign key from 115 server.
 	SignKey string
-	// SHA-1 hash value of a part in file, in upper-case HEX format
+	// SHA-1 hash value of a segment of the file, in upper-case HEX format
 	SignValue string
 }
 
 // Import imports(aka. fast-upload) a file to your 115 cloud storage.
-// Please check example code for detailed usage.
+// Please check example code for the detailed usage.
 func (a *Agent) Import(dirId string, ticket *ImportTicket) (err error) {
 	if err = a.uploadInitHelper(); err != nil {
 		return
@@ -53,14 +53,9 @@ func (a *Agent) Import(dirId string, ticket *ImportTicket) (err error) {
 	exist, checkRange := false, ""
 	if exist, checkRange, err = a.uploadInitInternal(initData, nil); err == nil {
 		if checkRange != "" {
-			var start, end int
-			fmt.Sscanf(checkRange, "%d-%d", &start, &end)
 			err = &ErrImportNeedCheck{
 				SignKey: initData.SignKey,
-				SignRange: Range{
-					start: int64(start),
-					end: int64(end),
-				},
+				SignRange: checkRange,
 			}
 		} else if !exist {
 			err = webapi.ErrNotExist
@@ -69,9 +64,14 @@ func (a *Agent) Import(dirId string, ticket *ImportTicket) (err error) {
 	return
 }
 
-// ImportCalculateSignValue calculates a sign value of a file on cloud storage.
-// Please check example code for detailed usage.
-func (a *Agent) ImportCalculateSignValue(pickcode string, rng Range) (value string, err error) {
+// ImportCalculateSignValue calculates sign value of a file on cloud storage.
+// Please check example code for the detailed usage.
+func (a *Agent) ImportCalculateSignValue(pickcode string, signRange string) (value string, err error) {
+	// Parse range text at first
+	var start, end int64
+	if _, err = fmt.Sscanf(signRange, "%d-%d", &start, &end); err != nil {
+		return
+	}
 	// Get download URL
 	ticket := &DownloadTicket{}
 	if err = a.DownloadCreateTicket(pickcode, ticket); err != nil {
@@ -79,7 +79,7 @@ func (a *Agent) ImportCalculateSignValue(pickcode string, rng Range) (value stri
 	}
 	// Get range content
 	var body io.ReadCloser
-	if body, err = a.GetRange(ticket.Url, rng); err != nil {
+	if body, err = a.GetRange(ticket.Url, Range{start, end}); err != nil {
 		return
 	}
 	defer util.QuietlyClose(body)

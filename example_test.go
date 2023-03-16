@@ -206,13 +206,11 @@ func ExampleAgent_QrcodeStart() {
 func ExampleAgent_Import() {
 	var err error
 
-	// Initialize two agent for sender and receiver
+	// Initialize two agents for sender and receiver
 	sender, receiver := Default(), Default()
-	// Import sender's cookie
 	sender.CredentialImport(&Credential{
 		UID: "", CID: "", SEID: "",
 	})
-	// Import receiver's cookie
 	receiver.CredentialImport(&Credential{
 		UID: "", CID: "", SEID: "",
 	})
@@ -232,24 +230,20 @@ func ExampleAgent_Import() {
 
 	// Directory to save file on receiver's storage
 	dirId := "0"
-	
-	// Import first time
+	// Call Import first time
 	if err = receiver.Import(dirId, ticket); err != nil {
-		// First time 
 		if ie, ok := err.(*ErrImportNeedCheck); ok {
 			// Calculate sign value by sender
 			signValue, err := sender.ImportCalculateSignValue(file.PickCode, ie.SignRange)
 			if err != nil {
 				log.Fatalf("Calculate sign value failed: %s", err)
 			}
-
 			// Update ticket and import again
-			ticket.SignKey = ie.SignKey
-			ticket.SignValue = signValue
-			if err = receiver.Import(dirId, ticket); err != nil {
-				log.Fatalf("Import failed: %s", err)
-			} else {
+			ticket.SignKey, ticket.SignValue = ie.SignKey, signValue
+			if err = receiver.Import(dirId, ticket); err == nil {
 				log.Print("Import succeeded!")
+			} else {
+				log.Fatalf("Import failed: %s", err)
 			}
 		} else {
 			log.Fatalf("Import failed: %s", err)
