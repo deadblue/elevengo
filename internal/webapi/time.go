@@ -2,32 +2,28 @@ package webapi
 
 import (
 	"strconv"
+	"strings"
 	"time"
 )
 
-const (
-	timeLayout = "2006-01-02 15:04"
-)
+func ParseFileTime(t string) time.Time {
 
-var (
-	timeLocation, _ = time.LoadLocation("Asia/Shanghai")
-)
+	if isTimestamp(t) {
+		i, err := strconv.ParseInt(t, 10, 64)
+		if err != nil {
+			return time.Now()
+		}
 
-func ParseFileTime(str string) time.Time {
-	if isTimestamp(str) {
-		sec, _ := strconv.ParseInt(str, 10, 64)
-		return time.Unix(sec, 0)
-	} else {
-		t, _ := time.ParseInLocation(timeLayout, str, timeLocation)
-		return t.UTC()
+		return time.Unix(i, 0)
 	}
+	tm, _ := time.Parse("2006-01-02 15:04", t)
+	return tm
 }
 
 func isTimestamp(str string) bool {
-	for _, ch := range str {
-		if ch < '0' || ch > '9' {
-			return false
-		}
+	// 2023-01-10 13:43
+	if strings.Contains(str, "-") {
+		return false
 	}
 	return true
 }
