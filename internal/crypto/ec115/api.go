@@ -8,7 +8,7 @@ import (
 	"hash/crc32"
 	"math/rand"
 
-	"github.com/pierrec/lz4/v4"
+	"github.com/deadblue/elevengo/internal/crypto/lz4"
 )
 
 var (
@@ -76,8 +76,8 @@ func (c *Cipher) Decode(input []byte) (output []byte, err error) {
 	// Decrypt
 	plaintext := make([]byte, cryptoSize)
 	dec.CryptBlocks(plaintext, cryptotext)
-	// Decompress
+	// Uncompress
 	srcSize := binary.LittleEndian.Uint16(plaintext[0:2])
-	_, err = lz4.UncompressBlock(plaintext[2:srcSize+2], output)
+	err = lz4.BlockUncompress(plaintext[2:srcSize+2], output)
 	return
 }
