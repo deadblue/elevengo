@@ -322,8 +322,17 @@ func (a *Agent) FileStat(fileId string, info *FileInfo) (err error) {
 	info.Name = resp.FileName
 	info.PickCode = resp.PickCode
 	info.Sha1 = resp.Sha1
-	info.CreateTime = time.Unix(int64(resp.CreateTime), 0)
-	info.UpdateTime = time.Unix(int64(resp.UpdateTime), 0)
+	t, err := resp.CreateTime.Int64()
+	if err != nil {
+		t = time.Now().Unix()
+	}
+
+	info.CreateTime = time.Unix(t, 0)
+	t, err = resp.UpdateTime.Int64()
+	if err != nil {
+		t = time.Now().Unix()
+	}
+	info.UpdateTime = time.Unix(t, 0)
 	info.AccessTime = time.Unix(resp.AccessTime, 0)
 	// Fill parents
 	info.Parents = make([]*DirInfo, len(resp.Paths))
