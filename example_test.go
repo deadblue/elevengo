@@ -218,14 +218,9 @@ func ExampleAgent_Import() {
 	// File to send on sender's storage
 	fileId := "12345678"
 	// Create import ticket by sender
-	file := File{}
-	if err = sender.FileGet(fileId, &file); err != nil {
+	ticket, pickcode := &ImportTicket{}, ""
+	if pickcode, err = sender.ImportCreateTicket(fileId, ticket); err != nil {
 		log.Fatalf("Get file info failed: %s", err)
-	}
-	ticket := &ImportTicket{
-		FileName: file.Name,
-		FileSize: file.Size,
-		FileSha1: file.Sha1,
 	}
 
 	// Directory to save file on receiver's storage
@@ -234,7 +229,7 @@ func ExampleAgent_Import() {
 	if err = receiver.Import(dirId, ticket); err != nil {
 		if ie, ok := err.(*ErrImportNeedCheck); ok {
 			// Calculate sign value by sender
-			signValue, err := sender.ImportCalculateSignValue(file.PickCode, ie.SignRange)
+			signValue, err := sender.ImportCalculateSignValue(pickcode, ie.SignRange)
 			if err != nil {
 				log.Fatalf("Calculate sign value failed: %s", err)
 			}

@@ -11,7 +11,10 @@ import (
 )
 
 type ErrImportNeedCheck struct {
-	SignKey   string
+	// The sign key your should set to ImportTicket
+	SignKey string
+	// The sign range in format of "<start>-<end>" in bytes.
+	// You can directly use it in ImportCreateTicket. 
 	SignRange string
 }
 
@@ -59,6 +62,22 @@ func (a *Agent) Import(dirId string, ticket *ImportTicket) (err error) {
 			}
 		} else if !exist {
 			err = webapi.ErrNotExist
+		}
+	}
+	return
+}
+
+// ImportCreateTicket is a helper function to create an ImportTicket of a file, 
+// that you can share to others to import this file to their cloud storage.
+// You should also send pickcode together with ticket.
+func (a *Agent) ImportCreateTicket(fileId string, ticket *ImportTicket) (pickcode string, err error) {
+	file := &File{}
+	if err = a.FileGet(fileId, file); err == nil {
+		pickcode = file.PickCode
+		if ticket != nil {
+			ticket.FileName = file.Name
+			ticket.FileSize = file.Size
+			ticket.FileSha1 = file.Sha1
 		}
 	}
 	return
