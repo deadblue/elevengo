@@ -1,5 +1,7 @@
 package webapi
 
+import "encoding/json"
+
 const (
 	FileOrderByTime = "user_ptime"
 	FileOrderByType = "file_type"
@@ -49,7 +51,7 @@ type FileDuplication struct {
 	Sha1     string      `json:"sha1"`
 	PickCode string      `json:"pc"`
 
-	UpdateTime StringInt64 `json:"te"`
+	UpdateTime json.Number `json:"te"`
 
 	Parent FileParentInfo `json:"paths"`
 }
@@ -77,8 +79,8 @@ type FileStatResponse struct {
 	Sha1     string    `json:"sha1"`
 	IsFile   StringInt `json:"file_category"`
 
-	CreateTime StringInt64 `json:"ptime"`
-	UpdateTime StringInt64 `json:"utime"`
+	CreateTime json.Number `json:"ptime"`
+	UpdateTime json.Number `json:"utime"`
 	AccessTime int64       `json:"open_time"`
 
 	Paths []*FileParentInfo `json:"paths"`
