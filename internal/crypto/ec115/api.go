@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"encoding/base64"
 	"encoding/binary"
+	"errors"
 	"hash/crc32"
 	"math/rand"
 
@@ -13,6 +14,8 @@ import (
 
 var (
 	crcSalt = []byte("^j>WD3Kr?J2gLFjD4W2y@")
+
+	errInvalidEncodedData = errors.New("invalid ec data")
 )
 
 func (c *Cipher) EncodeToken(timestamp int64) string {
@@ -64,6 +67,14 @@ func (c *Cipher) Encode(input []byte) (output []byte) {
 func (c *Cipher) Decode(input []byte) (output []byte, err error) {
 	cryptoSize := len(input) - 12
 	cryptotext, tail := input[:cryptoSize], input[cryptoSize:]
+	// Validate input data
+	h := crc32.NewIEEE()
+	h.Write(crcSalt)
+	h.Write(tail[0:8])
+	if h.Sum32() != binary.LittleEndian.Uint32(tail[8:12]) {
+		err = errInvalidEncodedData
+		return
+	}
 	// Get output size
 	for i := 0; i < 4; i++ {
 		tail[i] ^= tail[7]
