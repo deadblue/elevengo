@@ -21,6 +21,9 @@ type Client struct {
 
 	// EC cipher
 	ecc *ec115.Cipher
+
+	// Valve to control API request frequency
+	v Valve
 }
 
 func NewClient(hc plugin.HttpClient) *Client {
@@ -47,4 +50,19 @@ func NewClient(hc plugin.HttpClient) *Client {
 		}
 	}
 	return client
+}
+
+func (c *Client) SetUserAgent(name string) {
+	c.ua = name
+}
+
+func (c *Client) GetUserAgent() string {
+	return c.ua
+}
+
+func (c *Client) SetupValve(cdMin, cdMax uint) {
+	if cdMax > 0 && cdMax >= cdMin {
+		c.v.enabled = true
+		c.v.cdMin, c.v.cdMax = cdMin, cdMax
+	}
 }

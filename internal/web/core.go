@@ -8,14 +8,6 @@ const (
 	defaultUserAgent = "Mozilla/5.0"
 )
 
-func (c *Client) SetUserAgent(name string) {
-	c.ua = name
-}
-
-func (c *Client) GetUserAgent() string {
-	return c.ua
-}
-
 func (c *Client) do(req *http.Request) (resp *http.Response, err error) {
 	req.Header.Set("Accept", "*/*")
 	// Always override user-agent
