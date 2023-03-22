@@ -40,6 +40,7 @@ func (a *Agent) getAppVersion() (ver string, err error) {
 func New(options ...option.Option) *Agent {
 	agent := &Agent{}
 	name, appVer := "", ""
+	var cdMin, cdMax uint
 	// Apply options
 	for _, opt := range options {
 		switch opt := opt.(type) {
@@ -49,18 +50,21 @@ func New(options ...option.Option) *Agent {
 			appVer = string(opt)
 		case *option.HttpOption:
 			agent.wc = web.NewClient(opt.Client)
+		case option.CooldownOption:
+			cdMin, cdMax = opt.Min, opt.Max
 		}
 	}
 	if agent.wc == nil {
 		agent.wc = web.NewClient(nil)
 	}
+	agent.wc.SetupValve(cdMin, cdMax)
 	if appVer == "" {
 		// Get latest app version from cloud
 		appVer, _ = agent.getAppVersion()
 	}
 	agent.uh.SetAppVersion(appVer)
 	agent.wc.SetUserAgent(webapi.MakeUserAgent(name, appVer))
-	
+
 	return agent
 }
 

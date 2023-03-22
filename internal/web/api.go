@@ -17,6 +17,9 @@ func (c *Client) CallJsonApi(
 	url string, qs Params, payload Payload, 
 	resp ApiResp,
 ) (err error) {
+	// Request frequency control
+	c.v.Wait()
+	defer c.v.ClockIn()
 	// Prepare request
 	var body io.ReadCloser
 	if payload != nil {
@@ -40,6 +43,10 @@ func (c *Client) CallJsonApi(
 }
 
 func (c *Client) CallJsonpApi(url string, qs Params, resp ApiResp) (err error) {
+	// Request frequency control
+	c.v.Wait()
+	defer c.v.ClockIn()
+	// Send request
 	body, err := c.Get(url, qs, nil)
 	if err != nil {
 		return
@@ -76,6 +83,9 @@ func (c *Client) CallSecretJsonApi(
 		return
 	}
 	payload = makePayload(c.ecc.Encode(data), payload.ContentType())
+	// Request frequency control
+	c.v.Wait()
+	defer c.v.ClockIn()
 	// Call API
 	if body, err = c.Post(url, qs, payload); err != nil {
 		return

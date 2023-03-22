@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"path"
+
+	"github.com/deadblue/elevengo/option"
 )
 
 func ExampleAgent_CredentialImport() {
@@ -245,5 +247,22 @@ func ExampleAgent_Import() {
 		}
 	} else {
 		log.Print("Import succeeded!")
+	}
+}
+
+func ExampleNew() {
+	// Customize agent
+	agent := New(
+		// Custom agent name
+		option.NameOption("Evangelion/1.0"),
+		// Sleep 100~500 ms between two API calling
+		option.CooldownOption{Min: 100, Max: 500},
+	)
+
+	var err error
+	if err = agent.CredentialImport(&Credential{
+		UID: "", CID: "", SEID: "",
+	}); err != nil {
+		log.Fatalf("Invalid credential, error: %s", err)
 	}
 }
