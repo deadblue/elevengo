@@ -115,10 +115,12 @@ func (a *Agent) uploadInit(
 		Target: target,
 		Signature: a.uh.CalculateSignature(dr.SHA1, target),
 	}
-	for checkRange := "" ; (!exist && err == nil); {
+	for checkRange := "" ;; {
 		exist, checkRange, err = a.uploadInitInternal(initData, od)
 		if checkRange != "" {
-			initData.SignValue, err = webapi.UploadDigestRange(rs, checkRange)
+			initData.SignValue, _ = webapi.UploadDigestRange(rs, checkRange)
+		} else {
+			break
 		}
 	}
 	return
