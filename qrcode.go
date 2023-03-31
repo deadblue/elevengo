@@ -54,6 +54,18 @@ func (a *Agent) QrcodeStart(session *QrcodeSession) (err error) {
 	return
 }
 
+// QrcodeStartForLinux starts a QRCode Img login for linux session.
+func (a *Agent) QrcodeStartForLinux(session *QrcodeSession) (err error) {
+	data := &webapi.QrcodeTokenData{}
+	if err = a.qrcodeCallApi(webapi.ApiQrcodeTokenForLinux, nil, nil, data); err == nil {
+		session.uid = data.Uid
+		session.time = data.Time
+		session.sign = data.Sign
+		session.Content = webapi.ApiQrcodeImgForLinux + data.Uid
+	}
+	return
+}
+
 /*
 QrcodeStatus returns the status of QRCode login session.
 
@@ -62,10 +74,10 @@ also block at most 30 seconds, be careful to use it in main goroutine.
 
 There will be 4 kinds of status:
 
-	- Waiting
-	- Scanned
-	- Allowed
-	- Canceled
+  - Waiting
+  - Scanned
+  - Allowed
+  - Canceled
 
 The QRCode will expire in 5 minutes, when it expired, an error will be return, caller
 can use IsQrcodeExpire() to check that.
