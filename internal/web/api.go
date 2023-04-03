@@ -14,7 +14,7 @@ type ApiResp interface {
 
 // CallJsonApi calls remote HTTP API, and parses its result as JSON.
 func (c *Client) CallJsonApi(
-	url string, qs Params, payload Payload, 
+	url string, qs Params, payload Payload,
 	resp ApiResp,
 ) (err error) {
 	// Request frequency control
@@ -68,7 +68,7 @@ func (c *Client) CallJsonpApi(url string, qs Params, resp ApiResp) (err error) {
 
 // CallSecretJsonApi calls JSON API with EC cryptography.
 func (c *Client) CallSecretJsonApi(
-	url string, qs Params, payload Payload, 
+	url string, qs Params, payload Payload,
 	resp ApiResp, timestamp int64,
 ) (err error) {
 	var data []byte
@@ -78,18 +78,27 @@ func (c *Client) CallSecretJsonApi(
 		qs = Params{}
 	}
 	qs.With("k_ec", c.ecc.EncodeToken(timestamp))
-	// Encrypt payload
-	if data, err = io.ReadAll(payload); err != nil {
-		return
-	}
-	payload = makePayload(c.ecc.Encode(data), payload.ContentType())
+
 	// Request frequency control
 	c.v.Wait()
 	defer c.v.ClockIn()
-	// Call API
-	if body, err = c.Post(url, qs, payload); err != nil {
-		return
+	if payload != nil {
+		// Encrypt payload
+		if data, err = io.ReadAll(payload); err != nil {
+			return
+		}
+		payload = makePayload(c.ecc.Encode(data), payload.ContentType())
+		// Call API
+		if body, err = c.Post(url, qs, payload); err != nil {
+			return
+		}
+	} else {
+		// Call API
+		if body, err = c.Get(url, qs, nil); err != nil {
+			return
+		}
 	}
+
 	defer util.QuietlyClose(body)
 	if resp == nil {
 		return
