@@ -17,20 +17,23 @@ func (c *Client) CallJsonApi(
 	url string, qs Params, payload Payload,
 	resp ApiResp,
 ) (err error) {
-	// Request frequency control
-	c.v.Wait()
-	defer c.v.ClockIn()
-	// Prepare request
 	var body io.ReadCloser
-	if payload != nil {
-		body, err = c.Post(url, qs, payload)
-	} else {
-		body, err = c.Get(url, qs, nil)
+	{
+		// Request frequency control
+		c.v.Wait()
+		defer c.v.ClockIn()
+		// Prepare request
+		if payload != nil {
+			body, err = c.Post(url, qs, payload)
+		} else {
+			body, err = c.Get(url, qs, nil)
+		}
 	}
 	if err != nil {
 		return
 	}
 	defer util.QuietlyClose(body)
+
 	// Parse response
 	if resp == nil {
 		return
@@ -43,11 +46,14 @@ func (c *Client) CallJsonApi(
 }
 
 func (c *Client) CallJsonpApi(url string, qs Params, resp ApiResp) (err error) {
-	// Request frequency control
-	c.v.Wait()
-	defer c.v.ClockIn()
-	// Send request
-	body, err := c.Get(url, qs, nil)
+	var body io.ReadCloser
+	{
+		// Request frequency control
+		c.v.Wait()
+		defer c.v.ClockIn()
+		// Send request
+		body, err = c.Get(url, qs, nil)
+	}
 	if err != nil {
 		return
 	}
@@ -71,43 +77,40 @@ func (c *Client) CallSecretJsonApi(
 	url string, qs Params, payload Payload,
 	resp ApiResp, timestamp int64,
 ) (err error) {
-	var data []byte
-	var body io.ReadCloser
 	// Append EC key in querystring
 	if qs == nil {
 		qs = Params{}
 	}
 	qs.With("k_ec", c.ecc.EncodeToken(timestamp))
-
-	// Request frequency control
-	c.v.Wait()
-	defer c.v.ClockIn()
-	if payload != nil {
-		// Encrypt payload
-		if data, err = io.ReadAll(payload); err != nil {
-			return
-		}
-		payload = makePayload(c.ecc.Encode(data), payload.ContentType())
-		// Call API
-		if body, err = c.Post(url, qs, payload); err != nil {
-			return
-		}
-	} else {
-		// Call API
-		if body, err = c.Get(url, qs, nil); err != nil {
-			return
-		}
+	// Encrypt payload
+	payload, err = c.encryptPayload(payload)
+	if err != nil {
+		return
 	}
 
+	var body io.ReadCloser
+	{
+		// Request frequency control
+		c.v.Wait()
+		defer c.v.ClockIn()
+		// Call API
+		if payload != nil {
+			body, err = c.Post(url, qs, payload)
+		} else {
+			body, err = c.Get(url, qs, nil)
+		}
+	}
+	if err != nil {
+		return
+	}
 	defer util.QuietlyClose(body)
+
 	if resp == nil {
 		return
 	}
 	// Decrypt body
-	if data, err = io.ReadAll(body); err != nil {
-		return
-	}
-	if data, err = c.ecc.Decode(data); err != nil {
+	data, err := c.decryptBody(body)
+	if err != nil {
 		return
 	}
 	// Parse result
