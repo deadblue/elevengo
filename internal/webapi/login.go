@@ -1,6 +1,8 @@
 package webapi
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 type LoginBasicResponse struct {
 	State   int    `json:"state"`
@@ -58,6 +60,21 @@ type QrcodeTokenData struct {
 	Time   int64  `json:"time"`
 	Sign   string `json:"sign"`
 	Qrcode string `json:"qrcode"`
+}
+
+type QrcodeTokenSecretData struct {
+	State   int    `json:"state"`
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Data    struct {
+		UID  string `json:"uid"`
+		Time int64  `json:"time"`
+		Sign string `json:"sign"`
+	} `json:"data"`
+}
+
+func (q QrcodeTokenSecretData) Err() error {
+	return nil
 }
 
 type QrcodeStatusData struct {

@@ -3,6 +3,7 @@ package elevengo
 import (
 	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
+	"time"
 )
 
 // QrcodeSession holds the information during a QRCode login process.
@@ -55,13 +56,15 @@ func (a *Agent) QrcodeStart(session *QrcodeSession) (err error) {
 }
 
 // QrcodeStartForLinux starts a QRCode Img login for linux session.
+// need use QrcodeLoginForLinux get cookie
 func (a *Agent) QrcodeStartForLinux(session *QrcodeSession) (err error) {
-	data := &webapi.QrcodeTokenData{}
-	if err = a.qrcodeCallApi(webapi.ApiQrcodeTokenForLinux, nil, nil, data); err == nil {
-		session.uid = data.Uid
-		session.time = data.Time
-		session.sign = data.Sign
-		session.Content = webapi.ApiQrcodeImgForLinux + data.Uid
+	data := &webapi.QrcodeTokenSecretData{}
+	now := time.Now().Unix()
+	if err = a.wc.CallSecretJsonApi(webapi.ApiQrcodeTokenForLinux, nil, nil, data, now); err == nil {
+		session.uid = data.Data.UID
+		session.time = data.Data.Time
+		session.sign = data.Data.Sign
+		session.Content = webapi.ApiQrcodeImgForLinux + data.Data.UID
 	}
 	return
 }
@@ -104,6 +107,19 @@ func (a *Agent) QrcodeLogin(session *QrcodeSession) (err error) {
 		ToForm()
 	data := &webapi.LoginUserData{}
 	if err = a.qrcodeCallApi(webapi.ApiQrcodeLogin, nil, form, data); err == nil {
+		a.uid = data.Id
+	}
+	return
+}
+
+// QrcodeLoginForLinux logins user through Linux QRCode.
+func (a *Agent) QrcodeLoginForLinux(session *QrcodeSession) (err error) {
+	form := web.Params{}.
+		With("account", session.uid).
+		With("app", "web").
+		ToForm()
+	data := &webapi.LoginUserData{}
+	if err = a.qrcodeCallApi(webapi.ApiQrcodeLoginForLinux, nil, form, data); err == nil {
 		a.uid = data.Id
 	}
 	return
