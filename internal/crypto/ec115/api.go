@@ -47,7 +47,7 @@ func (c *Cipher) Encode(input []byte) (output []byte) {
 	// Zero padding
 	plaintext, plainSize := input, len(input)
 	if padSize := aes.BlockSize - (plainSize % aes.BlockSize); padSize != aes.BlockSize {
-		plaintext = make([]byte, plainSize + padSize)
+		plaintext = make([]byte, plainSize+padSize)
 		copy(plaintext, input)
 		// Make sure all padding bytes are zero
 		for i := 0; i < padSize; i++ {

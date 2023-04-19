@@ -32,7 +32,7 @@ var (
 	ErrReachEnd = errors.New("reach the end")
 
 	ErrUploadDisabled = errors.New("upload function is disabled")
-	
+
 	ErrUploadTooLarge = errors.New("upload reach the limit")
 
 	ErrInitUploadUnknowStatus = errors.New("unknown status from initupload")

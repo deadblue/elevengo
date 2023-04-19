@@ -118,23 +118,23 @@ func (r *Range) headerValue() string {
 // RangeFirst makes a Range parameter to request the first `length` bytes.
 func RangeFirst(length int64) Range {
 	return Range{
-		start: 0, 
-		end: length - 1,
+		start: 0,
+		end:   length - 1,
 	}
 }
 
 // RangeLast makes a Range parameter to request the last `length` bytes.
 func RangeLast(length int64) Range {
 	return Range{
-		start: 0 - length, 
-		end: 0,
+		start: 0 - length,
+		end:   0,
 	}
 }
 
-// RangeMiddle makes a Range parameter to request content starts from `offset`, 
+// RangeMiddle makes a Range parameter to request content starts from `offset`,
 // and has `length` bytes (at most).
-// 
-// You can pass a negative number in `length`, to request content starts from 
+//
+// You can pass a negative number in `length`, to request content starts from
 // `offset` to the end.
 func RangeMiddle(offset, length int64) Range {
 	end := offset + length - 1
@@ -142,8 +142,8 @@ func RangeMiddle(offset, length int64) Range {
 		end = -1
 	}
 	return Range{
-		start: offset, 
-		end: end,
+		start: offset,
+		end:   end,
 	}
 }
 

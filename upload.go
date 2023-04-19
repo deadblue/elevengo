@@ -63,7 +63,7 @@ func (a *Agent) uploadInitInternal(
 		With("sig", initData.Signature).
 		WithInt64("t", now).
 		With("token", a.uh.CalculateToken(
-			initData.FileId, initData.FileSize, 
+			initData.FileId, initData.FileSize,
 			initData.SignKey, initData.SignValue, now,
 		))
 	if initData.SignKey != "" && initData.SignValue != "" {
@@ -96,7 +96,7 @@ func (a *Agent) uploadInitInternal(
 }
 
 func (a *Agent) uploadInit(
-	dirId, name string, 
+	dirId, name string,
 	rs io.ReadSeeker,
 	dr *webapi.UploadDigestResult,
 	od *webapi.UploadOssData,
@@ -109,13 +109,13 @@ func (a *Agent) uploadInit(
 	}
 	target := fmt.Sprintf("U_1_%s", dirId)
 	initData := &webapi.UploadInitData{
-		FileId: dr.SHA1,
-		FileName: name,
-		FileSize: dr.Size,
-		Target: target,
+		FileId:    dr.SHA1,
+		FileName:  name,
+		FileSize:  dr.Size,
+		Target:    target,
 		Signature: a.uh.CalculateSignature(dr.SHA1, target),
 	}
-	for checkRange := "" ;; {
+	for checkRange := ""; ; {
 		exist, checkRange, err = a.uploadInitInternal(initData, od)
 		if checkRange != "" {
 			initData.SignValue, _ = webapi.UploadDigestRange(rs, checkRange)
@@ -129,12 +129,12 @@ func (a *Agent) uploadInit(
 // UploadCreateTicket creates a ticket which contains all required parameters
 // to upload file/data to cloud, the ticket should be used in 1 hour.
 //
-// To create ticket, r will be fully read to calculate SHA-1 and MD5 hash value. 
+// To create ticket, r will be fully read to calculate SHA-1 and MD5 hash value.
 // If you want to re-use r, try to seek it to beginning.
-// 
+//
 // To upload a file larger than 5G bytes, use `UploadCreateOssTicket`.
 func (a *Agent) UploadCreateTicket(
-	dirId, name string, r io.ReadSeeker, 
+	dirId, name string, r io.ReadSeeker,
 	ticket *UploadTicket,
 ) (err error) {
 	// Initialize uploading
@@ -273,10 +273,10 @@ type UploadOssTicket struct {
 }
 
 /*
-UploadCreateOssTicket creates ticket to upload file through aliyun-oss-sdk. Use 
+UploadCreateOssTicket creates ticket to upload file through aliyun-oss-sdk. Use
 this method if you want to upload a file larger than 5G bytes.
 
-To create ticket, r will be fully read to calculate SHA-1 and MD5 hash value. 
+To create ticket, r will be fully read to calculate SHA-1 and MD5 hash value.
 If you want to re-use r, try to seek it to beginning.
 
 Example:
@@ -285,7 +285,7 @@ Example:
         "github.com/aliyun/aliyun-oss-go-sdk/oss"
         "github.com/deadblue/elevengo"
     )
-    
+
 	func main() {
 		filePath := "/file/to/upload"
 
@@ -307,10 +307,10 @@ Example:
 		// Prepare OSS upload ticket
 		ticket := &UploadOssTicket{}
 		if err = agent.UploadCreateOssTicket(
-			"dirId", 
-			filepath.Base(file.Name()), 
-			file, 
-			ticket, 
+			"dirId",
+			filepath.Base(file.Name()),
+			file,
+			ticket,
 		); err != nil {
 			log.Fatalf("Create OSS ticket failed: %s", err)
 		}
@@ -321,7 +321,7 @@ Example:
 
 		// Create OSS client
 		oc, err := oss.New(
-			ticket.Client.Endpoint, 
+			ticket.Client.Endpoint,
 			ticket.Client.AccessKeyId,
 			ticket.Client.AccessKeySecret,
 			oss.SecurityToken(ticket.Client.SecurityToken)
@@ -335,16 +335,16 @@ Example:
 		}
 		// Upload file in multipart.
 		err = bucket.UploadFile(
-			ticket.Object, 
-			filePath, 
+			ticket.Object,
+			filePath,
 			100 * 1024 * 1024,	// 100 Megabytes per part
 			oss.Callback(ticket.Callback),
 			oss.CallbackVar(ticket.CallbackVar),
 		)
 		// Until now (2023-01-29), there is a bug in aliyun-oss-go-sdk:
-		// When set Callback option, the response from CompleteMultipartUpload API 
+		// When set Callback option, the response from CompleteMultipartUpload API
 		// is returned by callback host, which is not the standard XML. But SDK
-		// always tries to parse it as CompleteMultipartUploadResult, and returns 
+		// always tries to parse it as CompleteMultipartUploadResult, and returns
 		// `io.EOF` error, just ignore it!
 		if err != nil && err != io.EOF {
 			log.Fatalf("Upload file failed: %s", err)
@@ -354,8 +354,8 @@ Example:
 	}
 */
 func (a *Agent) UploadCreateOssTicket(
-	dirId, name string, 
-	r io.ReadSeeker, 
+	dirId, name string,
+	r io.ReadSeeker,
 	ticket *UploadOssTicket,
 ) (err error) {
 	// Initialize upload
