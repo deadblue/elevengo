@@ -5,20 +5,20 @@ import (
 )
 
 var (
-	errOutOfRange  = errors.New("out of range")
+	errOutOfRange = errors.New("out of range")
 )
 
-type Buffer struct{
-	buf []byte
+type Buffer struct {
+	buf    []byte
 	cursor int
 	size   int
 }
 
 func newBuffer(p []byte) *Buffer {
 	return &Buffer{
-		buf: p,
+		buf:    p,
 		cursor: 0,
-		size: len(p),
+		size:   len(p),
 	}
 }
 
@@ -28,10 +28,10 @@ func (b *Buffer) AtTheEnd() bool {
 
 // Next return a slice of underlying buf for reading/writing.
 func (b *Buffer) Next(n int) (p []byte, err error) {
-	if b.cursor + n > b.size {
+	if b.cursor+n > b.size {
 		err = errOutOfRange
 	} else {
-		p = b.buf[b.cursor:b.cursor+n]
+		p = b.buf[b.cursor : b.cursor+n]
 		b.cursor += n
 	}
 	return
@@ -51,7 +51,7 @@ func (b *Buffer) ReadToken() (literalLen, matchLen int, err error) {
 	var v byte
 	if v, err = b.ReadByte(); err == nil {
 		literalLen = int(v >> 4)
-		matchLen = 4 + int(v & 0x0f)
+		matchLen = 4 + int(v&0x0f)
 	}
 	return
 }
@@ -84,7 +84,7 @@ func (b *Buffer) WriteMatchedLiteral(offset, length int) (err error) {
 		return
 	}
 	copy(p, b.buf[start:])
-	return 
+	return
 }
 
 func CopyN(dst, src *Buffer, n int) (err error) {

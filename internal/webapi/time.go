@@ -10,7 +10,7 @@ const (
 )
 
 var (
-	timeLocation = time.FixedZone("CST", 8 * 60 * 60)
+	timeLocation = time.FixedZone("CST", 8*60*60)
 )
 
 func ParseFileTime(str string) time.Time {

@@ -46,7 +46,7 @@ func (v *Valve) getCooldownDuration() int64 {
 	if v.cdMax == v.cdMin {
 		duration = int64(v.cdMax)
 	} else {
-		duration = rand.Int63n(int64(v.cdMax - v.cdMin)) + int64(v.cdMin)
+		duration = rand.Int63n(int64(v.cdMax-v.cdMin)) + int64(v.cdMin)
 	}
 	return duration
 }

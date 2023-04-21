@@ -13,11 +13,11 @@ import (
 )
 
 const (
-	UploadMaxSize = 5 * 1024 * 1024 * 1024
+	UploadMaxSize       = 5 * 1024 * 1024 * 1024
 	UploadSimplyMaxSize = 200 * 1024 * 1024
 
-	UploadStatusNormal = 1
-	UploadStatusExist = 2
+	UploadStatusNormal       = 1
+	UploadStatusExist        = 2
 	UploadStatusRequireCheck = 7
 
 	uploadTokenSalt = "Qclm8MGWUv59TnrR0XPg"
@@ -174,7 +174,7 @@ func (h *UploadHelper) CalculateSignature(fileId, target string) string {
 }
 
 func (h *UploadHelper) CalculateToken(
-	fileId string, fileSize int64, 
+	fileId string, fileSize int64,
 	signKey, signValue string,
 	timestamp int64,
 ) string {
@@ -182,12 +182,12 @@ func (h *UploadHelper) CalculateToken(
 	wx := util.UpgradeWriter(digester)
 	wx.MustWriteString(
 		uploadTokenSalt,
-		fileId, 
-		strconv.FormatInt(fileSize, 10), 
+		fileId,
+		strconv.FormatInt(fileSize, 10),
 		signKey,
 		signValue,
 		h.userId,
-		strconv.FormatInt(timestamp, 10), 
+		strconv.FormatInt(timestamp, 10),
 		h.userHash,
 		h.appVer,
 	)
@@ -218,7 +218,7 @@ func UploadDigestRange(r io.ReadSeeker, rangeSpec string) (result string, err er
 	}
 	h := sha1.New()
 	r.Seek(start, io.SeekStart)
-	if _, err = io.CopyN(h, r, end - start + 1); err == nil {
+	if _, err = io.CopyN(h, r, end-start+1); err == nil {
 		result = hash.ToHexUpper(h)
 	}
 	return
