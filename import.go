@@ -14,7 +14,7 @@ type ErrImportNeedCheck struct {
 	// The sign key your should set to ImportTicket
 	SignKey string
 	// The sign range in format of "<start>-<end>" in bytes.
-	// You can directly use it in ImportCreateTicket. 
+	// You can directly use it in ImportCreateTicket.
 	SignRange string
 }
 
@@ -26,11 +26,11 @@ func (e *ErrImportNeedCheck) Error() string {
 // to your 115 cloud storage.
 type ImportTicket struct {
 	// File base name
-	FileName  string
+	FileName string
 	// File size in bytes
-	FileSize  int64
+	FileSize int64
 	// File SHA-1 hash, in upper-case HEX format
-	FileSha1  string
+	FileSha1 string
 	// Sign key from 115 server.
 	SignKey string
 	// SHA-1 hash value of a segment of the file, in upper-case HEX format
@@ -45,19 +45,19 @@ func (a *Agent) Import(dirId string, ticket *ImportTicket) (err error) {
 	}
 	target := fmt.Sprintf("U_1_%s", dirId)
 	initData := &webapi.UploadInitData{
-		FileId: ticket.FileSha1,
-		FileName: ticket.FileName,
-		FileSize: ticket.FileSize,
-		Target: target,
+		FileId:    ticket.FileSha1,
+		FileName:  ticket.FileName,
+		FileSize:  ticket.FileSize,
+		Target:    target,
 		Signature: a.uh.CalculateSignature(ticket.FileSha1, target),
-		SignKey: ticket.SignKey,
+		SignKey:   ticket.SignKey,
 		SignValue: ticket.SignValue,
 	}
 	exist, checkRange := false, ""
 	if exist, checkRange, err = a.uploadInitInternal(initData, nil); err == nil {
 		if checkRange != "" {
 			err = &ErrImportNeedCheck{
-				SignKey: initData.SignKey,
+				SignKey:   initData.SignKey,
 				SignRange: checkRange,
 			}
 		} else if !exist {
@@ -67,7 +67,7 @@ func (a *Agent) Import(dirId string, ticket *ImportTicket) (err error) {
 	return
 }
 
-// ImportCreateTicket is a helper function to create an ImportTicket of a file, 
+// ImportCreateTicket is a helper function to create an ImportTicket of a file,
 // that you can share to others to import this file to their cloud storage.
 // You should also send pickcode together with ticket.
 func (a *Agent) ImportCreateTicket(fileId string, ticket *ImportTicket) (pickcode string, err error) {
@@ -94,7 +94,7 @@ func (a *Agent) ImportCalculateSignValue(pickcode string, signRange string) (val
 	// Get download URL
 	ticket := &DownloadTicket{}
 	if err = a.DownloadCreateTicket(pickcode, ticket); err != nil {
-		return 
+		return
 	}
 	// Get range content
 	var body io.ReadCloser

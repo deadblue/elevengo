@@ -1,6 +1,6 @@
 package option
 
-type CooldownOption struct{
+type CooldownOption struct {
 	// Minimum cooldown duration in millisecond
 	Min uint
 	// Maximum cooldown duration in millisecond

@@ -5,6 +5,7 @@ import (
 	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
 	"math/rand"
+	"strings"
 	"time"
 )
 
@@ -72,6 +73,7 @@ func (a *Agent) UserGet(info *UserInfo) (err error) {
 		return
 	}
 	result := webapi.UserInfoData{}
+	resp.Data = []byte(strings.ReplaceAll(string(resp.Data), "\"privilege\":[],", ""))
 	if err = resp.Decode(&result); err == nil {
 		info.Id = result.UserId
 		info.Name = result.UserName
