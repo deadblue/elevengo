@@ -54,31 +54,3 @@ type LoginUserData struct {
 		SEID string `json:"SEID"`
 	} `json:"cookie"`
 }
-
-type QrcodeTokenData struct {
-	Uid    string `json:"uid"`
-	Time   int64  `json:"time"`
-	Sign   string `json:"sign"`
-	Qrcode string `json:"qrcode"`
-}
-
-type QrcodeTokenSecretData struct {
-	State   int    `json:"state"`
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-	Data    struct {
-		UID  string `json:"uid"`
-		Time int64  `json:"time"`
-		Sign string `json:"sign"`
-	} `json:"data"`
-}
-
-func (q QrcodeTokenSecretData) Err() error {
-	return nil
-}
-
-type QrcodeStatusData struct {
-	Status  int    `json:"status,omitempty"`
-	Msg     string `json:"msg,omitempty"`
-	Version string `json:"version,omitempty"`
-}

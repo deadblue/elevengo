@@ -3,7 +3,6 @@ package elevengo
 import (
 	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
-	"time"
 )
 
 // QrcodeSession holds the information during a QRCode login process.
@@ -15,7 +14,17 @@ type QrcodeSession struct {
 	uid  string
 	time int64
 	sign string
+	platform string
 }
+
+type QrcodePlatform string
+
+const (
+	QrcodePlatformLinux   QrcodePlatform = "linux"
+	QrcodePlatformWindows QrcodePlatform = "windows"
+	QrcodePlatformWeb     QrcodePlatform = "web"
+	// TODO: What's the "platform" for mac?
+)
 
 // QrcodeStatus is returned by `Agent.QrcodeStatus()`.
 // You can call `QrcodeStatus.IsXXX()` method to check the status,
@@ -45,26 +54,21 @@ func (a *Agent) qrcodeCallApi(url string, qs web.Params, form web.Payload, data 
 
 // QrcodeStart starts a QRCode login session.
 func (a *Agent) QrcodeStart(session *QrcodeSession) (err error) {
+	return a.QrcodeStartForPlatform(session, QrcodePlatformWeb)
+}
+
+func (a *Agent) QrcodeStartForPlatform(session *QrcodeSession, platform QrcodePlatform) (err error) {
 	data := &webapi.QrcodeTokenData{}
-	if err = a.qrcodeCallApi(webapi.ApiQrcodeToken, nil, nil, data); err == nil {
+	if err = a.qrcodeCallApi(webapi.QrcodeTokenApi(string(platform)), nil, nil, data); err == nil {
+		session.platform = string(platform)
 		session.uid = data.Uid
 		session.time = data.Time
 		session.sign = data.Sign
-		session.Content = data.Qrcode
-	}
-	return
-}
-
-// QrcodeStartForLinux starts a QRCode Img login for linux session.
-// need use QrcodeLoginForLinux get cookie
-func (a *Agent) QrcodeStartForLinux(session *QrcodeSession) (err error) {
-	data := &webapi.QrcodeTokenSecretData{}
-	now := time.Now().Unix()
-	if err = a.wc.CallSecretJsonApi(webapi.ApiQrcodeTokenForLinux, nil, nil, data, now); err == nil {
-		session.uid = data.Data.UID
-		session.time = data.Data.Time
-		session.sign = data.Data.Sign
-		session.Content = webapi.ApiQrcodeImgForLinux + data.Data.UID
+		if platform == QrcodePlatformWeb {
+			session.Content = data.Qrcode
+		} else {
+			session.Content = webapi.QrcodeImageUrl(session.platform, data.Uid)
+		}
 	}
 	return
 }
@@ -103,23 +107,12 @@ func (a *Agent) QrcodeStatus(session *QrcodeSession) (status QrcodeStatus, err e
 func (a *Agent) QrcodeLogin(session *QrcodeSession) (err error) {
 	form := web.Params{}.
 		With("account", session.uid).
-		With("app", "web").
+		With("app", session.platform).
 		ToForm()
 	data := &webapi.LoginUserData{}
-	if err = a.qrcodeCallApi(webapi.ApiQrcodeLogin, nil, form, data); err == nil {
-		a.uid = data.Id
-	}
-	return
-}
-
-// QrcodeLoginForLinux logins user through Linux QRCode.
-func (a *Agent) QrcodeLoginForLinux(session *QrcodeSession) (err error) {
-	form := web.Params{}.
-		With("account", session.uid).
-		With("app", "web").
-		ToForm()
-	data := &webapi.LoginUserData{}
-	if err = a.qrcodeCallApi(webapi.ApiQrcodeLoginForLinux, nil, form, data); err == nil {
+	if err = a.qrcodeCallApi(
+		webapi.QrcodeLoginApi(session.platform), nil, form, data,
+	); err == nil {
 		a.uid = data.Id
 	}
 	return
