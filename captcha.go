@@ -6,7 +6,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/deadblue/elevengo/internal/web"
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/webapi"
 )
 
@@ -54,18 +54,18 @@ type CaptchaSession struct {
 func (a *Agent) CaptchaStart(session *CaptchaSession) (err error) {
 	session.callback = fmt.Sprintf("Close911_%d", time.Now().UnixNano())
 	// Access captcha page
-	qs := web.Params{}.With("cb", session.callback)
-	if err = a.wc.Touch(webapi.ApiCaptchaPage, qs); err != nil {
+	qs := protocol.Params{}.With("cb", session.callback)
+	if err = a.pc.Touch(webapi.ApiCaptchaPage, qs); err != nil {
 		return
 	}
 	// Fetch CAPTCHA code image
-	qs = web.Params{}.WithNow("_t")
-	session.CodeImage, err = a.wc.GetContent(webapi.ApiCaptchaCodeImage, qs)
+	qs = protocol.Params{}.WithNow("_t")
+	session.CodeImage, err = a.pc.GetContent(webapi.ApiCaptchaCodeImage, qs)
 	if err != nil {
 		return
 	}
 	// Fetch CAPTCHA keys image
-	session.KeysImage, err = a.wc.GetContent(webapi.ApiCaptchaAllKeyImage, qs)
+	session.KeysImage, err = a.pc.GetContent(webapi.ApiCaptchaAllKeyImage, qs)
 	return
 }
 
@@ -83,30 +83,30 @@ func (a *Agent) CaptchaKeyImage(session *CaptchaSession, index int) (data []byte
 	} else if index > 9 {
 		index = 9
 	}
-	qs := web.Params{}.
+	qs := protocol.Params{}.
 		WithInt("id", index).
 		WithNow("_t")
-	return a.wc.GetContent(webapi.ApiCaptchaOneKeyImage, qs)
+	return a.pc.GetContent(webapi.ApiCaptchaOneKeyImage, qs)
 }
 
 // CaptchaSubmit submits the CAPTCHA code to session.
 func (a *Agent) CaptchaSubmit(session *CaptchaSession, code string) (err error) {
 	// Get captcha sign
 	cb := fmt.Sprintf("jQuery%d_%d", rand.Uint64(), time.Now().UnixNano())
-	qs := web.Params{}.
+	qs := protocol.Params{}.
 		With("callback", cb).
 		WithNow("_")
 	resp := &webapi.CaptchaSignResponse{}
-	if err = a.wc.CallJsonpApi(webapi.ApiCaptchaSign, qs, resp); err != nil {
+	if err = a.pc.CallJsonpApi(webapi.ApiCaptchaSign, qs, resp); err != nil {
 		return
 	}
 	// Submit captcha code
-	form := web.Params{}.
+	form := protocol.Params{}.
 		With("ac", "security_code").
 		With("type", "web").
 		With("sign", resp.Sign).
 		With("code", code).
 		With("cb", session.callback).
 		ToForm()
-	return a.wc.CallJsonApi(webapi.ApiCaptchaSubmit, nil, form, &webapi.BasicResponse{})
+	return a.pc.CallJsonApi(webapi.ApiCaptchaSubmit, nil, form, &webapi.BasicResponse{})
 }

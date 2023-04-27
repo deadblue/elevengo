@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/deadblue/elevengo/internal/crypto/m115"
-	"github.com/deadblue/elevengo/internal/web"
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/webapi"
 )
 
@@ -32,11 +32,11 @@ func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (e
 
 	// Prepare request
 	data, _ := json.Marshal(&webapi.DownloadRequest{Pickcode: pickcode})
-	qs := web.Params{}.WithNow("t")
-	form := web.Params{}.With("data", m115.Encode(data, key)).ToForm()
+	qs := protocol.Params{}.WithNow("t")
+	form := protocol.Params{}.With("data", m115.Encode(data, key)).ToForm()
 	// Send request
 	resp := &webapi.BasicResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiDownloadGetUrl, qs, form, resp); err != nil {
+	if err = a.pc.CallJsonApi(webapi.ApiDownloadGetUrl, qs, form, resp); err != nil {
 		return
 	}
 	// Parse response
@@ -70,10 +70,10 @@ func (a *Agent) convertDownloadTicket(info *webapi.DownloadInfo, ticket *Downloa
 	ticket.FileSize = int64(info.FileSize)
 	ticket.Url = info.Url.Url
 	ticket.Headers = map[string]string{
-		"User-Agent": a.wc.GetUserAgent(),
+		"User-Agent": a.pc.GetUserAgent(),
 	}
 	// Serialize cookie
-	cookies := a.wc.ExportCookies(ticket.Url)
+	cookies := a.pc.ExportCookies(ticket.Url)
 	if len(cookies) > 0 {
 		buf, isFirst := strings.Builder{}, true
 		for ck, cv := range cookies {
@@ -91,7 +91,7 @@ func (a *Agent) convertDownloadTicket(info *webapi.DownloadInfo, ticket *Downloa
 
 // Get gets content from url using agent underlying HTTP client.
 func (a *Agent) Get(url string) (body io.ReadCloser, err error) {
-	return a.wc.Get(url, nil, nil)
+	return a.pc.Get(url, nil, nil)
 }
 
 // Range is used in Agent.GetRange().
@@ -153,5 +153,5 @@ func (a *Agent) GetRange(url string, rng Range) (body io.ReadCloser, err error) 
 	if value := rng.headerValue(); value != "" {
 		headers["Range"] = value
 	}
-	return a.wc.Get(url, nil, headers)
+	return a.pc.Get(url, nil, headers)
 }

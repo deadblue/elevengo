@@ -23,7 +23,9 @@ const (
 
 var (
 	_PlatformIdMap = map[string]int{
-		"windows": 5,
+		"web": 0,
+		// Client ID for app is always 7
+		"windows": 7,
 		"linux": 7,
 	}
 )

@@ -2,11 +2,12 @@ package elevengo
 
 import (
 	"fmt"
-	"github.com/deadblue/elevengo/internal/web"
-	"github.com/deadblue/elevengo/internal/webapi"
 	"math/rand"
 	"strings"
 	"time"
+
+	"github.com/deadblue/elevengo/internal/protocol"
+	"github.com/deadblue/elevengo/internal/webapi"
 )
 
 // Credential contains required information which upstream server uses to
@@ -32,7 +33,7 @@ func (a *Agent) CredentialImport(cr *Credential) (err error) {
 		webapi.CookieNameCid:  cr.CID,
 		webapi.CookieNameSeid: cr.SEID,
 	}
-	a.wc.ImportCookies(cookies, webapi.CookieDomain115, webapi.CookieDomainAnxia)
+	a.pc.ImportCookies(cookies, webapi.CookieDomain115, webapi.CookieDomainAnxia)
 	if !a.LoginCheck() {
 		err = webapi.ErrCredentialInvalid
 	}
@@ -41,16 +42,16 @@ func (a *Agent) CredentialImport(cr *Credential) (err error) {
 
 // CredentialExport exports credentials for future-use.
 func (a *Agent) CredentialExport(cr *Credential) {
-	cookies := a.wc.ExportCookies(webapi.CookieUrl)
+	cookies := a.pc.ExportCookies(webapi.CookieUrl)
 	cr.UID = cookies[webapi.CookieNameUid]
 	cr.CID = cookies[webapi.CookieNameCid]
 	cr.SEID = cookies[webapi.CookieNameSeid]
 }
 
 func (a *Agent) LoginCheck() bool {
-	qs := web.Params{}.WithNowMilli("_")
+	qs := protocol.Params{}.WithNowMilli("_")
 	resp := &webapi.LoginCheckResponse{}
-	if err := a.wc.CallJsonApi(webapi.ApiLoginCheck, qs, nil, resp); err != nil {
+	if err := a.pc.CallJsonApi(webapi.ApiLoginCheck, qs, nil, resp); err != nil {
 		return false
 	}
 	data := &webapi.LoginCheckData{}
@@ -65,11 +66,11 @@ func (a *Agent) LoginCheck() bool {
 // UserGet retrieves user information from cloud.
 func (a *Agent) UserGet(info *UserInfo) (err error) {
 	cb := fmt.Sprintf("jQuery%d_%d", rand.Uint64(), time.Now().Unix())
-	qs := web.Params{}.
+	qs := protocol.Params{}.
 		With("callback", cb).
 		WithNow("_")
 	resp := webapi.BasicResponse{}
-	if err = a.wc.CallJsonpApi(webapi.ApiUserInfo, qs, &resp); err != nil {
+	if err = a.pc.CallJsonpApi(webapi.ApiUserInfo, qs, &resp); err != nil {
 		return
 	}
 	result := webapi.UserInfoData{}

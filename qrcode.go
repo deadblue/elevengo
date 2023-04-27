@@ -1,7 +1,7 @@
 package elevengo
 
 import (
-	"github.com/deadblue/elevengo/internal/web"
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/webapi"
 )
 
@@ -10,6 +10,8 @@ type QrcodeSession struct {
 	// The raw data of QRCode, caller should use third-party tools/libraries
 	// to convert it into QRCode matrix or image.
 	Content string
+	// URL of QRCode image
+	ImageUrl string
 	// Hidden fields
 	uid  string
 	time int64
@@ -44,9 +46,9 @@ func (s QrcodeStatus) IsCanceled() bool {
 	return s == -2
 }
 
-func (a *Agent) qrcodeCallApi(url string, qs web.Params, form web.Payload, data interface{}) (err error) {
+func (a *Agent) qrcodeCallApi(url string, qs protocol.Params, form protocol.Payload, data interface{}) (err error) {
 	resp := &webapi.LoginBasicResponse{}
-	if err = a.wc.CallJsonApi(url, qs, form, resp); err != nil {
+	if err = a.pc.CallJsonApi(url, qs, form, resp); err != nil {
 		return err
 	}
 	return resp.Decode(data)
@@ -64,10 +66,9 @@ func (a *Agent) QrcodeStartForPlatform(session *QrcodeSession, platform QrcodePl
 		session.uid = data.Uid
 		session.time = data.Time
 		session.sign = data.Sign
+		session.ImageUrl = webapi.QrcodeImageUrl(session.platform, data.Uid)
 		if platform == QrcodePlatformWeb {
 			session.Content = data.Qrcode
-		} else {
-			session.Content = webapi.QrcodeImageUrl(session.platform, data.Uid)
 		}
 	}
 	return
@@ -90,7 +91,7 @@ The QRCode will expire in 5 minutes, when it expired, an error will be return, c
 can use IsQrcodeExpire() to check that.
 */
 func (a *Agent) QrcodeStatus(session *QrcodeSession) (status QrcodeStatus, err error) {
-	qs := web.Params{}.
+	qs := protocol.Params{}.
 		With("uid", session.uid).
 		WithInt64("time", session.time).
 		With("sign", session.sign).
@@ -105,7 +106,7 @@ func (a *Agent) QrcodeStatus(session *QrcodeSession) (status QrcodeStatus, err e
 // QrcodeLogin logins user through QRCode.
 // You SHOULD call this method ONLY when `QrcodeStatus.IsAllowed()` is true.
 func (a *Agent) QrcodeLogin(session *QrcodeSession) (err error) {
-	form := web.Params{}.
+	form := protocol.Params{}.
 		With("account", session.uid).
 		With("app", session.platform).
 		ToForm()

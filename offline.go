@@ -1,7 +1,7 @@
 package elevengo
 
 import (
-	"github.com/deadblue/elevengo/internal/web"
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/webapi"
 )
 
@@ -43,9 +43,9 @@ func (t *OfflineTask) IsFailed() bool {
 }
 
 func (a *Agent) offlineInitToken() (err error) {
-	qs := web.Params{}.WithNow("_")
+	qs := protocol.Params{}.WithNow("_")
 	resp := &webapi.OfflineSpaceResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiOfflineSpace, qs, nil, resp); err != nil {
+	if err = a.pc.CallJsonApi(webapi.ApiOfflineSpace, qs, nil, resp); err != nil {
 		return
 	}
 	a.ot.Time = resp.Time
@@ -53,19 +53,19 @@ func (a *Agent) offlineInitToken() (err error) {
 	return nil
 }
 
-func (a *Agent) offlineCallApi(url string, params web.Params, resp web.ApiResp) (err error) {
+func (a *Agent) offlineCallApi(url string, params protocol.Params, resp protocol.ApiResp) (err error) {
 	if a.ot.Time == 0 {
 		if err = a.offlineInitToken(); err != nil {
 			return
 		}
 	}
 	if params == nil {
-		params = web.Params{}
+		params = protocol.Params{}
 	}
 	params.WithInt("uid", a.uid).
 		WithInt64("time", a.ot.Time).
 		With("sign", a.ot.Sign)
-	return a.wc.CallJsonApi(url, nil, params.ToForm(), resp)
+	return a.pc.CallJsonApi(url, nil, params.ToForm(), resp)
 }
 
 type offlineIterator struct {
@@ -138,7 +138,7 @@ func (a *Agent) OfflineIterate() (it Iterator[OfflineTask], err error) {
 }
 
 func (a *Agent) offlineIterateInternal(oi *offlineIterator) (err error) {
-	form := web.Params{}.
+	form := protocol.Params{}.
 		WithInt("page", oi.pi)
 	resp := &webapi.OfflineListResponse{}
 	if err = a.offlineCallApi(webapi.ApiOfflineList, form, resp); err != nil {
@@ -173,7 +173,7 @@ func (r *OfflineAddResult) IsExist() bool {
 // You can pass empty string as dirId, to save the downloaded files at default
 // directory.
 func (a *Agent) OfflineAdd(url string, dirId string) (result OfflineAddResult) {
-	form := web.Params{}.
+	form := protocol.Params{}.
 		With("url", url)
 	if dirId != "" {
 		form.With("wp_path_id", dirId)
@@ -193,7 +193,7 @@ func (a *Agent) OfflineBatchAdd(urls []string, dirId string) (results []OfflineA
 		results = make([]OfflineAddResult, urlCount)
 	}
 
-	form := web.Params{}.
+	form := protocol.Params{}.
 		WithArray("url", urls)
 	if dirId != "" {
 		form.With("wp_path_id", dirId)
@@ -215,7 +215,7 @@ func (a *Agent) OfflineDelete(deleteFiles bool, hashes ...string) (err error) {
 	if len(hashes) == 0 {
 		return
 	}
-	form := web.Params{}.WithArray("hash", hashes)
+	form := protocol.Params{}.WithArray("hash", hashes)
 	if deleteFiles {
 		form.With("flag", "1")
 	}
@@ -228,7 +228,7 @@ func (a *Agent) OfflineClear(flag OfflineClearFlag) (err error) {
 	if flag < offlineClearFlagMin || flag > offlineClearFlagMax {
 		flag = OfflineClearDone
 	}
-	form := web.Params{}.
+	form := protocol.Params{}.
 		WithInt("flag", int(flag))
 	return a.offlineCallApi(
 		webapi.ApiOfflineClear, form, &webapi.OfflineBasicResponse{})
