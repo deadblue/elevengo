@@ -50,6 +50,8 @@ const (
 	ApiOfflineAddUrls = "https://115.com/web/lixian/?ct=lixian&ac=add_task_urls"
 	ApiOfflineDelete  = "https://115.com/web/lixian/?ct=lixian&ac=task_del"
 	ApiOfflineClear   = "https://115.com/web/lixian/?ct=lixian&ac=task_clear"
+	// New offline API
+	ApiOfflineAddUrlsNew = "https://lixian.115.com/lixianssp/?ac=add_task_urls"
 
 	ApiDownloadGetUrl = "https://proapi.115.com/app/chrome/downurl"
 

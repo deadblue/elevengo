@@ -1,6 +1,9 @@
 package elevengo
 
 import (
+	"encoding/json"
+
+	"github.com/deadblue/elevengo/internal/crypto/m115"
 	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/webapi"
 )
@@ -168,6 +171,8 @@ func (r *OfflineAddResult) IsExist() bool {
 	return r.Error == webapi.ErrOfflineTaskExisted
 }
 
+// Deprecated: Please use `OfflineAddUrl` instead.
+// 
 // OfflineAdd adds an offline task with url, and saves the downloaded files at
 // directory whose ID is dirId.
 // You can pass empty string as dirId, to save the downloaded files at default
@@ -184,6 +189,8 @@ func (a *Agent) OfflineAdd(url string, dirId string) (result OfflineAddResult) {
 	return
 }
 
+// Deprecated: Please use `OfflineAddUrl` instead.
+//
 // OfflineBatchAdd adds many offline tasks in one request.
 func (a *Agent) OfflineBatchAdd(urls []string, dirId string) (results []OfflineAddResult, err error) {
 	if urlCount := len(urls); urlCount == 0 {
@@ -200,6 +207,50 @@ func (a *Agent) OfflineBatchAdd(urls []string, dirId string) (results []OfflineA
 	}
 	resp := &webapi.OfflineAddUrlsResponse{}
 	if err = a.offlineCallApi(webapi.ApiOfflineAddUrls, form, resp); err != nil {
+		return
+	}
+	for i, result := range resp.Result {
+		results[i].InfoHash = result.InfoHash
+		results[i].Name = result.Name
+		results[i].Error = result.Err()
+	}
+	return
+}
+
+// OfflineAddUrl adds offline tasks from urls, this API calls 115 PC API 
+// which (may) not require captcha after you add a lot of tasks.
+func (a *Agent) OfflineAddUrl(urls ...string) (results []OfflineAddResult, err error) {
+	// Prepare results buffer
+	if urlCount := len(urls); urlCount == 0 {
+		err = webapi.ErrEmptyList
+		return
+	} else {
+		results = make([]OfflineAddResult, urlCount)
+	}
+	// Prepare request data
+	params := protocol.Params{}.
+		With("ac", "add_task_urls").
+		With("app_ver", a.uh.AppVersion()).
+		WithInt("uid", a.uid).
+		WithArray("url", urls)
+	// if dirId != "" {
+	// 	params.With("savepath", dirId)
+	// }
+	data ,err := json.Marshal(params)
+	if err != nil {
+		return 
+	}
+	key := m115.GenerateKey()
+	form := protocol.Params{}.With("data", m115.Encode(data, key)).ToForm()
+	mr := &webapi.M115Response{}
+	if err = a.pc.CallJsonApi(webapi.ApiOfflineAddUrlsNew, nil, form, mr); err != nil {
+		return
+	}
+	if data, err = m115.Decode(mr.Data, key); err != nil {
+		return
+	}
+	resp := &webapi.OfflineAddUrlsResponse{}
+	if err = json.Unmarshal(data, resp); err != nil {
 		return
 	}
 	for i, result := range resp.Result {

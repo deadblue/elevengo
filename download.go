@@ -35,16 +35,12 @@ func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (e
 	qs := protocol.Params{}.WithNow("t")
 	form := protocol.Params{}.With("data", m115.Encode(data, key)).ToForm()
 	// Send request
-	resp := &webapi.BasicResponse{}
+	resp := &webapi.M115Response{}
 	if err = a.pc.CallJsonApi(webapi.ApiDownloadGetUrl, qs, form, resp); err != nil {
 		return
 	}
 	// Parse response
-	var resultData string
-	if err = resp.Decode(&resultData); err != nil {
-		return
-	}
-	if data, err = m115.Decode(resultData, key); err != nil {
+	if data, err = m115.Decode(resp.Data, key); err != nil {
 		return
 	}
 	result := webapi.DownloadData{}
