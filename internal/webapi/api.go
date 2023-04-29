@@ -9,14 +9,11 @@ const (
 	ApiLoginGetKey   = "https://passportapi.115.com/app/1.0/web/5.0.1/login/getKey"
 	ApiPasswordLogin = "https://passportapi.115.com/app/1.0/web/1.0/login/login"
 
+	// Deprecated APIs
 	ApiSmsSendCode         = "https://passportapi.115.com/app/1.0/web/1.0/code/sms/login"
 	ApiSmsLogin            = "https://passportapi.115.com/app/1.0/web/1.0/login/vip"
-	ApiQrcodeTokenForLinux = "https://qrcodeapi.115.com/api/1.0/linux/1.0/token"
-	ApiQrcodeImgForLinux   = "https://qrcodeapi.115.com/api/1.0/linux/1.0/qrcode?qrfrom=1&client=7&uid="
-	ApiQrcodeToken         = "https://qrcodeapi.115.com/api/1.0/web/1.0/token"
+
 	ApiQrcodeStatus        = "https://qrcodeapi.115.com/get/status/"
-	ApiQrcodeLogin         = "https://passportapi.115.com/app/1.0/web/1.0/login/qrcode"
-	ApiQrcodeLoginForLinux = "https://passportapi.115.com/app/1.0/linux/1.0/login/qrcode"
 
 	ApiFileList       = "https://webapi.115.com/files"
 	ApiFileListByName = "https://aps.115.com/natsort/files.php"
@@ -53,6 +50,8 @@ const (
 	ApiOfflineAddUrls = "https://115.com/web/lixian/?ct=lixian&ac=add_task_urls"
 	ApiOfflineDelete  = "https://115.com/web/lixian/?ct=lixian&ac=task_del"
 	ApiOfflineClear   = "https://115.com/web/lixian/?ct=lixian&ac=task_clear"
+	// New offline API
+	ApiOfflineAddUrlsNew = "https://lixian.115.com/lixianssp/?ac=add_task_urls"
 
 	ApiDownloadGetUrl = "https://proapi.115.com/app/chrome/downurl"
 

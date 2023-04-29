@@ -1,8 +1,8 @@
 package elevengo
 
 import (
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/util"
-	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
 )
 
@@ -34,11 +34,11 @@ type Video struct {
 // VideoGet gets information of a video file by its pickcode.
 func (a *Agent) VideoGet(pickcode string, video *Video) (err error) {
 	// Call video API
-	qs := web.Params{}.
+	qs := protocol.Params{}.
 		With("pickcode", pickcode).
 		With("share_id", "0")
 	resp := &webapi.VideoResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiFileVideo, qs, nil, resp); err != nil {
+	if err = a.pc.CallJsonApi(webapi.ApiFileVideo, qs, nil, resp); err != nil {
 		return
 	}
 	if resp.FileStatus != 1 {
@@ -58,11 +58,11 @@ func (a *Agent) VideoGet(pickcode string, video *Video) (err error) {
 
 // ImageGetUrl gets an accessible URL of an image file by its pickcode.
 func (a *Agent) ImageGetUrl(pickcode string) (imageUrl string, err error) {
-	qs := web.Params{}.
+	qs := protocol.Params{}.
 		With("pickcode", pickcode).
 		WithNow("_")
 	resp := &webapi.BasicResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiFileImage, qs, nil, resp); err != nil {
+	if err = a.pc.CallJsonApi(webapi.ApiFileImage, qs, nil, resp); err != nil {
 		return
 	}
 	// Parse response

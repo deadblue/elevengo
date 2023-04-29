@@ -24,7 +24,7 @@ type StorageInfo struct {
 // StorageStat gets storage size information.
 func (a *Agent) StorageStat(info *StorageInfo) (err error) {
 	resp := &webapi.BasicResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiIndexInfo, nil, nil, resp); err != nil {
+	if err = a.pc.CallJsonApi(webapi.ApiIndexInfo, nil, nil, resp); err != nil {
 		return err
 	}
 	result := webapi.IndexData{}
@@ -53,7 +53,7 @@ type StorageFormatInfo struct {
 // StorageFormatStat gets storage size information format.
 func (a *Agent) StorageFormatStat(info *StorageFormatInfo) (err error) {
 	resp := &webapi.BasicResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiIndexInfo, nil, nil, resp); err != nil {
+	if err = a.pc.CallJsonApi(webapi.ApiIndexInfo, nil, nil, resp); err != nil {
 		return err
 	}
 	result := webapi.IndexData{}

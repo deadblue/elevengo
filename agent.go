@@ -1,7 +1,7 @@
 package elevengo
 
 import (
-	"github.com/deadblue/elevengo/internal/web"
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/webapi"
 	"github.com/deadblue/elevengo/option"
 )
@@ -9,8 +9,8 @@ import (
 // Agent holds signed-in user's credentials, and provides methods to access upstream
 // server's features, such as file management, offline download, etc.
 type Agent struct {
-	// wc is the underlying web client
-	wc *web.Client
+	// |pc| is the underlying protocol client
+	pc *protocol.Client
 
 	// User ID
 	uid int
@@ -22,10 +22,10 @@ type Agent struct {
 
 // getAppVersion gets desktop client version from 115.
 func (a *Agent) getAppVersion() (ver string, err error) {
-	qs := web.Params{}.
+	qs := protocol.Params{}.
 		With("callback", "get_version")
 	resp := webapi.BasicResponse{}
-	if err = a.wc.CallJsonpApi(webapi.ApiGetVersion, qs, &resp); err != nil {
+	if err = a.pc.CallJsonpApi(webapi.ApiGetVersion, qs, &resp); err != nil {
 		return
 	}
 	data := webapi.VersionData{}
@@ -49,21 +49,21 @@ func New(options ...option.Option) *Agent {
 		case option.AppVersionOption:
 			appVer = string(opt)
 		case *option.HttpOption:
-			agent.wc = web.NewClient(opt.Client)
+			agent.pc = protocol.NewClient(opt.Client)
 		case option.CooldownOption:
 			cdMin, cdMax = opt.Min, opt.Max
 		}
 	}
-	if agent.wc == nil {
-		agent.wc = web.NewClient(nil)
+	if agent.pc == nil {
+		agent.pc = protocol.NewClient(nil)
 	}
-	agent.wc.SetupValve(cdMin, cdMax)
+	agent.pc.SetupValve(cdMin, cdMax)
 	if appVer == "" {
 		// Get latest app version from cloud
 		appVer, _ = agent.getAppVersion()
 	}
 	agent.uh.SetAppVersion(appVer)
-	agent.wc.SetUserAgent(webapi.MakeUserAgent(name, appVer))
+	agent.pc.SetUserAgent(webapi.MakeUserAgent(name, appVer))
 
 	return agent
 }

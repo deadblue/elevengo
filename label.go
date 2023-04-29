@@ -2,9 +2,10 @@ package elevengo
 
 import (
 	"fmt"
-	"github.com/deadblue/elevengo/internal/web"
-	"github.com/deadblue/elevengo/internal/webapi"
 	"strings"
+
+	"github.com/deadblue/elevengo/internal/protocol"
+	"github.com/deadblue/elevengo/internal/webapi"
 )
 
 type LabelColor int
@@ -89,14 +90,14 @@ func (a *Agent) LabelIterate() (it Iterator[Label], err error) {
 }
 
 func (a *Agent) labelIterateInternal(i *labelIterator) (err error) {
-	qs := web.Params{}.
+	qs := protocol.Params{}.
 		WithInt("user_id", a.uid).
 		With("sort", "create_time").
 		With("order", "desc").
 		WithInt("offset", i.offset).
 		WithInt("limit", 30)
 	resp := &webapi.BasicResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiLabelList, qs, nil, resp); err != nil {
+	if err = a.pc.CallJsonApi(webapi.ApiLabelList, qs, nil, resp); err != nil {
 		return
 	}
 	data := &webapi.LabelListData{}
@@ -112,11 +113,11 @@ func (a *Agent) labelIterateInternal(i *labelIterator) (err error) {
 
 // LabelFind finds label whose name is name, and returns it.
 func (a *Agent) LabelFind(name string, label *Label) (err error) {
-	qs := web.Params{}.
+	qs := protocol.Params{}.
 		With("keyword", name).
 		WithInt("limit", 10)
 	resp := &webapi.BasicResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiLabelList, qs, nil, resp); err != nil {
+	if err = a.pc.CallJsonApi(webapi.ApiLabelList, qs, nil, resp); err != nil {
 		return
 	}
 	data := &webapi.LabelListData{}
@@ -138,11 +139,11 @@ func (a *Agent) LabelCreate(name string, color LabelColor) (labelId string, err 
 	if color < labelColorMin || color > labelColorMax {
 		color = LabelNoColor
 	}
-	form := web.Params{}.
+	form := protocol.Params{}.
 		With("name[]", fmt.Sprintf("%s.%s", name, webapi.LabelColors[color])).
 		ToForm()
 	resp := &webapi.BasicResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiLabelAdd, nil, form, resp); err != nil {
+	if err = a.pc.CallJsonApi(webapi.ApiLabelAdd, nil, form, resp); err != nil {
 		return
 	}
 	var data []*webapi.LabelInfo
@@ -161,12 +162,12 @@ func (a *Agent) LabelUpdate(label *Label) (err error) {
 	if label == nil || label.Id == "" {
 		return
 	}
-	form := web.Params{}.
+	form := protocol.Params{}.
 		With("id", label.Id).
 		With("name", label.Name).
 		With("color", webapi.LabelColors[label.Color]).
 		ToForm()
-	return a.wc.CallJsonApi(webapi.ApiLabelEdit, nil, form, &webapi.BasicResponse{})
+	return a.pc.CallJsonApi(webapi.ApiLabelEdit, nil, form, &webapi.BasicResponse{})
 }
 
 // LabelDelete deletes a label whose ID is labelId.
@@ -174,19 +175,19 @@ func (a *Agent) LabelDelete(labelId string) (err error) {
 	if labelId == "" {
 		return
 	}
-	form := web.Params{}.With("id", labelId).ToForm()
-	return a.wc.CallJsonApi(webapi.ApiLabelDelete, nil, form, &webapi.BasicResponse{})
+	form := protocol.Params{}.With("id", labelId).ToForm()
+	return a.pc.CallJsonApi(webapi.ApiLabelDelete, nil, form, &webapi.BasicResponse{})
 }
 
 // FileSetLabels sets labels for a file, you can also remove all labels from it
 // by not passing any labelId.
 func (a *Agent) FileSetLabels(fileId string, labelIds ...string) (err error) {
-	params := web.Params{}.
+	params := protocol.Params{}.
 		With("fid", fileId)
 	if len(labelIds) == 0 {
 		params.With("file_label", "")
 	} else {
 		params.With("file_label", strings.Join(labelIds, ","))
 	}
-	return a.wc.CallJsonApi(webapi.ApiFileEdit, nil, params.ToForm(), &webapi.BasicResponse{})
+	return a.pc.CallJsonApi(webapi.ApiFileEdit, nil, params.ToForm(), &webapi.BasicResponse{})
 }

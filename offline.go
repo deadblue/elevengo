@@ -1,7 +1,10 @@
 package elevengo
 
 import (
-	"github.com/deadblue/elevengo/internal/web"
+	"encoding/json"
+
+	"github.com/deadblue/elevengo/internal/crypto/m115"
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/webapi"
 )
 
@@ -43,9 +46,9 @@ func (t *OfflineTask) IsFailed() bool {
 }
 
 func (a *Agent) offlineInitToken() (err error) {
-	qs := web.Params{}.WithNow("_")
+	qs := protocol.Params{}.WithNow("_")
 	resp := &webapi.OfflineSpaceResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiOfflineSpace, qs, nil, resp); err != nil {
+	if err = a.pc.CallJsonApi(webapi.ApiOfflineSpace, qs, nil, resp); err != nil {
 		return
 	}
 	a.ot.Time = resp.Time
@@ -53,19 +56,19 @@ func (a *Agent) offlineInitToken() (err error) {
 	return nil
 }
 
-func (a *Agent) offlineCallApi(url string, params web.Params, resp web.ApiResp) (err error) {
+func (a *Agent) offlineCallApi(url string, params protocol.Params, resp protocol.ApiResp) (err error) {
 	if a.ot.Time == 0 {
 		if err = a.offlineInitToken(); err != nil {
 			return
 		}
 	}
 	if params == nil {
-		params = web.Params{}
+		params = protocol.Params{}
 	}
 	params.WithInt("uid", a.uid).
 		WithInt64("time", a.ot.Time).
 		With("sign", a.ot.Sign)
-	return a.wc.CallJsonApi(url, nil, params.ToForm(), resp)
+	return a.pc.CallJsonApi(url, nil, params.ToForm(), resp)
 }
 
 type offlineIterator struct {
@@ -138,7 +141,7 @@ func (a *Agent) OfflineIterate() (it Iterator[OfflineTask], err error) {
 }
 
 func (a *Agent) offlineIterateInternal(oi *offlineIterator) (err error) {
-	form := web.Params{}.
+	form := protocol.Params{}.
 		WithInt("page", oi.pi)
 	resp := &webapi.OfflineListResponse{}
 	if err = a.offlineCallApi(webapi.ApiOfflineList, form, resp); err != nil {
@@ -168,12 +171,14 @@ func (r *OfflineAddResult) IsExist() bool {
 	return r.Error == webapi.ErrOfflineTaskExisted
 }
 
+// Deprecated: Please use `OfflineAddUrl` instead.
+// 
 // OfflineAdd adds an offline task with url, and saves the downloaded files at
 // directory whose ID is dirId.
 // You can pass empty string as dirId, to save the downloaded files at default
 // directory.
 func (a *Agent) OfflineAdd(url string, dirId string) (result OfflineAddResult) {
-	form := web.Params{}.
+	form := protocol.Params{}.
 		With("url", url)
 	if dirId != "" {
 		form.With("wp_path_id", dirId)
@@ -184,6 +189,8 @@ func (a *Agent) OfflineAdd(url string, dirId string) (result OfflineAddResult) {
 	return
 }
 
+// Deprecated: Please use `OfflineAddUrl` instead.
+//
 // OfflineBatchAdd adds many offline tasks in one request.
 func (a *Agent) OfflineBatchAdd(urls []string, dirId string) (results []OfflineAddResult, err error) {
 	if urlCount := len(urls); urlCount == 0 {
@@ -193,7 +200,7 @@ func (a *Agent) OfflineBatchAdd(urls []string, dirId string) (results []OfflineA
 		results = make([]OfflineAddResult, urlCount)
 	}
 
-	form := web.Params{}.
+	form := protocol.Params{}.
 		WithArray("url", urls)
 	if dirId != "" {
 		form.With("wp_path_id", dirId)
@@ -210,12 +217,56 @@ func (a *Agent) OfflineBatchAdd(urls []string, dirId string) (results []OfflineA
 	return
 }
 
+// OfflineAddUrl adds offline tasks from urls, this API calls 115 PC API 
+// which (may) not require captcha after you add a lot of tasks.
+func (a *Agent) OfflineAddUrl(urls ...string) (results []OfflineAddResult, err error) {
+	// Prepare results buffer
+	if urlCount := len(urls); urlCount == 0 {
+		err = webapi.ErrEmptyList
+		return
+	} else {
+		results = make([]OfflineAddResult, urlCount)
+	}
+	// Prepare request data
+	params := protocol.Params{}.
+		With("ac", "add_task_urls").
+		With("app_ver", a.uh.AppVersion()).
+		WithInt("uid", a.uid).
+		WithArray("url", urls)
+	// if dirId != "" {
+	// 	params.With("savepath", dirId)
+	// }
+	data ,err := json.Marshal(params)
+	if err != nil {
+		return 
+	}
+	key := m115.GenerateKey()
+	form := protocol.Params{}.With("data", m115.Encode(data, key)).ToForm()
+	mr := &webapi.M115Response{}
+	if err = a.pc.CallJsonApi(webapi.ApiOfflineAddUrlsNew, nil, form, mr); err != nil {
+		return
+	}
+	if data, err = m115.Decode(mr.Data, key); err != nil {
+		return
+	}
+	resp := &webapi.OfflineAddUrlsResponse{}
+	if err = json.Unmarshal(data, resp); err != nil {
+		return
+	}
+	for i, result := range resp.Result {
+		results[i].InfoHash = result.InfoHash
+		results[i].Name = result.Name
+		results[i].Error = result.Err()
+	}
+	return
+}
+
 // OfflineDelete deletes tasks.
 func (a *Agent) OfflineDelete(deleteFiles bool, hashes ...string) (err error) {
 	if len(hashes) == 0 {
 		return
 	}
-	form := web.Params{}.WithArray("hash", hashes)
+	form := protocol.Params{}.WithArray("hash", hashes)
 	if deleteFiles {
 		form.With("flag", "1")
 	}
@@ -228,7 +279,7 @@ func (a *Agent) OfflineClear(flag OfflineClearFlag) (err error) {
 	if flag < offlineClearFlagMin || flag > offlineClearFlagMax {
 		flag = OfflineClearDone
 	}
-	form := web.Params{}.
+	form := protocol.Params{}.
 		WithInt("flag", int(flag))
 	return a.offlineCallApi(
 		webapi.ApiOfflineClear, form, &webapi.OfflineBasicResponse{})

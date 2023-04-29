@@ -90,7 +90,18 @@ func (c *Cipher) Decode(input []byte) (output []byte, err error) {
 	plaintext := make([]byte, cryptoSize)
 	dec.CryptBlocks(plaintext, cryptotext)
 	// Uncompress
-	srcSize := binary.LittleEndian.Uint16(plaintext[0:2])
-	err = lz4.BlockUncompress(plaintext[2:srcSize+2], output)
+	for buf := output; err == nil && outputSize > 0; {
+		// Each block is 8192 bytes at maximum
+		bufSize := outputSize
+		if bufSize > 8192 {
+			bufSize = 8192
+		}
+		srcSize := binary.LittleEndian.Uint16(plaintext[0:2])
+		err = lz4.BlockUncompress(plaintext[2:srcSize+2], buf)
+		// Prepare for next block
+		plaintext = plaintext[srcSize+2:]
+		buf = buf[bufSize:]
+		outputSize -= bufSize
+	}
 	return
 }

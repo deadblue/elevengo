@@ -3,7 +3,7 @@ package elevengo
 import (
 	"time"
 
-	"github.com/deadblue/elevengo/internal/web"
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/webapi"
 )
 
@@ -187,7 +187,7 @@ func (a *Agent) FileStared() (it Iterator[File], err error) {
 
 func (a *Agent) fileListInternal(fi *fileIterator) (err error) {
 	// Prepare request
-	qs := web.Params{}.
+	qs := protocol.Params{}.
 		With("aid", "1").
 		With("show_dir", "1").
 		With("snap", "0").
@@ -210,7 +210,7 @@ func (a *Agent) fileListInternal(fi *fileIterator) (err error) {
 			apiUrl = webapi.ApiFileListByName
 		}
 		// Call API
-		err = a.wc.CallJsonApi(apiUrl, qs, nil, resp)
+		err = a.pc.CallJsonApi(apiUrl, qs, nil, resp)
 		if err == webapi.ErrOrderNotSupport {
 			// Update order & asc
 			fi.order, fi.asc = resp.Order, resp.IsAsc
@@ -273,7 +273,7 @@ func (a *Agent) FileLabeled(labelId string) (it Iterator[File], err error) {
 
 func (a *Agent) fileSearchInternal(fi *fileIterator) (err error) {
 	// Prepare request
-	qs := web.Params{}.
+	qs := protocol.Params{}.
 		With("aid", "1").
 		With("cid", fi.dirId).
 		WithInt("offset", fi.offset).
@@ -283,7 +283,7 @@ func (a *Agent) fileSearchInternal(fi *fileIterator) (err error) {
 		qs.With(pn, pv)
 	}
 	resp := &webapi.FileListResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiFileSearch, qs, nil, resp); err != nil {
+	if err = a.pc.CallJsonApi(webapi.ApiFileSearch, qs, nil, resp); err != nil {
 		return
 	}
 	// Parse response
@@ -299,10 +299,10 @@ func (a *Agent) fileSearchInternal(fi *fileIterator) (err error) {
 
 // FileGet gets information of a file/directory by its ID.
 func (a *Agent) FileGet(fileId string, file *File) (err error) {
-	qs := web.Params{}.
+	qs := protocol.Params{}.
 		With("file_id", fileId)
 	resp := &webapi.BasicResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiFileInfo, qs, nil, resp); err != nil {
+	if err = a.pc.CallJsonApi(webapi.ApiFileInfo, qs, nil, resp); err != nil {
 		return
 	}
 	data := make([]*webapi.FileInfo, 0, 1)
@@ -314,9 +314,9 @@ func (a *Agent) FileGet(fileId string, file *File) (err error) {
 
 // FileStat gets statistic information of a file/directory.
 func (a *Agent) FileStat(fileId string, info *FileInfo) (err error) {
-	qs := (web.Params{}).With("cid", fileId)
+	qs := (protocol.Params{}).With("cid", fileId)
 	resp := &webapi.FileStatResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiFileStat, qs, nil, resp); err != nil {
+	if err = a.pc.CallJsonApi(webapi.ApiFileStat, qs, nil, resp); err != nil {
 		return
 	}
 	info.Name = resp.FileName
@@ -347,11 +347,11 @@ func (a *Agent) FileMove(dirId string, fileIds ...string) (err error) {
 	if len(fileIds) == 0 {
 		return
 	}
-	form := web.Params{}.
+	form := protocol.Params{}.
 		With("pid", dirId).
 		WithArray("fid", fileIds).
 		ToForm()
-	return a.wc.CallJsonApi(
+	return a.pc.CallJsonApi(
 		webapi.ApiFileMove, nil, form, &webapi.BasicResponse{})
 }
 
@@ -360,21 +360,21 @@ func (a *Agent) FileCopy(dirId string, fileIds ...string) (err error) {
 	if len(fileIds) == 0 {
 		return
 	}
-	form := web.Params{}.
+	form := protocol.Params{}.
 		With("pid", dirId).
 		WithArray("fid", fileIds).
 		ToForm()
-	return a.wc.CallJsonApi(
+	return a.pc.CallJsonApi(
 		webapi.ApiFileCopy, nil, form, &webapi.BasicResponse{})
 }
 
 // FileRename renames file to new name.
 func (a *Agent) FileRename(fileId, newName string) (err error) {
-	form := web.Params{}.
+	form := protocol.Params{}.
 		WithMap("files_new_name", map[string]string{
 			fileId: newName,
 		}).ToForm()
-	return a.wc.CallJsonApi(
+	return a.pc.CallJsonApi(
 		webapi.ApiFileRename, nil, form, &webapi.BasicResponse{})
 }
 
@@ -383,17 +383,17 @@ func (a *Agent) FileDelete(fileIds ...string) (err error) {
 	if len(fileIds) == 0 {
 		return
 	}
-	form := web.Params{}.WithArray("fid", fileIds).ToForm()
-	return a.wc.CallJsonApi(
+	form := protocol.Params{}.WithArray("fid", fileIds).ToForm()
+	return a.pc.CallJsonApi(
 		webapi.ApiFileDelete, nil, form, &webapi.BasicResponse{})
 }
 
 // FileFindDuplications finds all duplicate files which have the same SHA1 hash
 // with the given file, and return their ID.
 func (a *Agent) FileFindDuplications(fileId string) (dupIds []string, err error) {
-	qs := web.Params{}.With("file_id", fileId)
+	qs := protocol.Params{}.With("file_id", fileId)
 	resp := &webapi.BasicResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiFileFindDuplicate, qs, nil, resp); err != nil {
+	if err = a.pc.CallJsonApi(webapi.ApiFileFindDuplicate, qs, nil, resp); err != nil {
 		return
 	}
 	// Parse response

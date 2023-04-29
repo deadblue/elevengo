@@ -11,8 +11,8 @@ import (
 
 	"github.com/deadblue/elevengo/internal/multipart"
 	"github.com/deadblue/elevengo/internal/oss"
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/util"
-	"github.com/deadblue/elevengo/internal/web"
 	"github.com/deadblue/elevengo/internal/webapi"
 )
 
@@ -40,7 +40,7 @@ func (a *Agent) uploadInitHelper() (err error) {
 		return
 	}
 	resp := &webapi.UploadInfoResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiUploadInfo, nil, nil, resp); err == nil {
+	if err = a.pc.CallJsonApi(webapi.ApiUploadInfo, nil, nil, resp); err == nil {
 		a.uh.SetUserData(resp.UserId, resp.UserKey)
 	}
 	return
@@ -52,7 +52,7 @@ func (a *Agent) uploadInitInternal(
 ) (exist bool, checkRange string, err error) {
 	now := time.Now().Unix()
 	// Prepare parameters
-	form := web.Params{}.
+	form := protocol.Params{}.
 		With("appid", "0").
 		With("appversion", a.uh.AppVersion()).
 		With("userid", a.uh.UserId()).
@@ -71,7 +71,7 @@ func (a *Agent) uploadInitInternal(
 			With("sign_val", initData.SignValue)
 	}
 	resp := &webapi.UploadInitResponse{}
-	if err = a.wc.CallSecretJsonApi(
+	if err = a.pc.CallSecretJsonApi(
 		webapi.ApiUploadInit, nil, form.ToForm(), resp, now,
 	); err != nil {
 		return
@@ -150,7 +150,7 @@ func (a *Agent) UploadCreateTicket(
 	}
 	// Get OSS token
 	resp := &webapi.UploadOssTokenResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiUploadOssToken, nil, nil, resp); err != nil {
+	if err = a.pc.CallJsonApi(webapi.ApiUploadOssToken, nil, nil, resp); err != nil {
 		return
 	}
 	// Fill UploadTicket
@@ -214,14 +214,14 @@ func (a *Agent) UploadSimply(dirId, name string, size int64, r io.Reader) (fileI
 	} else if size > webapi.UploadSimplyMaxSize {
 		return "", webapi.ErrUploadTooLarge
 	}
-	form := web.Params{}.
+	form := protocol.Params{}.
 		With("userid", a.uh.UserId()).
 		With("filename", name).
 		WithInt64("filesize", size).
 		With("target", fmt.Sprintf("U_1_%s", dirId)).
 		ToForm()
 	initResp := &webapi.UploadSimpleInitResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiUploadSimpleInit, nil, form, initResp); err != nil {
+	if err = a.pc.CallJsonApi(webapi.ApiUploadSimpleInit, nil, form, initResp); err != nil {
 		return
 	}
 
@@ -237,7 +237,7 @@ func (a *Agent) UploadSimply(dirId, name string, size int64, r io.Reader) (fileI
 		AddFile("file", name, r).
 		Build()
 	uploadResp := &webapi.BasicResponse{}
-	if err = a.wc.CallJsonApi(util.SecretUrl(initResp.Host), nil, mf, uploadResp); err != nil {
+	if err = a.pc.CallJsonApi(util.SecretUrl(initResp.Host), nil, mf, uploadResp); err != nil {
 		return
 	}
 	// Parse response
@@ -367,7 +367,7 @@ func (a *Agent) UploadCreateOssTicket(
 	}
 	// Get OSS token
 	resp := &webapi.UploadOssTokenResponse{}
-	if err = a.wc.CallJsonApi(webapi.ApiUploadOssToken, nil, nil, resp); err != nil {
+	if err = a.pc.CallJsonApi(webapi.ApiUploadOssToken, nil, nil, resp); err != nil {
 		return
 	}
 	// Fill ticket
