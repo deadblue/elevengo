@@ -25,8 +25,9 @@ var (
 	_PlatformIdMap = map[string]int{
 		"web": 0,
 		// Client ID for app is always 7
+		"mac":     7,
+		"linux":   7,
 		"windows": 7,
-		"linux": 7,
 	}
 )
 
