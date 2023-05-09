@@ -9,8 +9,10 @@ import (
 type QrcodeSession struct {
 	// The raw data of QRCode, caller should use third-party tools/libraries
 	// to convert it into QRCode matrix or image.
+	// 
+	// Deprecated: Please use `ImageUrl` instead.
 	Content string
-	// URL of QRCode image
+	// URL of QRCode image.
 	ImageUrl string
 	// Hidden fields
 	uid  string
@@ -23,9 +25,9 @@ type QrcodePlatform string
 
 const (
 	QrcodePlatformLinux   QrcodePlatform = "linux"
+	QrcodePlatformMac     QrcodePlatform = "mac"
 	QrcodePlatformWindows QrcodePlatform = "windows"
 	QrcodePlatformWeb     QrcodePlatform = "web"
-	// TODO: What's the "platform" for mac?
 )
 
 // QrcodeStatus is returned by `Agent.QrcodeStatus()`.
@@ -54,11 +56,12 @@ func (a *Agent) qrcodeCallApi(url string, qs protocol.Params, form protocol.Payl
 	return resp.Decode(data)
 }
 
-// QrcodeStart starts a QRCode login session.
+// QrcodeStart starts a QRCode login session for web.
 func (a *Agent) QrcodeStart(session *QrcodeSession) (err error) {
 	return a.QrcodeStartForPlatform(session, QrcodePlatformWeb)
 }
 
+// QrcodeStartForPlatform starts a QRCode login session for specific platform.
 func (a *Agent) QrcodeStartForPlatform(session *QrcodeSession, platform QrcodePlatform) (err error) {
 	data := &webapi.QrcodeTokenData{}
 	if err = a.qrcodeCallApi(webapi.QrcodeTokenApi(string(platform)), nil, nil, data); err == nil {
