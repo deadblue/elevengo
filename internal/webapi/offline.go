@@ -1,10 +1,5 @@
 package webapi
 
-type OfflineToken struct {
-	Sign string
-	Time int64
-}
-
 type OfflineTask struct {
 	InfoHash   string  `json:"info_hash"`
 	Name       string  `json:"name"`
@@ -16,17 +11,6 @@ type OfflineTask struct {
 	Percent    float64 `json:"percentDone"`
 	AddTime    int64   `json:"add_time"`
 	UpdateTime int64   `json:"last_update"`
-}
-
-type OfflineSpaceResponse struct {
-	BasicResponse
-
-	Sign  string `json:"sign"`
-	Time  int64  `json:"time"`
-	Size  string `json:"size"`
-	Limit int64  `json:"limit"`
-	Url   string `json:"url"`
-	BtUrl string `json:"bt_url"`
 }
 
 type OfflineBasicResponse struct {
@@ -63,7 +47,6 @@ type OfflineListResponse struct {
 type OfflineAddUrlResponse struct {
 	OfflineBasicResponse
 
-	ErrorType string `json:"errtype"`
 	InfoHash  string `json:"info_hash"`
 	Name      string `json:"name"`
 	Url       string `json:"url"`

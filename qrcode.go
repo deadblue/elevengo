@@ -114,10 +114,7 @@ func (a *Agent) QrcodeLogin(session *QrcodeSession) (err error) {
 		With("app", session.platform).
 		ToForm()
 	data := &webapi.LoginUserData{}
-	if err = a.qrcodeCallApi(
+	return a.qrcodeCallApi(
 		webapi.QrcodeLoginApi(session.platform), nil, form, data,
-	); err == nil {
-		a.uid = data.Id
-	}
-	return
+	)
 }

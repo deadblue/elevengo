@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"time"
 
 	"github.com/deadblue/elevengo/internal/util"
 )
@@ -77,6 +78,9 @@ func (c *Client) CallSecretJsonApi(
 	url string, qs Params, payload Payload,
 	resp ApiResp, timestamp int64,
 ) (err error) {
+	if timestamp == 0 {
+		timestamp = time.Now().UnixMilli()
+	}
 	// Append EC key in querystring
 	if qs == nil {
 		qs = Params{}

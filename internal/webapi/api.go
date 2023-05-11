@@ -6,14 +6,7 @@ const (
 
 	ApiLoginCheck = "https://passportapi.115.com/app/1.0/web/1.0/check/sso"
 
-	ApiLoginGetKey   = "https://passportapi.115.com/app/1.0/web/5.0.1/login/getKey"
-	ApiPasswordLogin = "https://passportapi.115.com/app/1.0/web/1.0/login/login"
-
-	// Deprecated APIs
-	ApiSmsSendCode         = "https://passportapi.115.com/app/1.0/web/1.0/code/sms/login"
-	ApiSmsLogin            = "https://passportapi.115.com/app/1.0/web/1.0/login/vip"
-
-	ApiQrcodeStatus        = "https://qrcodeapi.115.com/get/status/"
+	ApiQrcodeStatus = "https://qrcodeapi.115.com/get/status/"
 
 	ApiFileList       = "https://webapi.115.com/files"
 	ApiFileListByName = "https://aps.115.com/natsort/files.php"
@@ -44,14 +37,10 @@ const (
 	ApiFileImage = "https://webapi.115.com/files/image"
 	ApiFileVideo = "https://v.anxia.com/webapi/files/video"
 
-	ApiOfflineSpace   = "https://115.com/?ct=offline&ac=space"
-	ApiOfflineList    = "https://115.com/web/lixian/?ct=lixian&ac=task_lists"
-	ApiOfflineAddUrl  = "https://115.com/web/lixian/?ct=lixian&ac=add_task_url"
-	ApiOfflineAddUrls = "https://115.com/web/lixian/?ct=lixian&ac=add_task_urls"
-	ApiOfflineDelete  = "https://115.com/web/lixian/?ct=lixian&ac=task_del"
-	ApiOfflineClear   = "https://115.com/web/lixian/?ct=lixian&ac=task_clear"
-	// New offline API
-	ApiOfflineAddUrlsNew = "https://lixian.115.com/lixianssp/?ac=add_task_urls"
+	ApiTaskList    = "https://lixian.115.com/lixian/?ct=lixian&ac=task_lists"
+	ApiTaskDelete  = "https://lixian.115.com/lixian/?ct=lixian&ac=task_del"
+	ApiTaskClear   = "https://lixian.115.com/lixian/?ct=lixian&ac=task_clear"
+	ApiTaskAddUrls = "https://lixian.115.com/lixianssp/?ac=add_task_urls"
 
 	ApiDownloadGetUrl = "https://proapi.115.com/app/chrome/downurl"
 
@@ -60,13 +49,6 @@ const (
 	ApiUploadInit     = "https://uplb.115.com/4.0/initupload.php"
 
 	ApiUploadSimpleInit = "https://uplb.115.com/3.0/sampleinitupload.php"
-
-	ApiCaptchaPage        = "https://captchaapi.115.com/?ac=security_code&type=web"
-	ApiCaptchaCodeImage   = "https://captchaapi.115.com/?ct=index&ac=code&ctype=0"
-	ApiCaptchaAllKeyImage = "https://captchaapi.115.com/?ct=index&ac=code&t=all"
-	ApiCaptchaOneKeyImage = "https://captchaapi.115.com/?ct=index&ac=code&t=single"
-	ApiCaptchaSign        = "https://captchaapi.115.com/?ac=code&t=sign"
-	ApiCaptchaSubmit      = "https://webapi.115.com/user/captcha"
 
 	ApiGetVersion = "https://appversion.115.com/1/web/1.0/api/chrome"
 )

@@ -45,32 +45,6 @@ func (t *OfflineTask) IsFailed() bool {
 	return t.Status == -1
 }
 
-func (a *Agent) offlineInitToken() (err error) {
-	qs := protocol.Params{}.WithNow("_")
-	resp := &webapi.OfflineSpaceResponse{}
-	if err = a.pc.CallJsonApi(webapi.ApiOfflineSpace, qs, nil, resp); err != nil {
-		return
-	}
-	a.ot.Time = resp.Time
-	a.ot.Sign = resp.Sign
-	return nil
-}
-
-func (a *Agent) offlineCallApi(url string, params protocol.Params, resp protocol.ApiResp) (err error) {
-	if a.ot.Time == 0 {
-		if err = a.offlineInitToken(); err != nil {
-			return
-		}
-	}
-	if params == nil {
-		params = protocol.Params{}
-	}
-	params.WithInt("uid", a.uid).
-		WithInt64("time", a.ot.Time).
-		With("sign", a.ot.Sign)
-	return a.pc.CallJsonApi(url, nil, params.ToForm(), resp)
-}
-
 type offlineIterator struct {
 	// Total task count
 	count int
@@ -141,10 +115,10 @@ func (a *Agent) OfflineIterate() (it Iterator[OfflineTask], err error) {
 }
 
 func (a *Agent) offlineIterateInternal(oi *offlineIterator) (err error) {
-	form := protocol.Params{}.
+	qs := protocol.Params{}.
 		WithInt("page", oi.pi)
 	resp := &webapi.OfflineListResponse{}
-	if err = a.offlineCallApi(webapi.ApiOfflineList, form, resp); err != nil {
+	if err = a.pc.CallSecretJsonApi(webapi.ApiTaskList, qs, nil, resp, 0); err != nil {
 		return
 	}
 	oi.pi = resp.PageIndex
@@ -161,117 +135,74 @@ func (a *Agent) offlineIterateInternal(oi *offlineIterator) (err error) {
 	return
 }
 
-type OfflineAddResult struct {
-	InfoHash string
-	Name     string
-	Error    error
-}
+type OfflineAddResult map[string]*webapi.OfflineAddUrlResponse
 
-func (r *OfflineAddResult) IsExist() bool {
-	return r.Error == webapi.ErrOfflineTaskExisted
-}
-
-// Deprecated: Please use `OfflineAddUrl` instead.
-// 
-// OfflineAdd adds an offline task with url, and saves the downloaded files at
-// directory whose ID is dirId.
-// You can pass empty string as dirId, to save the downloaded files at default
-// directory.
-func (a *Agent) OfflineAdd(url string, dirId string) (result OfflineAddResult) {
-	form := protocol.Params{}.
-		With("url", url)
-	if dirId != "" {
-		form.With("wp_path_id", dirId)
-	}
-	resp := &webapi.OfflineAddUrlResponse{}
-	result.Error = a.offlineCallApi(webapi.ApiOfflineAddUrl, form, resp)
-	result.InfoHash, result.Name = resp.InfoHash, resp.Name
-	return
-}
-
-// Deprecated: Please use `OfflineAddUrl` instead.
-//
-// OfflineBatchAdd adds many offline tasks in one request.
-func (a *Agent) OfflineBatchAdd(urls []string, dirId string) (results []OfflineAddResult, err error) {
-	if urlCount := len(urls); urlCount == 0 {
-		err = webapi.ErrEmptyList
-		return
-	} else {
-		results = make([]OfflineAddResult, urlCount)
-	}
-
-	form := protocol.Params{}.
-		WithArray("url", urls)
-	if dirId != "" {
-		form.With("wp_path_id", dirId)
-	}
-	resp := &webapi.OfflineAddUrlsResponse{}
-	if err = a.offlineCallApi(webapi.ApiOfflineAddUrls, form, resp); err != nil {
-		return
-	}
-	for i, result := range resp.Result {
-		results[i].InfoHash = result.InfoHash
-		results[i].Name = result.Name
-		results[i].Error = result.Err()
+func (r OfflineAddResult) Get(url string, task * OfflineTask) (err error) {
+	if resp, ok  := r[url]; !ok {
+		return webapi.ErrNotExist
+	} else if task != nil {
+		task.InfoHash = resp.InfoHash
+		task.Name = resp.Name
+		task.Url = resp.Url
 	}
 	return
 }
 
-// OfflineAddUrl adds offline tasks from urls, this API calls 115 PC API 
-// which (may) not require captcha after you add a lot of tasks.
-func (a *Agent) OfflineAddUrl(urls ...string) (results []OfflineAddResult, err error) {
+// OfflineAddUrl adds offline tasks from urls, this function calls 115 PC API 
+// which does not require CAPTCHA after you add a lot of tasks.
+func (a *Agent) OfflineAddUrl(dirId string, urls []string, result OfflineAddResult) (err error) {
 	// Prepare results buffer
 	if urlCount := len(urls); urlCount == 0 {
 		err = webapi.ErrEmptyList
 		return
-	} else {
-		results = make([]OfflineAddResult, urlCount)
 	}
 	// Prepare request data
 	params := protocol.Params{}.
 		With("ac", "add_task_urls").
 		With("app_ver", a.uh.AppVersion()).
-		WithInt("uid", a.uid).
+		With("uid", a.uh.UserId()).
 		WithArray("url", urls)
-	// if dirId != "" {
-	// 	params.With("savepath", dirId)
-	// }
+	if dirId != "" {
+		params.With("wp_path_id", dirId)
+	}
 	data ,err := json.Marshal(params)
 	if err != nil {
 		return 
 	}
+	// M115 encoding
 	key := m115.GenerateKey()
 	form := protocol.Params{}.With("data", m115.Encode(data, key)).ToForm()
 	mr := &webapi.M115Response{}
-	if err = a.pc.CallJsonApi(webapi.ApiOfflineAddUrlsNew, nil, form, mr); err != nil {
+	if err = a.pc.CallJsonApi(webapi.ApiTaskAddUrls, nil, form, mr); err != nil {
 		return
 	}
 	if data, err = m115.Decode(mr.Data, key); err != nil {
 		return
 	}
 	resp := &webapi.OfflineAddUrlsResponse{}
-	if err = json.Unmarshal(data, resp); err != nil {
-		return
-	}
-	for i, result := range resp.Result {
-		results[i].InfoHash = result.InfoHash
-		results[i].Name = result.Name
-		results[i].Error = result.Err()
+	if err = json.Unmarshal(data, resp); err == nil && result != nil {
+		for i, r := range resp.Result {
+			result[urls[i]] = r
+		}
 	}
 	return
 }
 
 // OfflineDelete deletes tasks.
-func (a *Agent) OfflineDelete(deleteFiles bool, hashes ...string) (err error) {
+func (a *Agent) OfflineDelete(deleteFiles bool, hashes []string) (err error) {
 	if len(hashes) == 0 {
 		return
 	}
-	form := protocol.Params{}.WithArray("hash", hashes)
+	form := protocol.Params{}.
+		WithArray("hash", hashes)
 	if deleteFiles {
 		form.With("flag", "1")
+	} else {
+		form.With("flag", "0")
 	}
-	return a.offlineCallApi(
-		webapi.ApiOfflineDelete, form, &webapi.OfflineBasicResponse{})
+	return a.pc.CallSecretJsonApi(
+		webapi.ApiTaskDelete, nil, form.ToForm(), 
+		&webapi.OfflineBasicResponse{}, 0)
 }
 
 // OfflineClear clears tasks which is in specific status.
@@ -280,7 +211,9 @@ func (a *Agent) OfflineClear(flag OfflineClearFlag) (err error) {
 		flag = OfflineClearDone
 	}
 	form := protocol.Params{}.
-		WithInt("flag", int(flag))
-	return a.offlineCallApi(
-		webapi.ApiOfflineClear, form, &webapi.OfflineBasicResponse{})
+		WithInt("flag", int(flag)).
+		ToForm()
+	return a.pc.CallSecretJsonApi(
+		webapi.ApiTaskClear, nil, form, 
+		&webapi.OfflineBasicResponse{}, 0)
 }

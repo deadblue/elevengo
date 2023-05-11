@@ -147,24 +147,6 @@ func ExampleAgent_VideoGet() {
 	}
 }
 
-func ExampleAgent_CaptchaStart() {
-	agent := Default()
-
-	var err error
-	// Start captcha session.
-	session := &CaptchaSession{}
-	if err = agent.CaptchaStart(session); err != nil {
-		log.Fatalf("Start captcha session error: %s", err)
-	}
-
-	// 1. Show `session.CodeImage` and `session.KeysImage` to user.
-	// 2. Ask user to give the captcha code.
-
-	if err = agent.CaptchaSubmit(session, "code"); err != nil {
-		log.Fatalf("Submit captcha code error: %s", err)
-	}
-}
-
 func ExampleAgent_QrcodeStart() {
 	agent := Default()
 

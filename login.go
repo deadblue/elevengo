@@ -54,12 +54,7 @@ func (a *Agent) LoginCheck() bool {
 		return false
 	}
 	data := &webapi.LoginCheckData{}
-	if err := resp.Decode(data); err == nil {
-		a.uid = data.UserId
-		return true
-	} else {
-		return false
-	}
+	return resp.Decode(data) == nil
 }
 
 // UserGet retrieves user information from cloud.

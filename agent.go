@@ -11,11 +11,6 @@ import (
 type Agent struct {
 	// |pc| is the underlying protocol client
 	pc *protocol.Client
-
-	// User ID
-	uid int
-	// Offline token
-	ot webapi.OfflineToken
 	// Upload helper
 	uh webapi.UploadHelper
 }
