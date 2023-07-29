@@ -5,6 +5,7 @@ import (
 
 	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/webapi"
+	"github.com/deadblue/elevengo/option"
 )
 
 // File describe a file or directory on cloud storage.
@@ -109,6 +110,7 @@ type fileIterator struct {
 	offset int
 	order  string
 	asc    int
+	kind   int
 	// Function parameters
 	params map[string]string
 	// Total count
@@ -152,8 +154,17 @@ func (i *fileIterator) Count() int {
 	return i.count
 }
 
+func (i *fileIterator) applyOptions(options []option.FileOption) {
+	for _, opt := range options {
+		switch opt := opt.(type) {
+		case option.FileKindOption:
+			i.kind = int(opt)
+		}
+	}
+}
+
 // FileIterate returns an iterator.
-func (a *Agent) FileIterate(dirId string) (it Iterator[File], err error) {
+func (a *Agent) FileIterate(dirId string, options ...option.FileOption) (it Iterator[File], err error) {
 	fi := &fileIterator{
 		dirId:  dirId,
 		order:  webapi.FileOrderByTime,
@@ -161,6 +172,7 @@ func (a *Agent) FileIterate(dirId string) (it Iterator[File], err error) {
 		offset: 0,
 		update: a.fileListInternal,
 	}
+	fi.applyOptions(options)
 	if err = a.fileListInternal(fi); err == nil {
 		it = fi
 	}
@@ -168,7 +180,7 @@ func (a *Agent) FileIterate(dirId string) (it Iterator[File], err error) {
 }
 
 // FileStared lists all stared files.
-func (a *Agent) FileStared() (it Iterator[File], err error) {
+func (a *Agent) FileStared(options ...option.FileOption) (it Iterator[File], err error) {
 	fi := &fileIterator{
 		dirId:  "0",
 		order:  webapi.FileOrderByName,
@@ -179,6 +191,7 @@ func (a *Agent) FileStared() (it Iterator[File], err error) {
 		},
 		update: a.fileListInternal,
 	}
+	fi.applyOptions(options)
 	if err = a.fileListInternal(fi); err == nil {
 		it = fi
 	}
@@ -190,6 +203,7 @@ func (a *Agent) fileListInternal(fi *fileIterator) (err error) {
 	qs := protocol.Params{}.
 		With("aid", "1").
 		With("show_dir", "1").
+		WithInt("type", fi.kind).
 		With("snap", "0").
 		With("natsort", "1").
 		With("fc_mix", "0").
@@ -240,7 +254,7 @@ func (a *Agent) fileListInternal(fi *fileIterator) (err error) {
 }
 
 // FileSearch recursively searches files under dirId, whose name contains keyword.
-func (a *Agent) FileSearch(dirId, keyword string) (it Iterator[File], err error) {
+func (a *Agent) FileSearch(dirId, keyword string, options ...option.FileOption) (it Iterator[File], err error) {
 	fi := &fileIterator{
 		dirId:  dirId,
 		offset: 0,
@@ -249,6 +263,7 @@ func (a *Agent) FileSearch(dirId, keyword string) (it Iterator[File], err error)
 		},
 		update: a.fileSearchInternal,
 	}
+	fi.applyOptions(options)
 	if err = a.fileSearchInternal(fi); err == nil {
 		it = fi
 	}
@@ -256,7 +271,7 @@ func (a *Agent) FileSearch(dirId, keyword string) (it Iterator[File], err error)
 }
 
 // FileLabeled lists all files which has specific label.
-func (a *Agent) FileLabeled(labelId string) (it Iterator[File], err error) {
+func (a *Agent) FileLabeled(labelId string, options ...option.FileOption) (it Iterator[File], err error) {
 	fi := &fileIterator{
 		dirId:  "0",
 		offset: 0,
@@ -265,6 +280,7 @@ func (a *Agent) FileLabeled(labelId string) (it Iterator[File], err error) {
 		},
 		update: a.fileSearchInternal,
 	}
+	fi.applyOptions(options)
 	if err = a.fileSearchInternal(fi); err == nil {
 		it = fi
 	}
@@ -343,7 +359,7 @@ func (a *Agent) FileStat(fileId string, info *FileInfo) (err error) {
 }
 
 // FileMove moves files into target directory whose id is dirId.
-func (a *Agent) FileMove(dirId string, fileIds ...string) (err error) {
+func (a *Agent) FileMove(dirId string, fileIds []string) (err error) {
 	if len(fileIds) == 0 {
 		return
 	}
@@ -356,7 +372,7 @@ func (a *Agent) FileMove(dirId string, fileIds ...string) (err error) {
 }
 
 // FileCopy copies files into target directory whose id is dirId.
-func (a *Agent) FileCopy(dirId string, fileIds ...string) (err error) {
+func (a *Agent) FileCopy(dirId string, fileIds []string) (err error) {
 	if len(fileIds) == 0 {
 		return
 	}
@@ -379,7 +395,7 @@ func (a *Agent) FileRename(fileId, newName string) (err error) {
 }
 
 // FileDelete deletes files.
-func (a *Agent) FileDelete(fileIds ...string) (err error) {
+func (a *Agent) FileDelete(fileIds []string) (err error) {
 	if len(fileIds) == 0 {
 		return
 	}
