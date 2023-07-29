@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	_PlatformIdMap = map[string]int{
+	_AppIdMap = map[string]int{
 		"web": 0,
 		// Client ID for app is always 7
 		"mac":     7,
@@ -31,15 +31,15 @@ var (
 	}
 )
 
-func QrcodeTokenApi(platform string) string {
-	return fmt.Sprintf(_ApiFormatQrcodeToken, platform)
+func QrcodeTokenApi(appType string) string {
+	return fmt.Sprintf(_ApiFormatQrcodeToken, appType)
 }
 
-func QrcodeLoginApi(platform string) string {
-	return fmt.Sprintf(_ApiFormatQrcodeLogin, platform)
+func QrcodeLoginApi(appType string) string {
+	return fmt.Sprintf(_ApiFormatQrcodeLogin, appType)
 }
 
-func QrcodeImageUrl(platform, userId string) string {
-	platformId := _PlatformIdMap[platform]
-	return fmt.Sprintf(_UrlFormatQrcodeImage, platform, platformId, userId)
+func QrcodeImageUrl(appType, userId string) string {
+	appId := _AppIdMap[appType]
+	return fmt.Sprintf(_UrlFormatQrcodeImage, appType, appId, userId)
 }
