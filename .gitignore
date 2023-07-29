@@ -3,3 +3,5 @@
 
 self_test.go
 *_self_test.go
+
+test/*

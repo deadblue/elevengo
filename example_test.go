@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 
 	"github.com/deadblue/elevengo/option"
 )
@@ -120,31 +121,28 @@ func ExampleAgent_UploadCreateTicket() {
 	}
 }
 
-func ExampleAgent_VideoGet() {
+func ExampleAgent_VideoCreateTicket() {
 	agent := Default()
 
-	// Get video information
-	info := Video{}
-	err := agent.VideoGet("pickcode", &info)
+	// Create video play ticket
+	ticket := &PlayTicket{}
+	err := agent.VideoCreateTicket("pickcode", ticket)
 	if err != nil {
 		log.Fatalf("Get video info failed: %s", err)
 	}
 
-	// Get HLS content
-	hlsData, err := agent.Get(info.PlayUrl)
-	if err != nil {
-		log.Fatalf("Get HLS content failed: %s", err.Error())
+	headers := make([]string, 0, len(ticket.Headers))
+	for name, value := range ticket.Headers {
+		headers = append(headers, fmt.Sprintf("'%s: %s'", name, value))
 	}
-	defer func() {
-		_ = hlsData.Close()
-	}()
 
 	// Play HLS through mpv
-	cmd := exec.Command("mpv", "-")
-	cmd.Stdin = hlsData
-	if err = cmd.Run(); err != nil {
-		log.Fatalf("Execute mpv error: %s", err)
-	}
+	cmd := exec.Command("mpv")
+	cmd.Args = append(cmd.Args, 
+		fmt.Sprintf("--http-header-fields=%s", strings.Join(headers, ",")),
+		ticket.Url,
+	)
+	cmd.Run()
 }
 
 func ExampleAgent_QrcodeStart() {
@@ -155,36 +153,13 @@ func ExampleAgent_QrcodeStart() {
 	if err != nil {
 		log.Fatalf("Start QRcode session error: %s", err)
 	}
-	// Convert `session.Content` to QRCode, show it to user, and prompt user
-	// to scan it using mobile app.
-
-	for {
-		var status QrcodeStatus
-		// Get QR-Code status
-		status, err = agent.QrcodeStatus(session)
-		if err != nil {
-			log.Fatalf("Get QRCode status error: %s", err)
-		} else {
-			// Check QRCode status
-			if status.IsWaiting() {
-				log.Println("Please scan the QRCode in mobile app.")
-			} else if status.IsScanned() {
-				log.Println("QRCode has been scanned, please allow this login in mobile app.")
-			} else if status.IsAllowed() {
-				err = agent.QrcodeLogin(session)
-				if err == nil {
-					log.Println("QRCode login successes!")
-				} else {
-					log.Printf("Submit QRcode login error: %s", err)
-				}
-				break
-			} else if status.IsCanceled() {
-				fmt.Println("User canceled this login!")
-				break
-			}
-		}
+	// TODO: Show QRcode and ask user to scan it via 115 app.
+	for done := false; !done && err != nil; {
+		done, err = agent.QrcodePoll(session)
 	}
-
+	if err != nil {
+		log.Fatalf("QRcode login failed, error: %s", err)
+	}
 }
 
 func ExampleAgent_Import() {
@@ -236,9 +211,9 @@ func ExampleNew() {
 	// Customize agent
 	agent := New(
 		// Custom agent name
-		option.NameOption("Evangelion/1.0"),
+		option.AgentNameOption("Evangelion/1.0"),
 		// Sleep 100~500 ms between two API calling
-		option.CooldownOption{Min: 100, Max: 500},
+		option.AgentCooldownOption{Min: 100, Max: 500},
 	)
 
 	var err error

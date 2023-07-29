@@ -35,7 +35,7 @@ const (
 	ApiDirSetOrder = "https://webapi.115.com/files/order"
 
 	ApiFileImage = "https://webapi.115.com/files/image"
-	ApiFileVideo = "https://v.anxia.com/webapi/files/video"
+	ApiFileVideo = "https://webapi.115.com/files/video"
 
 	ApiTaskList    = "https://lixian.115.com/lixian/?ct=lixian&ac=task_lists"
 	ApiTaskDelete  = "https://lixian.115.com/lixian/?ct=lixian&ac=task_del"

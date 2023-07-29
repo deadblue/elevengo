@@ -1,42 +1,36 @@
 package elevengo
 
 import (
+	"strings"
+
 	"github.com/deadblue/elevengo/internal/protocol"
-	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/internal/webapi"
 )
 
-// Video contains information of a video file on cloud.
-type Video struct {
-
-	// File ID
-	FileId string
-	// File Name
+// PlayTicket contains all information to play a cloud video.
+type PlayTicket struct {
+	// Play URL.
+	Url string
+	// Request headers which SHOULD be used with play URL.
+	Headers map[string]string
+	// File name.
 	FileName string
-	// File size in bytes
+	// File size.
 	FileSize int64
-	// Pick code for downloading
-	PickCode string
-	// SHA-1 hash
-	Sha1 string
-
-	// Video width
-	Width int
-	// Video height
-	Height int
-	// Video duration in seconds
+	// Video duration in seconds.
 	Duration float64
-
-	// Play URL, usually is a m3u8 URL
-	PlayUrl string
+	// Video width.
+	Width int
+	// Video height.
+	Height int
 }
 
-// VideoGet gets information of a video file by its pickcode.
-func (a *Agent) VideoGet(pickcode string, video *Video) (err error) {
-	// Call video API
+// VideoCreateTicket creates a PlayTicket to play the cloud video.
+func (a *Agent) VideoCreateTicket(pickcode string, ticket *PlayTicket) (err error) {
 	qs := protocol.Params{}.
 		With("pickcode", pickcode).
-		With("share_id", "0")
+		With("share_id", "0").
+		With("local", "1")
 	resp := &webapi.VideoResponse{}
 	if err = a.pc.CallJsonApi(webapi.ApiFileVideo, qs, nil, resp); err != nil {
 		return
@@ -44,16 +38,30 @@ func (a *Agent) VideoGet(pickcode string, video *Video) (err error) {
 	if resp.FileStatus != 1 {
 		return webapi.ErrVideoNotReady
 	}
-	video.FileId = resp.FileId
-	video.FileName = resp.FileName
-	video.FileSize = int64(resp.FileSize)
-	video.PickCode = resp.PickCode
-	video.Sha1 = resp.Sha1
-	video.Width = int(resp.Width)
-	video.Height = int(resp.Height)
-	video.Duration = float64(resp.Duration)
-	video.PlayUrl = util.SecretUrl(resp.VideoUrl)
-	return
+	ticket.Url = resp.VideoUrl
+	ticket.Duration = float64(resp.Duration)
+	ticket.Width = int(resp.Width)
+	ticket.Height = int(resp.Height)
+	ticket.FileName = resp.FileName
+	ticket.FileSize = int64(resp.FileSize)
+	ticket.Headers = map[string]string{
+		"User-Agent": a.pc.GetUserAgent(),
+	}
+	cookies := a.pc.ExportCookies(ticket.Url)
+	if len(cookies) > 0 {
+		buf, isFirst := strings.Builder{}, true
+		for ck, cv := range cookies {
+			if !isFirst {
+				buf.WriteString("; ")
+			}
+			buf.WriteString(ck)
+			buf.WriteRune('=')
+			buf.WriteString(cv)
+			isFirst = false
+		}
+		ticket.Headers["Cookie"] = buf.String()
+	}
+	return 
 }
 
 // ImageGetUrl gets an accessible URL of an image file by its pickcode.
