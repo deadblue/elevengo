@@ -32,21 +32,19 @@ func (a *Agent) getAppVersion() (ver string, err error) {
 }
 
 // New creates Agent with customized options.
-func New(options ...option.Option) *Agent {
+func New(options ...option.AgentOption) *Agent {
 	agent := &Agent{}
 	name, appVer := "", ""
 	var cdMin, cdMax uint
 	// Apply options
 	for _, opt := range options {
 		switch opt := opt.(type) {
-		case option.NameOption:
+		case option.AgentNameOption:
 			name = string(opt)
-		case option.AppVersionOption:
-			appVer = string(opt)
-		case *option.HttpOption:
-			agent.pc = protocol.NewClient(opt.Client)
-		case option.CooldownOption:
+		case option.AgentCooldownOption:
 			cdMin, cdMax = opt.Min, opt.Max
+		case *option.AgentHttpOption:
+			agent.pc = protocol.NewClient(opt.Client)
 		}
 	}
 	if agent.pc == nil {
