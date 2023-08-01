@@ -6,15 +6,31 @@ import (
 	"github.com/deadblue/elevengo/internal/api/base"
 )
 
+type _DownloadUrlObject struct {
+	Url    string `json:"url"`
+	Client int    `json:"client"`
+	OssId  string `json:"oss_id"`
+}
+
+type _DownloadUrl struct {
+	Url string
+}
+
+func (u *_DownloadUrl) UnmarshalJSON(b []byte) (err error) {
+	if len(b) > 0 && b[0] == '{' {
+		obj := &_DownloadUrlObject{}
+		if err = json.Unmarshal(b, obj); err == nil {
+			u.Url = obj.Url
+		}
+	}
+	return
+}
+
 type _DownloadInfo struct {
-	FileName string      `json:"file_name"`
-	FileSize json.Number `json:"file_size"`
-	PickCode string      `json:"pick_code"`
-	Url      struct {
-		Url    string `json:"url"`
-		Client int    `json:"client"`
-		OssId  string `json:"oss_id"`
-	} `json:"url"`
+	FileName string       `json:"file_name"`
+	FileSize json.Number  `json:"file_size"`
+	PickCode string       `json:"pick_code"`
+	Url      _DownloadUrl `json:"url"`
 }
 
 type _DownloadData map[string]*_DownloadInfo
