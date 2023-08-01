@@ -27,7 +27,7 @@ func (c *Client) encryptPayload(p Payload) (ep Payload, err error) {
 		return nil, nil
 	}
 	// Read payload
-	body, err  := io.ReadAll(p)
+	body, err := io.ReadAll(p)
 	if err != nil {
 		return
 	}
@@ -42,7 +42,7 @@ func (c *Client) encryptPayload(p Payload) (ep Payload, err error) {
 
 func (c *Client) decryptBody(r io.Reader) (data []byte, err error) {
 	data, err = io.ReadAll(r)
-	if err !=nil {
+	if err != nil {
 		return
 	}
 	return c.ecc.Decode(data)
