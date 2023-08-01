@@ -3,8 +3,10 @@ package elevengo
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
+	"github.com/deadblue/elevengo/internal/api"
 	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/webapi"
 )
@@ -33,10 +35,7 @@ func (a *Agent) CredentialImport(cr *Credential) (err error) {
 		webapi.CookieNameSeid: cr.SEID,
 	}
 	a.pc.ImportCookies(cookies, webapi.CookieDomain115, webapi.CookieDomainAnxia)
-	if !a.LoginCheck() {
-		err = webapi.ErrCredentialInvalid
-	}
-	return
+	return a.afterSignIn()
 }
 
 // CredentialExport exports credentials for future-use.
@@ -47,14 +46,26 @@ func (a *Agent) CredentialExport(cr *Credential) {
 	cr.SEID = cookies[webapi.CookieNameSeid]
 }
 
-func (a *Agent) LoginCheck() bool {
-	qs := protocol.Params{}.WithNowMilli("_")
-	resp := &webapi.LoginCheckResponse{}
-	if err := a.pc.CallJsonApi(webapi.ApiLoginCheck, qs, nil, resp); err != nil {
-		return false
+func (a *Agent) afterSignIn() (err error) {
+	// Call UploadInfo API to get userId and userKey
+	uis := (&api.UploadInfoSpec{}).Init()
+	if err = a.pc.ExecuteApi(uis); err != nil {
+		return
+	} else {
+		a.uh.SetUserData(uis.Resp.UserId, uis.Resp.UserKey)
 	}
-	data := &webapi.LoginCheckData{}
-	return resp.Decode(data) == nil
+	// Call IndexInfo to get session information
+	iis := (&api.IndexInfoSpec{}).Init()
+	if err = a.pc.ExecuteApi(uis); err != nil {
+		return
+	}
+	for _, li := range iis.Resp.Data.LoginInfos.List {
+		if li.IsCurrent == 1 {
+			a.isWeb = strings.HasPrefix(li.AppFlag, "A")
+			break
+		}
+	}
+	return
 }
 
 // UserGet retrieves user information from cloud.
