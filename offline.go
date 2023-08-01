@@ -137,8 +137,8 @@ func (a *Agent) offlineIterateInternal(oi *offlineIterator) (err error) {
 
 type OfflineAddResult map[string]*webapi.OfflineAddUrlResponse
 
-func (r OfflineAddResult) Get(url string, task * OfflineTask) (err error) {
-	if resp, ok  := r[url]; !ok {
+func (r OfflineAddResult) Get(url string, task *OfflineTask) (err error) {
+	if resp, ok := r[url]; !ok {
 		return webapi.ErrNotExist
 	} else if task != nil {
 		task.InfoHash = resp.InfoHash
@@ -148,7 +148,7 @@ func (r OfflineAddResult) Get(url string, task * OfflineTask) (err error) {
 	return
 }
 
-// OfflineAddUrl adds offline tasks from urls, this function calls 115 PC API 
+// OfflineAddUrl adds offline tasks from urls, this function calls 115 PC API
 // which does not require CAPTCHA after you add a lot of tasks.
 func (a *Agent) OfflineAddUrl(dirId string, urls []string, result OfflineAddResult) (err error) {
 	// Prepare results buffer
@@ -165,9 +165,9 @@ func (a *Agent) OfflineAddUrl(dirId string, urls []string, result OfflineAddResu
 	if dirId != "" {
 		params.With("wp_path_id", dirId)
 	}
-	data ,err := json.Marshal(params)
+	data, err := json.Marshal(params)
 	if err != nil {
-		return 
+		return
 	}
 	// M115 encoding
 	key := m115.GenerateKey()
@@ -201,7 +201,7 @@ func (a *Agent) OfflineDelete(deleteFiles bool, hashes []string) (err error) {
 		form.With("flag", "0")
 	}
 	return a.pc.CallSecretJsonApi(
-		webapi.ApiTaskDelete, nil, form.ToForm(), 
+		webapi.ApiTaskDelete, nil, form.ToForm(),
 		&webapi.OfflineBasicResponse{}, 0)
 }
 
@@ -214,6 +214,6 @@ func (a *Agent) OfflineClear(flag OfflineClearFlag) (err error) {
 		WithInt("flag", int(flag)).
 		ToForm()
 	return a.pc.CallSecretJsonApi(
-		webapi.ApiTaskClear, nil, form, 
+		webapi.ApiTaskClear, nil, form,
 		&webapi.OfflineBasicResponse{}, 0)
 }

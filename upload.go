@@ -281,77 +281,77 @@ If you want to re-use r, try to seek it to beginning.
 
 Example:
 
-    import (
-        "github.com/aliyun/aliyun-oss-go-sdk/oss"
-        "github.com/deadblue/elevengo"
-    )
+	    import (
+	        "github.com/aliyun/aliyun-oss-go-sdk/oss"
+	        "github.com/deadblue/elevengo"
+	    )
 
-	func main() {
-		filePath := "/file/to/upload"
+		func main() {
+			filePath := "/file/to/upload"
 
-		var err error
+			var err error
 
-		file, err := os.Open(filePath)
-		if err != nil {
-			log.Fatalf("Open file failed: %s", err)
-		}
-		defer file.Close()
+			file, err := os.Open(filePath)
+			if err != nil {
+				log.Fatalf("Open file failed: %s", err)
+			}
+			defer file.Close()
 
-		// Create 115 agent
-		agent := elevengo.Default()
-		if err = agent.CredentialImport(&elevengo.Credential{
-			UID: "", CID: "", SEID: "",
-		}); err != nil {
-			log.Fatalf("Login failed: %s", err)
-		}
-		// Prepare OSS upload ticket
-		ticket := &UploadOssTicket{}
-		if err = agent.UploadCreateOssTicket(
-			"dirId",
-			filepath.Base(file.Name()),
-			file,
-			ticket,
-		); err != nil {
-			log.Fatalf("Create OSS ticket failed: %s", err)
-		}
-		if ticket.Exist {
-			log.Printf("File has been fast-uploaded!")
-			return
-		}
+			// Create 115 agent
+			agent := elevengo.Default()
+			if err = agent.CredentialImport(&elevengo.Credential{
+				UID: "", CID: "", SEID: "",
+			}); err != nil {
+				log.Fatalf("Login failed: %s", err)
+			}
+			// Prepare OSS upload ticket
+			ticket := &UploadOssTicket{}
+			if err = agent.UploadCreateOssTicket(
+				"dirId",
+				filepath.Base(file.Name()),
+				file,
+				ticket,
+			); err != nil {
+				log.Fatalf("Create OSS ticket failed: %s", err)
+			}
+			if ticket.Exist {
+				log.Printf("File has been fast-uploaded!")
+				return
+			}
 
-		// Create OSS client
-		oc, err := oss.New(
-			ticket.Client.Endpoint,
-			ticket.Client.AccessKeyId,
-			ticket.Client.AccessKeySecret,
-			oss.SecurityToken(ticket.Client.SecurityToken)
-		)
-		if err != nil {
-			log.Fatalf("Create OSS client failed: %s", err)
+			// Create OSS client
+			oc, err := oss.New(
+				ticket.Client.Endpoint,
+				ticket.Client.AccessKeyId,
+				ticket.Client.AccessKeySecret,
+				oss.SecurityToken(ticket.Client.SecurityToken)
+			)
+			if err != nil {
+				log.Fatalf("Create OSS client failed: %s", err)
+			}
+			bucket, err := oc.Bucket(ticket.Bucket)
+			if err != nil {
+				log.Fatalf("Get OSS bucket failed: %s", err)
+			}
+			// Upload file in multipart.
+			err = bucket.UploadFile(
+				ticket.Object,
+				filePath,
+				100 * 1024 * 1024,	// 100 Megabytes per part
+				oss.Callback(ticket.Callback),
+				oss.CallbackVar(ticket.CallbackVar),
+			)
+			// Until now (2023-01-29), there is a bug in aliyun-oss-go-sdk:
+			// When set Callback option, the response from CompleteMultipartUpload API
+			// is returned by callback host, which is not the standard XML. But SDK
+			// always tries to parse it as CompleteMultipartUploadResult, and returns
+			// `io.EOF` error, just ignore it!
+			if err != nil && err != io.EOF {
+				log.Fatalf("Upload file failed: %s", err)
+			} else {
+				log.Print("Upload done!")
+			}
 		}
-		bucket, err := oc.Bucket(ticket.Bucket)
-		if err != nil {
-			log.Fatalf("Get OSS bucket failed: %s", err)
-		}
-		// Upload file in multipart.
-		err = bucket.UploadFile(
-			ticket.Object,
-			filePath,
-			100 * 1024 * 1024,	// 100 Megabytes per part
-			oss.Callback(ticket.Callback),
-			oss.CallbackVar(ticket.CallbackVar),
-		)
-		// Until now (2023-01-29), there is a bug in aliyun-oss-go-sdk:
-		// When set Callback option, the response from CompleteMultipartUpload API
-		// is returned by callback host, which is not the standard XML. But SDK
-		// always tries to parse it as CompleteMultipartUploadResult, and returns
-		// `io.EOF` error, just ignore it!
-		if err != nil && err != io.EOF {
-			log.Fatalf("Upload file failed: %s", err)
-		} else {
-			log.Print("Upload done!")
-		}
-	}
 */
 func (a *Agent) UploadCreateOssTicket(
 	dirId, name string,

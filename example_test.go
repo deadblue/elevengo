@@ -138,7 +138,7 @@ func ExampleAgent_VideoCreateTicket() {
 
 	// Play HLS through mpv
 	cmd := exec.Command("mpv")
-	cmd.Args = append(cmd.Args, 
+	cmd.Args = append(cmd.Args,
 		fmt.Sprintf("--http-header-fields=%s", strings.Join(headers, ",")),
 		ticket.Url,
 	)
