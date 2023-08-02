@@ -9,10 +9,7 @@ import (
 	"github.com/deadblue/elevengo/internal/protocol"
 )
 
-type _M115Resp struct {
-	BasicResp
-	Data string `json:"data"`
-}
+type M115Extractor[D any] func([]byte, *D) error
 
 // M115ApiSpec is the base struct for all m115 ApiSpec.
 type M115ApiSpec[D any] struct {
@@ -23,6 +20,8 @@ type M115ApiSpec[D any] struct {
 	params map[string]string
 	// Final result.
 	Data D
+	// Custom the extraction process
+	Extractor M115Extractor[D]
 }
 
 func (s *M115ApiSpec[D]) Init(baseUrl string) {
@@ -44,15 +43,24 @@ func (s *M115ApiSpec[D]) Payload() protocol.Payload {
 
 // Parse implements |ApiSpec.Parse|.
 func (s *M115ApiSpec[D]) Parse(r io.Reader) (err error) {
-	jd, resp := json.NewDecoder(r), &_M115Resp{}
+	jd, resp := json.NewDecoder(r), &StandardResp{}
 	if err = jd.Decode(resp); err != nil {
 		return
 	}
 	if err = resp.Err(); err != nil {
 		return err
 	}
-	if body, err := m115.Decode(resp.Data, s.key); err == nil {
-		return json.Unmarshal(body, &s.Data)
+	// Decode response data
+	var data string
+	if err = resp.Extract(&data); err != nil {
+		return
+	}
+	if body, err := m115.Decode(data, s.key); err == nil {
+		if s.Extractor != nil {
+			return s.Extractor(body, &s.Data)
+		} else {
+			return json.Unmarshal(body, &s.Data)
+		}
 
 	} else {
 		return err

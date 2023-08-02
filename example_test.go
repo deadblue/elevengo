@@ -125,7 +125,7 @@ func ExampleAgent_VideoCreateTicket() {
 	agent := Default()
 
 	// Create video play ticket
-	ticket := &PlayTicket{}
+	ticket := &VideoTicket{}
 	err := agent.VideoCreateTicket("pickcode", ticket)
 	if err != nil {
 		log.Fatalf("Get video info failed: %s", err)

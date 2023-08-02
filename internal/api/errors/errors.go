@@ -1,4 +1,4 @@
-package base
+package errors
 
 import "errors"
 
@@ -28,7 +28,9 @@ var (
 	// ErrNotExist means an item which you find is not existed.
 	ErrNotExist = errors.New("target does not exist")
 
-	ErrInvalidOperation = errors.New("")
+	ErrInvalidOperation = errors.New("invalid operation")
+
+	ErrInvalidParameters = errors.New("invalid parameters")
 
 	// ErrReachEnd means there are no more item.
 	ErrReachEnd = errors.New("reach the end")
@@ -48,38 +50,4 @@ var (
 	ErrVideoNotReady = errors.New("video is not ready")
 
 	ErrEmptyList = errors.New("list is empty")
-
-	errMap = map[int]error{
-		// Normal errors
-		99:     ErrNotLogin,
-		911:    ErrCaptchaRequired,
-		990001: ErrNotLogin,
-		// Offline errors
-		10004: ErrOfflineInvalidLink,
-		10008: ErrOfflineTaskExisted,
-		// File errors
-		20004: ErrExist,
-		20022: ErrInvalidOperation,
-		// Label errors
-		21003: ErrExist,
-		// Download errors
-		50003: ErrNotExist,
-		// File errors
-		20130827: ErrOrderNotSupport,
-		// Login errors
-		40101009: ErrPasswordIncorrect,
-		40101010: ErrLoginTwoStepVerify,
-		40101030: ErrAccountNotBindMobile,
-		40101032: ErrCredentialInvalid,
-		40101037: ErrSessionExited,
-		// QRCode errors
-		40199002: ErrQrcodeExpired,
-	}
 )
-
-func GetError(code int) error {
-	if err, found := errMap[code]; found {
-		return err
-	}
-	return ErrUnexpected
-}

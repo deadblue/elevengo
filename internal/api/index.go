@@ -28,7 +28,7 @@ type _IndexInfoData struct {
 }
 
 type IndexInfoSpec struct {
-	base.JsonApiSpec[base.GenericResp[_IndexInfoData]]
+	base.JsonApiSpec[base.StandardResp, _IndexInfoData]
 }
 
 func (s *IndexInfoSpec) Init() *IndexInfoSpec {

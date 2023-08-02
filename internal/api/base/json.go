@@ -5,22 +5,35 @@ import (
 	"encoding/json"
 	"io"
 	"net/url"
+	"strconv"
 
 	"github.com/deadblue/elevengo/internal/protocol"
 )
 
-type JsonApiSpec[R any] struct {
-	_BaseApiSpec
-	form url.Values
-	Resp R
+type _ApiResp interface {
+	// Err returns an error if API failed.
+	Err() error
 }
 
-func (s *JsonApiSpec[R]) Init(baseUrl string) {
+type _DataResp interface {
+	// Extract extracts information to |v| from response.
+	Extract(v any) error
+}
+
+// JsonApiSpec is the base spec for all JSON ApiSpec, child implementation
+// should provide type parameters R (response type) and D (data type).
+type JsonApiSpec[R any, D any] struct {
+	_BaseApiSpec
+	form url.Values
+	Data D
+}
+
+func (s *JsonApiSpec[R, D]) Init(baseUrl string) {
 	s._BaseApiSpec.Init(baseUrl)
 	s.form = url.Values{}
 }
 
-func (s *JsonApiSpec[R]) Payload() protocol.Payload {
+func (s *JsonApiSpec[R, D]) Payload() protocol.Payload {
 	if len(s.form) == 0 {
 		return nil
 	} else {
@@ -28,33 +41,49 @@ func (s *JsonApiSpec[R]) Payload() protocol.Payload {
 	}
 }
 
-func (s *JsonApiSpec[R]) Parse(r io.Reader) (err error) {
-	jd, respPtr := json.NewDecoder(r), &s.Resp
-	if err = jd.Decode(respPtr); err != nil {
+func (s *JsonApiSpec[R, D]) Parse(r io.Reader) (err error) {
+	jd, resp := json.NewDecoder(r), any(new(R))
+	if err = jd.Decode(resp); err != nil {
 		return
 	}
-	return checkError(respPtr)
+	// Check response error
+	ar := resp.(_ApiResp)
+	if err = ar.Err(); err != nil {
+		return
+	}
+	// Extract data
+	if dr, ok := resp.(_DataResp); ok {
+		err = dr.Extract(&s.Data)
+	}
+	return
 }
 
-func (s *JsonApiSpec[R]) FormSet(key, value string) {
+func (s *JsonApiSpec[R, D]) FormSet(key, value string) {
 	s.form.Set(key, value)
 }
 
-type JsonpApiSpec[R any] struct {
-	_BaseApiSpec
-	Resp R
+func (s *JsonApiSpec[R, D]) FormSetInt(key string, value int) {
+	s.form.Set(key, strconv.Itoa(value))
 }
 
-func (s *JsonpApiSpec[D]) Init(baseUrl, cb string) {
+// JsonpApiSpec is the base spec for all JSON-P ApiSpec, child implementation
+// should provide type parameters R (response type) and D (data type).
+type JsonpApiSpec[R any, D any] struct {
+	_BaseApiSpec
+	// Data holds the final result
+	Data D
+}
+
+func (s *JsonpApiSpec[R, D]) Init(baseUrl, cb string) {
 	s._BaseApiSpec.Init(baseUrl)
 	s.QuerySet("callback", cb)
 }
 
-func (s *JsonpApiSpec[D]) Payload() protocol.Payload {
+func (s *JsonpApiSpec[R, D]) Payload() protocol.Payload {
 	return nil
 }
 
-func (s *JsonpApiSpec[D]) Parse(r io.Reader) (err error) {
+func (s *JsonpApiSpec[R, D]) Parse(r io.Reader) (err error) {
 	// Read response
 	var body []byte
 	if body, err = io.ReadAll(r); err != nil {
@@ -66,8 +95,18 @@ func (s *JsonpApiSpec[D]) Parse(r io.Reader) (err error) {
 		return &json.SyntaxError{Offset: 0}
 	}
 	// Parse JSON
-	if err = json.Unmarshal(body[left+1:right], &s.Resp); err != nil {
+	resp := any(new(R))
+	if err = json.Unmarshal(body[left+1:right], resp); err != nil {
 		return
 	}
-	return checkError(&s.Resp)
+	// Force convert resp to ApiResp
+	ar := resp.(_ApiResp)
+	if err = ar.Err(); err != nil {
+		return
+	}
+	// Extract data
+	if dr, ok := resp.(_DataResp); ok {
+		err = dr.Extract(&s.Data)
+	}
+	return
 }

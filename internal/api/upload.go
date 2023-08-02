@@ -1,19 +1,33 @@
 package api
 
 import (
-	"errors"
-
 	"github.com/deadblue/elevengo/internal/api/base"
+	"github.com/deadblue/elevengo/internal/api/errors"
 )
 
 type _UploadInfoResp struct {
 	base.BasicResp
+	UserId  int    `json:"user_id"`
+	UserKey string `json:"userkey"`
+}
+
+func (r *_UploadInfoResp) Extract(v any) error {
+	if ptr, ok := v.(*_UploadInfoData); !ok {
+		return errors.ErrUnsupportedData
+	} else {
+		ptr.UserId = r.UserId
+		ptr.UserKey = r.UserKey
+	}
+	return nil
+}
+
+type _UploadInfoData struct {
 	UserId  int
 	UserKey string
 }
 
 type UploadInfoSpec struct {
-	base.JsonApiSpec[_UploadInfoResp]
+	base.JsonApiSpec[_UploadInfoResp, _UploadInfoData]
 }
 
 func (s *UploadInfoSpec) Init() *UploadInfoSpec {
@@ -53,11 +67,11 @@ func (r *_UploadInitResp) Err() error {
 	if r.ErrorCode == 0 || r.ErrorCode == 701 {
 		return nil
 	}
-	return errors.New(r.ErrorMsg)
+	return errors.ErrUnexpected
 }
 
 type UploadInitSpec struct {
-	base.JsonApiSpec[_UploadInitResp]
+	base.JsonApiSpec[_UploadInitResp, any]
 }
 
 func (s *UploadInitSpec) Init() *UploadInitSpec {

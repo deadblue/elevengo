@@ -3,6 +3,8 @@ package elevengo
 import (
 	"encoding/json"
 
+	"github.com/deadblue/elevengo/internal/api"
+	"github.com/deadblue/elevengo/internal/api/errors"
 	"github.com/deadblue/elevengo/internal/crypto/m115"
 	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/webapi"
@@ -56,7 +58,7 @@ type offlineIterator struct {
 	ps int
 
 	// Cached tasks
-	tasks []*webapi.OfflineTask
+	tasks []*api.OfflineTask
 	// Task index
 	index int
 	// Task size
@@ -71,7 +73,7 @@ func (i *offlineIterator) Next() (err error) {
 		return nil
 	}
 	if i.pi >= i.pc {
-		return webapi.ErrReachEnd
+		return errors.ErrReachEnd
 	}
 	// Fetch next page
 	i.pi += 1
@@ -84,7 +86,7 @@ func (i *offlineIterator) Index() int {
 
 func (i *offlineIterator) Get(task *OfflineTask) (err error) {
 	if i.index >= i.size {
-		return webapi.ErrReachEnd
+		return errors.ErrReachEnd
 	}
 	t := i.tasks[i.index]
 	task.InfoHash = t.InfoHash
@@ -115,23 +117,22 @@ func (a *Agent) OfflineIterate() (it Iterator[OfflineTask], err error) {
 }
 
 func (a *Agent) offlineIterateInternal(oi *offlineIterator) (err error) {
-	qs := protocol.Params{}.
-		WithInt("page", oi.pi)
-	resp := &webapi.OfflineListResponse{}
-	if err = a.pc.CallSecretJsonApi(webapi.ApiTaskList, qs, nil, resp, 0); err != nil {
+	spec := (&api.OfflineListSpec{}).Init(oi.pi)
+	if err = a.pc.ExecuteApi(spec); err != nil {
 		return
 	}
-	oi.pi = resp.PageIndex
-	oi.pc = resp.PageCount
-	oi.ps = resp.PageSize
-	oi.index, oi.size = 0, len(resp.Tasks)
+	result := spec.Data
+	oi.pi = result.PageIndex
+	oi.pc = result.PageCount
+	oi.ps = result.PageSize
+	oi.index, oi.size = 0, len(result.Tasks)
 	if oi.size == 0 {
-		err = webapi.ErrReachEnd
+		err = errors.ErrReachEnd
 	} else {
-		oi.tasks = make([]*webapi.OfflineTask, 0, oi.size)
-		oi.tasks = append(oi.tasks, resp.Tasks...)
+		oi.tasks = make([]*api.OfflineTask, 0, oi.size)
+		oi.tasks = append(oi.tasks, result.Tasks...)
 	}
-	oi.count = resp.TaskCount
+	oi.count = result.TaskCount
 	return
 }
 
@@ -189,20 +190,12 @@ func (a *Agent) OfflineAddUrl(dirId string, urls []string, result OfflineAddResu
 }
 
 // OfflineDelete deletes tasks.
-func (a *Agent) OfflineDelete(deleteFiles bool, hashes []string) (err error) {
+func (a *Agent) OfflineDelete(hashes []string, deleteFiles bool) (err error) {
 	if len(hashes) == 0 {
 		return
 	}
-	form := protocol.Params{}.
-		WithArray("hash", hashes)
-	if deleteFiles {
-		form.With("flag", "1")
-	} else {
-		form.With("flag", "0")
-	}
-	return a.pc.CallSecretJsonApi(
-		webapi.ApiTaskDelete, nil, form.ToForm(),
-		&webapi.OfflineBasicResponse{}, 0)
+	spec := (&api.OfflineDeleteSpec{}).Init(hashes, deleteFiles)
+	return a.pc.ExecuteApi(spec)
 }
 
 // OfflineClear clears tasks which is in specific status.
@@ -210,10 +203,6 @@ func (a *Agent) OfflineClear(flag OfflineClearFlag) (err error) {
 	if flag < offlineClearFlagMin || flag > offlineClearFlagMax {
 		flag = OfflineClearDone
 	}
-	form := protocol.Params{}.
-		WithInt("flag", int(flag)).
-		ToForm()
-	return a.pc.CallSecretJsonApi(
-		webapi.ApiTaskClear, nil, form,
-		&webapi.OfflineBasicResponse{}, 0)
+	spec := (&api.OfflineClearSpec{}).Init(int(flag))
+	return a.pc.ExecuteApi(spec)
 }

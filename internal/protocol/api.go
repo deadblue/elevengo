@@ -3,8 +3,6 @@ package protocol
 import (
 	"bytes"
 	"io"
-	urllib "net/url"
-	"strings"
 	"time"
 
 	"github.com/deadblue/elevengo/internal/util"
@@ -13,22 +11,16 @@ import (
 // ApiSpec describes the specification of an API.
 type ApiSpec interface {
 	IsCrypto() bool
+	SetCryptoKey(key string)
 	Url() string
 	Payload() Payload
 	Parse(r io.Reader) (err error)
 }
 
 func (c *Client) ExecuteApi(spec ApiSpec) (err error) {
-	url, payload := spec.Url(), spec.Payload()
+	payload := spec.Payload()
 	if spec.IsCrypto() {
-		// Append EC key to querystring
-		ecKey := c.ecc.EncodeToken(time.Now().UnixMilli())
-		if strings.ContainsRune(url, '?') {
-			url = url + "&k_ec=" + urllib.QueryEscape(ecKey)
-		} else {
-			url = url + "?k_ec=" + urllib.QueryEscape(ecKey)
-		}
-		// Encrypt payload
+		spec.SetCryptoKey(c.ecc.EncodeToken(time.Now().UnixMilli()))
 		payload, _ = c.encryptPayload(payload)
 	}
 	// Perform HTTP request
@@ -39,9 +31,9 @@ func (c *Client) ExecuteApi(spec ApiSpec) (err error) {
 		defer c.v.ClockIn()
 		// Prepare request
 		if payload != nil {
-			body, err = c.Post(url, nil, payload)
+			body, err = c.Post(spec.Url(), nil, payload)
 		} else {
-			body, err = c.Get(url, nil, nil)
+			body, err = c.Get(spec.Url(), nil, nil)
 		}
 	}
 	if err != nil {

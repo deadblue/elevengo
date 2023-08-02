@@ -30,6 +30,10 @@ func (s *_BaseApiSpec) IsCrypto() bool {
 	return s.crypto
 }
 
+func (s *_BaseApiSpec) SetCryptoKey(key string) {
+	s.query.Set("k_ec", key)
+}
+
 // Url implements ApiSpec.Url()
 func (s *_BaseApiSpec) Url() string {
 	if len(s.query) == 0 {

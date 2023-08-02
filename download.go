@@ -3,10 +3,10 @@ package elevengo
 import (
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/deadblue/elevengo/internal/api"
-	"github.com/deadblue/elevengo/internal/api/base"
+	"github.com/deadblue/elevengo/internal/api/errors"
+	"github.com/deadblue/elevengo/internal/util"
 )
 
 // DownloadTicket contains all required information to download a file.
@@ -32,32 +32,20 @@ func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (e
 	}
 	// Convert result.
 	if len(spec.Data) == 0 {
-		return base.ErrDownloadEmpty
+		return errors.ErrDownloadEmpty
 	}
 	for _, info := range spec.Data {
 		ticket.FileSize, _ = info.FileSize.Int64()
 		if ticket.FileSize == 0 {
-			return base.ErrDownloadDirectory
+			return errors.ErrDownloadDirectory
 		}
 		ticket.FileName = info.FileName
 		ticket.Url = info.Url.Url
 		ticket.Headers = map[string]string{
+			// User-Agent header
 			"User-Agent": a.pc.GetUserAgent(),
-		}
-		// Serialize cookie
-		cookies := a.pc.ExportCookies(ticket.Url)
-		if len(cookies) > 0 {
-			buf, isFirst := strings.Builder{}, true
-			for ck, cv := range cookies {
-				if !isFirst {
-					buf.WriteString("; ")
-				}
-				buf.WriteString(ck)
-				buf.WriteRune('=')
-				buf.WriteString(cv)
-				isFirst = false
-			}
-			ticket.Headers["Cookie"] = buf.String()
+			// Cookie header
+			"Cookie": util.MarshalCookies(a.pc.ExportCookies(ticket.Url)),
 		}
 		break
 	}

@@ -1,26 +1,32 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/deadblue/elevengo/internal/api/base"
+	"github.com/deadblue/elevengo/internal/api/errors"
 )
 
-type _QrcodeBaseResp[D any] struct {
+type _QrcodeBaseResp struct {
 	State         int    `json:"state"`
 	ErrorCode1    int    `json:"code"`
 	ErrorCode2    int    `json:"errno"`
 	ErrorMessage1 string `json:"message"`
 	ErrorMessage2 string `json:"error"`
 
-	Data D `json:"data"`
+	Data json.RawMessage `json:"data"`
 }
 
-func (r _QrcodeBaseResp[D]) Err() error {
+func (r *_QrcodeBaseResp) Err() error {
 	if r.State != 0 {
 		return nil
 	}
-	return base.GetError(r.ErrorCode1)
+	return errors.Get(r.ErrorCode1)
+}
+
+func (r *_QrcodeBaseResp) Extract(v any) error {
+	return json.Unmarshal(r.Data, v)
 }
 
 type _QrcodeTokenData struct {
@@ -62,7 +68,7 @@ var (
 )
 
 type QrcodeTokenSpec struct {
-	base.JsonApiSpec[_QrcodeBaseResp[_QrcodeTokenData]]
+	base.JsonApiSpec[_QrcodeBaseResp, _QrcodeTokenData]
 }
 
 func (s *QrcodeTokenSpec) Init(appType string) *QrcodeTokenSpec {
@@ -72,7 +78,7 @@ func (s *QrcodeTokenSpec) Init(appType string) *QrcodeTokenSpec {
 }
 
 type QrcodeStatusSpec struct {
-	base.JsonApiSpec[_QrcodeBaseResp[_QrcodeStatusData]]
+	base.JsonApiSpec[_QrcodeBaseResp, _QrcodeStatusData]
 }
 
 func (s *QrcodeStatusSpec) Init(uid string, time int64, sign string) *QrcodeStatusSpec {
@@ -85,7 +91,7 @@ func (s *QrcodeStatusSpec) Init(uid string, time int64, sign string) *QrcodeStat
 }
 
 type QrcodeLoginSpec struct {
-	base.JsonApiSpec[_QrcodeBaseResp[_QrcodeLoginData]]
+	base.JsonApiSpec[_QrcodeBaseResp, _QrcodeLoginData]
 }
 
 func (s *QrcodeLoginSpec) Init(appType string, uid string) *QrcodeLoginSpec {

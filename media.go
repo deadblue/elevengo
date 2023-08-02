@@ -1,17 +1,18 @@
 package elevengo
 
 import (
-	"strings"
-
+	"github.com/deadblue/elevengo/internal/api"
+	"github.com/deadblue/elevengo/internal/api/errors"
 	"github.com/deadblue/elevengo/internal/protocol"
+	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/internal/webapi"
 )
 
-// PlayTicket contains all information to play a cloud video.
-type PlayTicket struct {
-	// Play URL.
+// VideoTicket contains all required arguments to play a cloud video.
+type VideoTicket struct {
+	// Play URL, it is normally a m3u8 URL.
 	Url string
-	// Request headers which SHOULD be used with play URL.
+	// Request headers which SHOULD be sent with play URL.
 	Headers map[string]string
 	// File name.
 	FileName string
@@ -26,42 +27,40 @@ type PlayTicket struct {
 }
 
 // VideoCreateTicket creates a PlayTicket to play the cloud video.
-func (a *Agent) VideoCreateTicket(pickcode string, ticket *PlayTicket) (err error) {
-	qs := protocol.Params{}.
-		With("pickcode", pickcode).
-		With("share_id", "0").
-		With("local", "1")
-	resp := &webapi.VideoResponse{}
-	if err = a.pc.CallJsonApi(webapi.ApiFileVideo, qs, nil, resp); err != nil {
+func (a *Agent) VideoCreateTicket(pickcode string, ticket *VideoTicket) (err error) {
+	// VideoPlay API for web and PC are different !
+	var spec protocol.ApiSpec
+	var data *api.VideoPlayData
+	if a.isWeb {
+		webSpec := (&api.VideoPlayWebSpec{}).Init(pickcode)
+		spec, data = webSpec, &webSpec.Data
+	} else {
+		pcSpec := (&api.VideoPlayPcSpec{}).Init(
+			a.uh.UserId(), a.uh.AppVersion(), pickcode,
+		)
+		spec, data = pcSpec, &pcSpec.Data
+	}
+	if err = a.pc.ExecuteApi(spec); err != nil {
 		return
 	}
-	if resp.FileStatus != 1 {
-		return webapi.ErrVideoNotReady
+	if !data.IsReady {
+		return errors.ErrVideoNotReady
 	}
-	ticket.Url = resp.VideoUrl
-	ticket.Duration = float64(resp.Duration)
-	ticket.Width = int(resp.Width)
-	ticket.Height = int(resp.Height)
-	ticket.FileName = resp.FileName
-	ticket.FileSize = int64(resp.FileSize)
-	ticket.Headers = map[string]string{
-		"User-Agent": a.pc.GetUserAgent(),
-	}
-	cookies := a.pc.ExportCookies(ticket.Url)
-	if len(cookies) > 0 {
-		buf, isFirst := strings.Builder{}, true
-		for ck, cv := range cookies {
-			if !isFirst {
-				buf.WriteString("; ")
-			}
-			buf.WriteString(ck)
-			buf.WriteRune('=')
-			buf.WriteString(cv)
-			isFirst = false
+	ticket.Url = data.VideoUrl
+	ticket.Duration = data.VideoDuration
+	ticket.Width = data.VideoWidth
+	ticket.Height = data.VideoHeight
+	ticket.FileName = data.FileName
+	ticket.FileSize = data.FileSize
+	// Currently(2023-08-02), the play URL for PC does not require any headers,
+	// it is extremely recommended to use PC credential.
+	if a.isWeb {
+		ticket.Headers = map[string]string{
+			"User-Agent": a.pc.GetUserAgent(),
+			"Cookie":     util.MarshalCookies(a.pc.ExportCookies(ticket.Url)),
 		}
-		ticket.Headers["Cookie"] = buf.String()
 	}
-	return 
+	return
 }
 
 // ImageGetUrl gets an accessible URL of an image file by its pickcode.

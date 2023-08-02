@@ -1,67 +1,39 @@
 package elevengo
 
 import (
-	"github.com/deadblue/elevengo/internal/webapi"
+	"github.com/deadblue/elevengo/internal/api"
 )
 
 // StorageInfo describes storage space usage.
 type StorageInfo struct {
 	// Total size in bytes.
 	Size int64
-	// Used size in bytes.
-	Used int64
-	// Available size in bytes.
-	Avail int64
-
 	// Human-readable total size.
 	FormatSize string
+
+	// Used size in bytes.
+	Used int64
 	// Human-readable used size.
 	FormatUsed string
+
+	// Available size in bytes.
+	Avail int64
 	// Human-readable remain size.
 	FormatAvail string
 }
 
 // StorageStat gets storage size information.
 func (a *Agent) StorageStat(info *StorageInfo) (err error) {
-	resp := &webapi.BasicResponse{}
-	if err = a.pc.CallJsonApi(webapi.ApiIndexInfo, nil, nil, resp); err != nil {
-		return err
-	}
-	result := webapi.IndexData{}
-	if err = resp.Decode(&result); err != nil {
+	spec := (&api.IndexInfoSpec{}).Init()
+	if err = a.pc.ExecuteApi(spec); err != nil {
 		return
 	}
-	info.Size = int64(result.Space.Total.Size)
-	info.Used = int64(result.Space.Used.Size)
-	info.Avail = int64(result.Space.Remain.Size)
-	info.FormatSize = result.Space.Total.FormatSize
-	info.FormatUsed = result.Space.Used.FormatSize
-	info.FormatAvail = result.Space.Remain.FormatSize
-	return
-}
-
-// StorageFormatInfo describes storage space format usage.
-type StorageFormatInfo struct {
-	// Total size in bytes.
-	Size string
-	// Used size in bytes.
-	Used string
-	// Avail size in bytes.
-	Avail string
-}
-
-// StorageFormatStat gets storage size information format.
-func (a *Agent) StorageFormatStat(info *StorageFormatInfo) (err error) {
-	resp := &webapi.BasicResponse{}
-	if err = a.pc.CallJsonApi(webapi.ApiIndexInfo, nil, nil, resp); err != nil {
-		return err
-	}
-	result := webapi.IndexData{}
-	if err = resp.Decode(&result); err != nil {
-		return
-	}
-	info.Size = result.Space.Total.FormatSize
-	info.Used = result.Space.Used.FormatSize
-	info.Avail = result.Space.Remain.FormatSize
+	result := spec.Data.SpaceInfo
+	info.Size = int64(result.Total.Size)
+	info.Used = int64(result.Used.Size)
+	info.Avail = int64(result.Remain.Size)
+	info.FormatSize = result.Total.SizeFormat
+	info.FormatUsed = result.Used.SizeFormat
+	info.FormatAvail = result.Remain.SizeFormat
 	return
 }

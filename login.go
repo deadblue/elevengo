@@ -1,14 +1,10 @@
 package elevengo
 
 import (
-	"fmt"
-	"math/rand"
 	"strings"
-	"time"
 
 	"github.com/deadblue/elevengo/internal/api"
-	"github.com/deadblue/elevengo/internal/protocol"
-	"github.com/deadblue/elevengo/internal/webapi"
+	"github.com/deadblue/elevengo/internal/api/errors"
 )
 
 // Credential contains required information which upstream server uses to
@@ -30,58 +26,53 @@ type UserInfo struct {
 // CredentialImport imports credentials into agent.
 func (a *Agent) CredentialImport(cr *Credential) (err error) {
 	cookies := map[string]string{
-		webapi.CookieNameUid:  cr.UID,
-		webapi.CookieNameCid:  cr.CID,
-		webapi.CookieNameSeid: cr.SEID,
+		api.CookieNameUID:  cr.UID,
+		api.CookieNameCID:  cr.CID,
+		api.CookieNameSEID: cr.SEID,
 	}
-	a.pc.ImportCookies(cookies, webapi.CookieDomain115, webapi.CookieDomainAnxia)
-	return a.afterSignIn()
+	a.pc.ImportCookies(cookies, api.CookieDomains...)
+	return a.afterSignIn(cr.UID)
 }
 
 // CredentialExport exports credentials for future-use.
 func (a *Agent) CredentialExport(cr *Credential) {
-	cookies := a.pc.ExportCookies(webapi.CookieUrl)
-	cr.UID = cookies[webapi.CookieNameUid]
-	cr.CID = cookies[webapi.CookieNameCid]
-	cr.SEID = cookies[webapi.CookieNameSeid]
+	cookies := a.pc.ExportCookies(api.CookieUrl)
+	cr.UID = cookies[api.CookieNameUID]
+	cr.CID = cookies[api.CookieNameCID]
+	cr.SEID = cookies[api.CookieNameSEID]
 }
 
-func (a *Agent) afterSignIn() (err error) {
+func (a *Agent) afterSignIn(uid string) (err error) {
 	// Call UploadInfo API to get userId and userKey
 	uis := (&api.UploadInfoSpec{}).Init()
 	if err = a.pc.ExecuteApi(uis); err != nil {
 		return
 	} else {
-		a.uh.SetUserData(uis.Resp.UserId, uis.Resp.UserKey)
+		a.uh.SetUserData(uis.Data.UserId, uis.Data.UserKey)
 	}
-	// Call IndexInfo to get session information
-	iis := (&api.IndexInfoSpec{}).Init()
-	if err = a.pc.ExecuteApi(uis); err != nil {
-		return
+	// Check UID
+	parts := strings.Split(uid, "_")
+	if len(parts) != 3 {
+		return errors.ErrCredentialInvalid
 	}
-	for _, li := range iis.Resp.Data.LoginInfos.List {
-		if li.IsCurrent == 1 {
-			a.isWeb = strings.HasPrefix(li.AppFlag, "A")
-			break
-		}
-	}
+	a.isWeb = strings.HasPrefix(parts[1], "A")
 	return
 }
 
 // UserGet retrieves user information from cloud.
-func (a *Agent) UserGet(info *UserInfo) (err error) {
-	cb := fmt.Sprintf("jQuery%d_%d", rand.Uint64(), time.Now().Unix())
-	qs := protocol.Params{}.
-		With("callback", cb).
-		WithNow("_")
-	resp := webapi.BasicResponse{}
-	if err = a.pc.CallJsonpApi(webapi.ApiUserInfo, qs, &resp); err != nil {
-		return
-	}
-	result := webapi.UserInfoData{}
-	if err = resp.Decode(&result); err == nil {
-		info.Id = result.UserId
-		info.Name = result.UserName
-	}
-	return
-}
+// func (a *Agent) UserGet(info *UserInfo) (err error) {
+// 	cb := fmt.Sprintf("jQuery%d_%d", rand.Uint64(), time.Now().Unix())
+// 	qs := protocol.Params{}.
+// 		With("callback", cb).
+// 		WithNow("_")
+// 	resp := webapi.BasicResponse{}
+// 	if err = a.pc.CallJsonpApi(webapi.ApiUserInfo, qs, &resp); err != nil {
+// 		return
+// 	}
+// 	result := webapi.UserInfoData{}
+// 	if err = resp.Decode(&result); err == nil {
+// 		info.Id = result.UserId
+// 		info.Name = result.UserName
+// 	}
+// 	return
+// }

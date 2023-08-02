@@ -27,7 +27,7 @@ func (a *Agent) getAppVersion() (ver string, err error) {
 	if err = a.pc.ExecuteApi(spec); err != nil {
 		return
 	}
-	ver = spec.Resp.Data.LinuxApp.VersionCode
+	ver = spec.Data.LinuxApp.VersionCode
 	return
 }
 

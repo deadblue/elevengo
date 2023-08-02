@@ -45,8 +45,8 @@ type FileInfo struct {
 	VideoDefinition int `json:"vdi"`
 }
 
-type fileListResp struct {
-	base.BasicResp
+type _FileListResp struct {
+	base.StandardResp
 
 	AreaId     string      `json:"aid"`
 	CategoryId json.Number `json:"cid"`
@@ -56,12 +56,10 @@ type fileListResp struct {
 	IsAsc  int    `json:"is_asc"`
 	Offset int    `json:"offset"`
 	Limit  int    `json:"limit"`
-
-	Data []*FileInfo `json:"data"`
 }
 
 type FileListSpec struct {
-	base.JsonApiSpec[fileListResp]
+	base.JsonApiSpec[_FileListResp, any]
 }
 
 func (s *FileListSpec) Init(dirId string) *FileListSpec {
