@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/deadblue/elevengo/internal/api/base"
@@ -22,7 +23,7 @@ type OfflineTask struct {
 	DirId  string `json:"wp_path_id"`
 }
 
-type _OfflineListData struct {
+type OfflineListResult struct {
 	PageIndex int
 	PageCount int
 	PageSize  int
@@ -31,6 +32,7 @@ type _OfflineListData struct {
 	Tasks     []*OfflineTask
 }
 
+//lint:ignore U1000 This type is used in generic.
 type _OfflineListResp struct {
 	base.BasicResp
 
@@ -46,8 +48,8 @@ type _OfflineListResp struct {
 }
 
 func (r *_OfflineListResp) Extract(v any) (err error) {
-	if ptr, ok := v.(*_OfflineListData); !ok {
-		return errors.ErrUnsupportedData
+	if ptr, ok := v.(*OfflineListResult); !ok {
+		return errors.ErrUnsupportedResult
 	} else {
 		ptr.PageIndex = r.PageIndex
 		ptr.PageCount = r.PageCount
@@ -59,7 +61,7 @@ func (r *_OfflineListResp) Extract(v any) (err error) {
 }
 
 type OfflineListSpec struct {
-	base.JsonApiSpec[_OfflineListResp, _OfflineListData]
+	base.JsonApiSpec[OfflineListResult, _OfflineListResp]
 }
 
 func (s *OfflineListSpec) Init(page int) *OfflineListSpec {
@@ -68,14 +70,35 @@ func (s *OfflineListSpec) Init(page int) *OfflineListSpec {
 	return s
 }
 
-func (s *OfflineListSpec) SetPage(page int) {
-	s.QuerySetInt("page", page)
+type OfflineDeleteSpec struct {
+	base.JsonApiSpec[base.VoidResult, base.BasicResp]
+}
+
+func (s *OfflineDeleteSpec) Init(hashes []string, deleteFiles bool) *OfflineDeleteSpec {
+	s.JsonApiSpec.Init("https://lixian.115.com/lixian/?ct=lixian&ac=task_del")
+	if deleteFiles {
+		s.FormSet("flag", "1")
+	} else {
+		s.FormSet("flag", "0")
+	}
+	return s
+}
+
+type OfflineClearSpec struct {
+	base.JsonApiSpec[base.VoidResult, base.BasicResp]
+}
+
+func (s *OfflineClearSpec) Init(flag int) *OfflineClearSpec {
+	s.JsonApiSpec.Init("https://lixian.115.com/lixian/?ct=lixian&ac=task_clear")
+	s.FormSetInt("flag", flag)
+	return s
 }
 
 type _OfflineAddResult struct {
-	State   bool `json:"state"`
-	ErrNum  int  `json:"errno"`
-	ErrCode int  `json:"errcode"`
+	State   bool   `json:"state"`
+	ErrNum  int    `json:"errno"`
+	ErrCode int    `json:"errcode"`
+	ErrType string `json:"errtype"`
 
 	InfoHash string `json:"info_hash"`
 	Name     string `json:"name"`
@@ -90,13 +113,32 @@ type _OfflineAddUrlsData struct {
 	Result []*_OfflineAddResult `json:"result"`
 }
 
+type OfflineAddUrlsResult []*OfflineTask
+
 type OfflineAddUrlsSpec struct {
-	base.M115ApiSpec[_OfflineAddUrlsData]
+	base.M115ApiSpec[OfflineAddUrlsResult]
 }
 
-func (s *OfflineAddUrlsSpec) Init(userId, appVer string, urls []string) *OfflineAddUrlsSpec {
+func offlineAddUrlsResultExtractor(data []byte, result *OfflineAddUrlsResult) (err error) {
+	obj := &_OfflineAddUrlsData{}
+	if err = json.Unmarshal(data, obj); err != nil {
+		return
+	}
+	tasks := make([]*OfflineTask, len(obj.Result))
+	for i, r := range obj.Result {
+		tasks[i] = &OfflineTask{}
+		tasks[i].InfoHash = r.InfoHash
+		tasks[i].Name = r.Name
+		tasks[i].Url = r.Url
+	}
+	*result = tasks
+	return
+}
+
+func (s *OfflineAddUrlsSpec) Init(userId, appVer string, urls []string, saveDirId string) *OfflineAddUrlsSpec {
 	s.M115ApiSpec.Init("https://lixian.115.com/lixianssp/?ac=add_task_urls")
 	s.M115ApiSpec.EnableCrypto()
+	s.M115ApiSpec.Extractor = offlineAddUrlsResultExtractor
 	s.ParamSetAll(map[string]string{
 		"ac":      "add_task_urls",
 		"app_ver": appVer,
@@ -106,29 +148,8 @@ func (s *OfflineAddUrlsSpec) Init(userId, appVer string, urls []string) *Offline
 		key := fmt.Sprintf("url[%d]", i)
 		s.ParamSet(key, url)
 	}
-	return s
-}
-
-type OfflineDeleteSpec struct {
-	base.JsonApiSpec[base.StandardResp, base.VoidData]
-}
-
-func (s *OfflineDeleteSpec) Init(hashes []string, deleteFiles bool) *OfflineDeleteSpec {
-	s.JsonApiSpec.Init("https://lixian.115.com/lixian/?ct=lixian&ac=task_del")
-	if deleteFiles {
-		s.FormSet("flag", "1")
-	} else {
-		s.FormSet("flag", "0")
+	if saveDirId != "" {
+		s.ParamSet("wp_path_id", saveDirId)
 	}
-	return s
-}
-
-type OfflineClearSpec struct {
-	base.JsonApiSpec[base.BasicResp, base.VoidData]
-}
-
-func (s *OfflineClearSpec) Init(flag int) *OfflineClearSpec {
-	s.JsonApiSpec.Init("https://lixian.115.com/lixian/?ct=lixian&ac=task_clear")
-	s.FormSetInt("flag", flag)
 	return s
 }

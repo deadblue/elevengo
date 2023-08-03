@@ -8,7 +8,7 @@ type _AppVersionInfo struct {
 	VersionUrl  string `json:"version_url"`
 }
 
-type _AppVersionData struct {
+type AppVersionResult struct {
 	Android    _AppVersionInfo `json:"android"`
 	LinuxApp   _AppVersionInfo `json:"linux_115"`
 	MacBrowser _AppVersionInfo `json:"mac"`
@@ -18,7 +18,7 @@ type _AppVersionData struct {
 }
 
 type AppVersionSpec struct {
-	base.JsonpApiSpec[base.StandardResp, _AppVersionData]
+	base.JsonpApiSpec[AppVersionResult, base.StandardResp]
 }
 
 func (s *AppVersionSpec) Init() *AppVersionSpec {

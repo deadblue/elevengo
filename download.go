@@ -31,10 +31,10 @@ func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (e
 		return
 	}
 	// Convert result.
-	if len(spec.Data) == 0 {
+	if len(spec.Result) == 0 {
 		return errors.ErrDownloadEmpty
 	}
-	for _, info := range spec.Data {
+	for _, info := range spec.Result {
 		ticket.FileSize, _ = info.FileSize.Int64()
 		if ticket.FileSize == 0 {
 			return errors.ErrDownloadDirectory

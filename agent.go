@@ -18,7 +18,7 @@ type Agent struct {
 	pc *protocol.Client
 
 	// Upload helper
-	uh webapi.UploadHelper
+	uh api.UploadHelper
 }
 
 // getAppVersion gets desktop client version from 115.
@@ -27,7 +27,7 @@ func (a *Agent) getAppVersion() (ver string, err error) {
 	if err = a.pc.ExecuteApi(spec); err != nil {
 		return
 	}
-	ver = spec.Data.LinuxApp.VersionCode
+	ver = spec.Result.LinuxApp.VersionCode
 	return
 }
 
@@ -51,9 +51,8 @@ func New(options ...option.AgentOption) *Agent {
 	if agent.pc == nil {
 		agent.pc = protocol.NewClient(nil)
 	}
-	appVer, _ := agent.getAppVersion()
-	agent.uh.SetAppVersion(appVer)
-	agent.pc.SetUserAgent(webapi.MakeUserAgent(name, appVer))
+	agent.uh.AppVer, _ = agent.getAppVersion()
+	agent.pc.SetUserAgent(webapi.MakeUserAgent(name, agent.uh.AppVer))
 	agent.pc.SetupValve(cdMin, cdMax)
 
 	return agent

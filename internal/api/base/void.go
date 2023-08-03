@@ -1,5 +1,5 @@
 package base
 
-// VoidData can be used in type parameter of D, when a ApiSpec does not care
-// about result.
-type VoidData struct{}
+// VoidResult can be used as result type parameter in ApiSpec, when we do not
+// care about result data from API.
+type VoidResult struct{}

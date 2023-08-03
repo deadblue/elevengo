@@ -16,24 +16,28 @@ type _ApiResp interface {
 }
 
 type _DataResp interface {
-	// Extract extracts information to |v| from response.
+	// Extract extracts result from response to |v|.
 	Extract(v any) error
 }
 
-// JsonApiSpec is the base spec for all JSON ApiSpec, child implementation
-// should provide type parameters R (response type) and D (data type).
-type JsonApiSpec[R any, D any] struct {
+// JsonApiSpec is the base spec for all JSON ApiSpec.
+//
+// Type parameters:
+//   - D: Result type.
+//   - R: Response type.
+type JsonApiSpec[D, R any] struct {
 	_BaseApiSpec
 	form url.Values
-	Data D
+	// The API result, its value will be filled after |Parse| called.
+	Result D
 }
 
-func (s *JsonApiSpec[R, D]) Init(baseUrl string) {
+func (s *JsonApiSpec[D, R]) Init(baseUrl string) {
 	s._BaseApiSpec.Init(baseUrl)
 	s.form = url.Values{}
 }
 
-func (s *JsonApiSpec[R, D]) Payload() protocol.Payload {
+func (s *JsonApiSpec[D, R]) Payload() protocol.Payload {
 	if len(s.form) == 0 {
 		return nil
 	} else {
@@ -41,7 +45,7 @@ func (s *JsonApiSpec[R, D]) Payload() protocol.Payload {
 	}
 }
 
-func (s *JsonApiSpec[R, D]) Parse(r io.Reader) (err error) {
+func (s *JsonApiSpec[D, R]) Parse(r io.Reader) (err error) {
 	jd, resp := json.NewDecoder(r), any(new(R))
 	if err = jd.Decode(resp); err != nil {
 		return
@@ -53,37 +57,50 @@ func (s *JsonApiSpec[R, D]) Parse(r io.Reader) (err error) {
 	}
 	// Extract data
 	if dr, ok := resp.(_DataResp); ok {
-		err = dr.Extract(&s.Data)
+		err = dr.Extract(&s.Result)
 	}
 	return
 }
 
-func (s *JsonApiSpec[R, D]) FormSet(key, value string) {
+func (s *JsonApiSpec[D, R]) FormSetAll(params map[string]string) {
+	for key, value := range params {
+		s.form.Set(key, value)
+	}
+}
+
+func (s *JsonApiSpec[D, R]) FormSet(key, value string) {
 	s.form.Set(key, value)
 }
 
-func (s *JsonApiSpec[R, D]) FormSetInt(key string, value int) {
+func (s *JsonApiSpec[D, R]) FormSetInt(key string, value int) {
 	s.form.Set(key, strconv.Itoa(value))
 }
 
-// JsonpApiSpec is the base spec for all JSON-P ApiSpec, child implementation
-// should provide type parameters R (response type) and D (data type).
-type JsonpApiSpec[R any, D any] struct {
-	_BaseApiSpec
-	// Data holds the final result
-	Data D
+func (s *JsonApiSpec[D, R]) FormSetInt64(key string, value int64) {
+	s.form.Set(key, strconv.FormatInt(value, 10))
 }
 
-func (s *JsonpApiSpec[R, D]) Init(baseUrl, cb string) {
+// JsonpApiSpec is the base spec for all JSON-P ApiSpec.
+//
+// Type parameters:
+//   - D: Result type.
+//   - R: Response type.
+type JsonpApiSpec[D, R any] struct {
+	_BaseApiSpec
+	// The API result, its value will be filled after |Parse| called.
+	Result D
+}
+
+func (s *JsonpApiSpec[D, R]) Init(baseUrl, cb string) {
 	s._BaseApiSpec.Init(baseUrl)
 	s.QuerySet("callback", cb)
 }
 
-func (s *JsonpApiSpec[R, D]) Payload() protocol.Payload {
+func (s *JsonpApiSpec[D, R]) Payload() protocol.Payload {
 	return nil
 }
 
-func (s *JsonpApiSpec[R, D]) Parse(r io.Reader) (err error) {
+func (s *JsonpApiSpec[D, R]) Parse(r io.Reader) (err error) {
 	// Read response
 	var body []byte
 	if body, err = io.ReadAll(r); err != nil {
@@ -106,7 +123,7 @@ func (s *JsonpApiSpec[R, D]) Parse(r io.Reader) (err error) {
 	}
 	// Extract data
 	if dr, ok := resp.(_DataResp); ok {
-		err = dr.Extract(&s.Data)
+		err = dr.Extract(&s.Result)
 	}
 	return
 }

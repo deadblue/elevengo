@@ -35,17 +35,6 @@ func (t *UploadTicket) header(name, value string) *UploadTicket {
 	return t
 }
 
-func (a *Agent) uploadInitHelper() (err error) {
-	if a.uh.IsReady() {
-		return
-	}
-	resp := &webapi.UploadInfoResponse{}
-	if err = a.pc.CallJsonApi(webapi.ApiUploadInfo, nil, nil, resp); err == nil {
-		a.uh.SetUserData(resp.UserId, resp.UserKey)
-	}
-	return
-}
-
 func (a *Agent) uploadInitInternal(
 	initData *webapi.UploadInitData,
 	ossData *webapi.UploadOssData,
@@ -54,15 +43,15 @@ func (a *Agent) uploadInitInternal(
 	// Prepare parameters
 	form := protocol.Params{}.
 		With("appid", "0").
-		With("appversion", a.uh.AppVersion()).
-		With("userid", a.uh.UserId()).
+		With("appversion", a.uh.AppVer).
+		With("userid", a.uh.UserId).
 		With("filename", initData.FileName).
 		WithInt64("filesize", initData.FileSize).
 		With("fileid", initData.FileId).
 		With("target", initData.Target).
 		With("sig", initData.Signature).
 		WithInt64("t", now).
-		With("token", a.uh.CalculateToken(
+		With("token", a.uh.CalcToken(
 			initData.FileId, initData.FileSize,
 			initData.SignKey, initData.SignValue, now,
 		))
@@ -101,9 +90,6 @@ func (a *Agent) uploadInit(
 	dr *webapi.UploadDigestResult,
 	od *webapi.UploadOssData,
 ) (exist bool, err error) {
-	if err = a.uploadInitHelper(); err != nil {
-		return
-	}
 	if err = webapi.UploadDigest(rs, dr); err != nil {
 		return
 	}
@@ -113,7 +99,7 @@ func (a *Agent) uploadInit(
 		FileName:  name,
 		FileSize:  dr.Size,
 		Target:    target,
-		Signature: a.uh.CalculateSignature(dr.SHA1, target),
+		Signature: a.uh.CalcSign(dr.SHA1, target),
 	}
 	for checkRange := ""; ; {
 		exist, checkRange, err = a.uploadInitInternal(initData, od)
@@ -215,7 +201,7 @@ func (a *Agent) UploadSimply(dirId, name string, size int64, r io.Reader) (fileI
 		return "", webapi.ErrUploadTooLarge
 	}
 	form := protocol.Params{}.
-		With("userid", a.uh.UserId()).
+		With("userid", a.uh.UserId).
 		With("filename", name).
 		WithInt64("filesize", size).
 		With("target", fmt.Sprintf("U_1_%s", dirId)).

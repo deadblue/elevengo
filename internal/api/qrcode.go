@@ -8,6 +8,7 @@ import (
 	"github.com/deadblue/elevengo/internal/api/errors"
 )
 
+//lint:ignore U1000 This type is used in generic.
 type _QrcodeBaseResp struct {
 	State         int    `json:"state"`
 	ErrorCode1    int    `json:"code"`
@@ -29,19 +30,19 @@ func (r *_QrcodeBaseResp) Extract(v any) error {
 	return json.Unmarshal(r.Data, v)
 }
 
-type _QrcodeTokenData struct {
+type QrcodeTokenResult struct {
 	Uid  string `json:"uid"`
 	Time int64  `json:"time"`
 	Sign string `json:"sign"`
 }
 
-type _QrcodeStatusData struct {
+type QrcodeStatusResult struct {
 	Status  int    `json:"status,omitempty"`
 	Message string `json:"msg,omitempty"`
 	Version string `json:"version,omitempty"`
 }
 
-type _QrcodeLoginData struct {
+type QrcodeLoginResult struct {
 	Cookie struct {
 		CID  string `json:"CID"`
 		SEID string `json:"SEID"`
@@ -68,7 +69,7 @@ var (
 )
 
 type QrcodeTokenSpec struct {
-	base.JsonApiSpec[_QrcodeBaseResp, _QrcodeTokenData]
+	base.JsonApiSpec[QrcodeTokenResult, _QrcodeBaseResp]
 }
 
 func (s *QrcodeTokenSpec) Init(appType string) *QrcodeTokenSpec {
@@ -78,7 +79,7 @@ func (s *QrcodeTokenSpec) Init(appType string) *QrcodeTokenSpec {
 }
 
 type QrcodeStatusSpec struct {
-	base.JsonApiSpec[_QrcodeBaseResp, _QrcodeStatusData]
+	base.JsonApiSpec[QrcodeStatusResult, _QrcodeBaseResp]
 }
 
 func (s *QrcodeStatusSpec) Init(uid string, time int64, sign string) *QrcodeStatusSpec {
@@ -91,7 +92,7 @@ func (s *QrcodeStatusSpec) Init(uid string, time int64, sign string) *QrcodeStat
 }
 
 type QrcodeLoginSpec struct {
-	base.JsonApiSpec[_QrcodeBaseResp, _QrcodeLoginData]
+	base.JsonApiSpec[QrcodeLoginResult, _QrcodeBaseResp]
 }
 
 func (s *QrcodeLoginSpec) Init(appType string, uid string) *QrcodeLoginSpec {

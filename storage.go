@@ -28,12 +28,12 @@ func (a *Agent) StorageStat(info *StorageInfo) (err error) {
 	if err = a.pc.ExecuteApi(spec); err != nil {
 		return
 	}
-	result := spec.Data.SpaceInfo
-	info.Size = int64(result.Total.Size)
-	info.Used = int64(result.Used.Size)
-	info.Avail = int64(result.Remain.Size)
-	info.FormatSize = result.Total.SizeFormat
-	info.FormatUsed = result.Used.SizeFormat
-	info.FormatAvail = result.Remain.SizeFormat
+	space := spec.Result.SpaceInfo
+	info.Size = int64(space.Total.Size)
+	info.Used = int64(space.Used.Size)
+	info.Avail = int64(space.Remain.Size)
+	info.FormatSize = space.Total.SizeFormat
+	info.FormatUsed = space.Used.SizeFormat
+	info.FormatAvail = space.Remain.SizeFormat
 	return
 }

@@ -33,10 +33,10 @@ type _DownloadInfo struct {
 	Url      _DownloadUrl `json:"url"`
 }
 
-type _DownloadData map[string]*_DownloadInfo
+type DownloadResult map[string]*_DownloadInfo
 
 type DownloadSpec struct {
-	base.M115ApiSpec[_DownloadData]
+	base.M115ApiSpec[DownloadResult]
 }
 
 func (s *DownloadSpec) Init(pickcode string) *DownloadSpec {

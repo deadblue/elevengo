@@ -48,7 +48,7 @@ func (a *Agent) afterSignIn(uid string) (err error) {
 	if err = a.pc.ExecuteApi(uis); err != nil {
 		return
 	} else {
-		a.uh.SetUserData(uis.Data.UserId, uis.Data.UserKey)
+		a.uh.SetUserParams(uis.Result.UserId, uis.Result.UserKey)
 	}
 	// Check UID
 	parts := strings.Split(uid, "_")

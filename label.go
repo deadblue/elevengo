@@ -91,7 +91,7 @@ func (a *Agent) LabelIterate() (it Iterator[Label], err error) {
 
 func (a *Agent) labelIterateInternal(i *labelIterator) (err error) {
 	qs := protocol.Params{}.
-		With("user_id", a.uh.UserId()).
+		With("user_id", a.uh.UserId).
 		With("sort", "create_time").
 		With("order", "desc").
 		WithInt("offset", i.offset).

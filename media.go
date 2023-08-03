@@ -5,7 +5,6 @@ import (
 	"github.com/deadblue/elevengo/internal/api/errors"
 	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/util"
-	"github.com/deadblue/elevengo/internal/webapi"
 )
 
 // VideoTicket contains all required arguments to play a cloud video.
@@ -30,28 +29,28 @@ type VideoTicket struct {
 func (a *Agent) VideoCreateTicket(pickcode string, ticket *VideoTicket) (err error) {
 	// VideoPlay API for web and PC are different !
 	var spec protocol.ApiSpec
-	var data *api.VideoPlayData
+	var result *api.VideoPlayResult
 	if a.isWeb {
 		webSpec := (&api.VideoPlayWebSpec{}).Init(pickcode)
-		spec, data = webSpec, &webSpec.Data
+		spec, result = webSpec, &webSpec.Result
 	} else {
 		pcSpec := (&api.VideoPlayPcSpec{}).Init(
-			a.uh.UserId(), a.uh.AppVersion(), pickcode,
+			a.uh.UserId, a.uh.AppVer, pickcode,
 		)
-		spec, data = pcSpec, &pcSpec.Data
+		spec, result = pcSpec, &pcSpec.Result
 	}
 	if err = a.pc.ExecuteApi(spec); err != nil {
 		return
 	}
-	if !data.IsReady {
+	if !result.IsReady {
 		return errors.ErrVideoNotReady
 	}
-	ticket.Url = data.VideoUrl
-	ticket.Duration = data.VideoDuration
-	ticket.Width = data.VideoWidth
-	ticket.Height = data.VideoHeight
-	ticket.FileName = data.FileName
-	ticket.FileSize = data.FileSize
+	ticket.Url = result.VideoUrl
+	ticket.Duration = result.VideoDuration
+	ticket.Width = result.VideoWidth
+	ticket.Height = result.VideoHeight
+	ticket.FileName = result.FileName
+	ticket.FileSize = result.FileSize
 	// Currently(2023-08-02), the play URL for PC does not require any headers,
 	// it is extremely recommended to use PC credential.
 	if a.isWeb {
@@ -65,17 +64,10 @@ func (a *Agent) VideoCreateTicket(pickcode string, ticket *VideoTicket) (err err
 
 // ImageGetUrl gets an accessible URL of an image file by its pickcode.
 func (a *Agent) ImageGetUrl(pickcode string) (imageUrl string, err error) {
-	qs := protocol.Params{}.
-		With("pickcode", pickcode).
-		WithNow("_")
-	resp := &webapi.BasicResponse{}
-	if err = a.pc.CallJsonApi(webapi.ApiFileImage, qs, nil, resp); err != nil {
+	spec := (&api.ImageGetSpec{}).Init(pickcode)
+	if err = a.pc.ExecuteApi(spec); err != nil {
 		return
 	}
-	// Parse response
-	data := &webapi.ImageData{}
-	if err = resp.Decode(data); err == nil {
-		imageUrl = data.OriginUrl
-	}
+	imageUrl = spec.Result.OriginUrl
 	return
 }

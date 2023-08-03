@@ -19,8 +19,8 @@ type M115ApiSpec[D any] struct {
 	// API parameters.
 	params map[string]string
 	// Final result.
-	Data D
-	// Custom the extraction process
+	Result D
+	// Custom the extraction process.
 	Extractor M115Extractor[D]
 }
 
@@ -55,11 +55,11 @@ func (s *M115ApiSpec[D]) Parse(r io.Reader) (err error) {
 	if err = resp.Extract(&data); err != nil {
 		return
 	}
-	if body, err := m115.Decode(data, s.key); err == nil {
+	if result, err := m115.Decode(data, s.key); err == nil {
 		if s.Extractor != nil {
-			return s.Extractor(body, &s.Data)
+			return s.Extractor(result, &s.Result)
 		} else {
-			return json.Unmarshal(body, &s.Data)
+			return json.Unmarshal(result, &s.Result)
 		}
 
 	} else {

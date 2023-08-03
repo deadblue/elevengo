@@ -46,9 +46,9 @@ func (a *Agent) QrcodeStart(session *QrcodeSession, options ...option.QrcodeOpti
 	if err = a.pc.ExecuteApi(spec); err != nil {
 		return
 	}
-	session.uid = spec.Data.Uid
-	session.time = spec.Data.Time
-	session.sign = spec.Data.Sign
+	session.uid = spec.Result.Uid
+	session.time = spec.Result.Time
+	session.sign = spec.Result.Sign
 	// Fetch QRcode image data
 	var reader io.ReadCloser
 	if reader, err = a.Get(api.QrcodeImageUrl(session.appType, session.uid)); err != nil {
@@ -64,7 +64,7 @@ func (a *Agent) qrcodeSignIn(session *QrcodeSession) (err error) {
 	if err = a.pc.ExecuteApi(spec); err != nil {
 		return
 	}
-	return a.afterSignIn(spec.Data.Cookie.UID)
+	return a.afterSignIn(spec.Result.Cookie.UID)
 }
 
 // QrcodePoll polls the session state, and automatically sin
@@ -75,7 +75,7 @@ func (a *Agent) QrcodePoll(session *QrcodeSession) (done bool, err error) {
 	if err = a.pc.ExecuteApi(spec); err != nil {
 		return
 	}
-	switch spec.Data.Status {
+	switch spec.Result.Status {
 	case -2:
 		err = ErrQrcodeCancelled
 	case 2:

@@ -1,10 +1,28 @@
 package api
 
 import (
+	"crypto/md5"
+	"crypto/sha1"
+	"io"
+	"strconv"
+	"time"
+
 	"github.com/deadblue/elevengo/internal/api/base"
 	"github.com/deadblue/elevengo/internal/api/errors"
+	"github.com/deadblue/elevengo/internal/crypto/hash"
+	"github.com/deadblue/elevengo/internal/util"
 )
 
+const (
+	uploadTokenSalt = "Qclm8MGWUv59TnrR0XPg"
+)
+
+type UploadInfoResult struct {
+	UserId  int
+	UserKey string
+}
+
+//lint:ignore U1000 This type is used in generic.
 type _UploadInfoResp struct {
 	base.BasicResp
 	UserId  int    `json:"user_id"`
@@ -12,8 +30,8 @@ type _UploadInfoResp struct {
 }
 
 func (r *_UploadInfoResp) Extract(v any) error {
-	if ptr, ok := v.(*_UploadInfoData); !ok {
-		return errors.ErrUnsupportedData
+	if ptr, ok := v.(*UploadInfoResult); !ok {
+		return errors.ErrUnsupportedResult
 	} else {
 		ptr.UserId = r.UserId
 		ptr.UserKey = r.UserKey
@@ -21,13 +39,8 @@ func (r *_UploadInfoResp) Extract(v any) error {
 	return nil
 }
 
-type _UploadInfoData struct {
-	UserId  int
-	UserKey string
-}
-
 type UploadInfoSpec struct {
-	base.JsonApiSpec[_UploadInfoResp, _UploadInfoData]
+	base.JsonApiSpec[UploadInfoResult, _UploadInfoResp]
 }
 
 func (s *UploadInfoSpec) Init() *UploadInfoSpec {
@@ -35,6 +48,54 @@ func (s *UploadInfoSpec) Init() *UploadInfoSpec {
 	return s
 }
 
+type UploadHelper struct {
+	AppVer string
+	UserId string
+
+	userHash string
+	userKey  string
+}
+
+func (h *UploadHelper) SetUserParams(userId int, userKey string) {
+	h.UserId = strconv.Itoa(userId)
+	h.userKey = userKey
+	h.userHash = hash.Md5Hex(h.UserId)
+}
+
+func (h *UploadHelper) CalcSign(fileId, target string) string {
+	digester := sha1.New()
+	wx := util.UpgradeWriter(digester)
+	// First pass
+	wx.MustWriteString(h.UserId, fileId, target, "0")
+	result := hash.ToHex(digester)
+	// Second pass
+	digester.Reset()
+	wx.MustWriteString(h.userKey, result, "000000")
+	return hash.ToHexUpper(digester)
+}
+
+func (h *UploadHelper) CalcToken(
+	fileId string, fileSize int64,
+	signKey, signValue string,
+	timestamp int64,
+) string {
+	digester := md5.New()
+	wx := util.UpgradeWriter(digester)
+	wx.MustWriteString(
+		uploadTokenSalt,
+		fileId,
+		strconv.FormatInt(fileSize, 10),
+		signKey,
+		signValue,
+		h.UserId,
+		strconv.FormatInt(timestamp, 10),
+		h.userHash,
+		h.AppVer,
+	)
+	return hash.ToHex(digester)
+}
+
+//lint:ignore U1000 This type is used in generic.
 type _UploadInitResp struct {
 	Request   string `json:"request"`
 	Version   string `json:"version"`
@@ -71,11 +132,19 @@ func (r *_UploadInitResp) Err() error {
 }
 
 type UploadInitSpec struct {
-	base.JsonApiSpec[_UploadInitResp, any]
+	base.JsonApiSpec[any, _UploadInitResp]
 }
 
-func (s *UploadInitSpec) Init() *UploadInitSpec {
+func (s *UploadInitSpec) Init(uh *UploadHelper, r io.ReadSeeker) *UploadInitSpec {
 	s.JsonApiSpec.Init("https://uplb.115.com/4.0/initupload.php")
-	s.JsonApiSpec.EnableCrypto()
+	s.EnableCrypto()
+	// Prepare parameters
+	now := time.Now().Unix()
+	s.FormSetAll(map[string]string{
+		"appid":      "0",
+		"appversion": uh.AppVer,
+		"userid":     uh.UserId,
+	})
+	s.FormSetInt64("t", now)
 	return s
 }

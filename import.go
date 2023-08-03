@@ -40,16 +40,13 @@ type ImportTicket struct {
 // Import imports(aka. fast-upload) a file to your 115 cloud storage.
 // Please check example code for the detailed usage.
 func (a *Agent) Import(dirId string, ticket *ImportTicket) (err error) {
-	if err = a.uploadInitHelper(); err != nil {
-		return
-	}
 	target := fmt.Sprintf("U_1_%s", dirId)
 	initData := &webapi.UploadInitData{
 		FileId:    ticket.FileSha1,
 		FileName:  ticket.FileName,
 		FileSize:  ticket.FileSize,
 		Target:    target,
-		Signature: a.uh.CalculateSignature(ticket.FileSha1, target),
+		Signature: a.uh.CalcSign(ticket.FileSha1, target),
 		SignKey:   ticket.SignKey,
 		SignValue: ticket.SignValue,
 	}

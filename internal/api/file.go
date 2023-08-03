@@ -45,6 +45,7 @@ type FileInfo struct {
 	VideoDefinition int `json:"vdi"`
 }
 
+//lint:ignore U1000 This type is used in generic.
 type _FileListResp struct {
 	base.StandardResp
 
@@ -59,7 +60,7 @@ type _FileListResp struct {
 }
 
 type FileListSpec struct {
-	base.JsonApiSpec[_FileListResp, any]
+	base.JsonApiSpec[any, _FileListResp]
 }
 
 func (s *FileListSpec) Init(dirId string) *FileListSpec {

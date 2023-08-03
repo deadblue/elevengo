@@ -16,7 +16,7 @@ type _LoginInfo struct {
 	City      string `json:"city"`
 }
 
-type _IndexInfoData struct {
+type IndexInfoResult struct {
 	SpaceInfo struct {
 		Total  _SizeInfo `json:"all_total"`
 		Remain _SizeInfo `json:"all_remain"`
@@ -28,7 +28,7 @@ type _IndexInfoData struct {
 }
 
 type IndexInfoSpec struct {
-	base.JsonApiSpec[base.StandardResp, _IndexInfoData]
+	base.JsonApiSpec[IndexInfoResult, base.StandardResp]
 }
 
 func (s *IndexInfoSpec) Init() *IndexInfoSpec {
