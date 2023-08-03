@@ -158,20 +158,8 @@ func (a *Agent) OfflineClear(flag OfflineClearFlag) (err error) {
 	return a.pc.ExecuteApi(spec)
 }
 
-// type OfflineAddResult map[string]*webapi.OfflineAddUrlResponse
-
-// func (r OfflineAddResult) Get(url string, task *OfflineTask) (err error) {
-// 	if resp, ok := r[url]; !ok {
-// 		return webapi.ErrNotExist
-// 	} else if task != nil {
-// 		task.InfoHash = resp.InfoHash
-// 		task.Name = resp.Name
-// 		task.Url = resp.Url
-// 	}
-// 	return
-// }
-
 // OfflineAddUrl adds offline tasks from urls.
+// TODO: Design the return value.
 func (a *Agent) OfflineAddUrl(urls []string, options ...option.OfflineOption) (err error) {
 	// Prepare results buffer
 	if urlCount := len(urls); urlCount == 0 {

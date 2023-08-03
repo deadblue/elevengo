@@ -51,8 +51,8 @@ func (a *Agent) VideoCreateTicket(pickcode string, ticket *VideoTicket) (err err
 	ticket.Height = result.VideoHeight
 	ticket.FileName = result.FileName
 	ticket.FileSize = result.FileSize
-	// Currently(2023-08-02), the play URL for PC does not require any headers,
-	// it is extremely recommended to use PC credential.
+	// Currently(2023-08-02), the play URL for PC does not check any request
+	// headers, it is highly recommended to use PC credential.
 	if a.isWeb {
 		ticket.Headers = map[string]string{
 			"User-Agent": a.pc.GetUserAgent(),
@@ -68,6 +68,7 @@ func (a *Agent) ImageGetUrl(pickcode string) (imageUrl string, err error) {
 	if err = a.pc.ExecuteApi(spec); err != nil {
 		return
 	}
+	// The origin URL can be access without cookie.
 	imageUrl = spec.Result.OriginUrl
 	return
 }

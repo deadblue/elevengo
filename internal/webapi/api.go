@@ -1,3 +1,4 @@
+// Deprecated: "webapi" package will be replaced by "api" package.
 package webapi
 
 const (
