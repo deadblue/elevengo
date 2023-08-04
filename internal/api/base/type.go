@@ -32,6 +32,10 @@ func (n IntNumber) Int() int {
 	return int(n)
 }
 
+func (n IntNumber) String() string {
+	return strconv.FormatInt(int64(n), 10)
+}
+
 // FloatNumner uses for JSON field which maybe a string or an float number.
 type FloatNumner float64
 
@@ -53,4 +57,28 @@ func (n *FloatNumner) UnmarshalJSON(b []byte) (err error) {
 
 func (n FloatNumner) Float64() float64 {
 	return float64(n)
+}
+
+type Boolean bool
+
+func (b *Boolean) UnmarshalJSON(data []byte) (err error) {
+	var v bool
+	switch data[0] {
+	case 'f':
+		v = false
+	case 't':
+		v = true
+	case '"':
+		var s string
+		if err = json.Unmarshal(data, &s); err == nil {
+			v = s != ""
+		}
+	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+		var i int
+		if err = json.Unmarshal(data, &i); err == nil {
+			v = i != 0
+		}
+	}
+	*b = Boolean(v)
+	return
 }

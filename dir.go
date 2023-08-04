@@ -1,12 +1,7 @@
 package elevengo
 
 import (
-	"os"
-	"strings"
-
 	"github.com/deadblue/elevengo/internal/api"
-	"github.com/deadblue/elevengo/internal/protocol"
-	"github.com/deadblue/elevengo/internal/webapi"
 )
 
 type DirOrder int
@@ -25,7 +20,7 @@ const (
 
 // DirMake makes directory under parentId, and returns its ID.
 func (a *Agent) DirMake(parentId string, name string) (dirId string, err error) {
-	spec := (&api.DirMakeSpec{}).Init(parentId, name)
+	spec := (&api.DirCreateSpec{}).Init(parentId, name)
 	if err = a.pc.ExecuteApi(spec); err == nil {
 		dirId = spec.Result
 	}
@@ -43,16 +38,16 @@ func (a *Agent) DirSetOrder(dirId string, order DirOrder, asc bool) (err error) 
 
 // DirGetId retrieves directory ID from full path.
 func (a *Agent) DirGetId(path string) (dirId string, err error) {
-	path = strings.TrimPrefix(path, "/")
-	qs := protocol.Params{}.With("path", path)
-	resp := &webapi.DirLocateResponse{}
-	if err = a.pc.CallJsonApi(webapi.ApiDirGetId, qs, nil, resp); err != nil {
-		return
-	}
-	if resp.DirId == "0" {
-		err = os.ErrNotExist
-	} else {
-		dirId = string(resp.DirId)
-	}
+	// path = strings.TrimPrefix(path, "/")
+	// qs := protocol.Params{}.With("path", path)
+	// resp := &webapi.DirLocateResponse{}
+	// if err = a.pc.CallJsonApi(webapi.ApiDirGetId, qs, nil, resp); err != nil {
+	// 	return
+	// }
+	// if resp.DirId == "0" {
+	// 	err = os.ErrNotExist
+	// } else {
+	// 	dirId = string(resp.DirId)
+	// }
 	return
 }

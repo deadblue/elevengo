@@ -10,8 +10,6 @@ var (
 	ErrOfflineInvalidLink = errors.New("invalid download link")
 	ErrOfflineTaskExisted = errors.New("offline task existed")
 
-	ErrOrderNotSupport = errors.New("file order not supported")
-
 	ErrPasswordIncorrect    = errors.New("password incorrect")
 	ErrLoginTwoStepVerify   = errors.New("requires two-step verification")
 	ErrAccountNotBindMobile = errors.New("account not binds mobile")

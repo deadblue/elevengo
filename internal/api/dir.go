@@ -15,13 +15,13 @@ var FileOrderMap = []string{
 }
 
 //lint:ignore U1000 This type is used in generic.
-type _DirMakeResp struct {
+type _DirCreateResp struct {
 	base.BasicResp
 	FileId   string `json:"file_id"`
 	FileName string `json:"file_name"`
 }
 
-func (r *_DirMakeResp) Extract(v any) (err error) {
+func (r *_DirCreateResp) Extract(v any) (err error) {
 	if ptr, ok := v.(*string); !ok {
 		err = errors.ErrUnsupportedResult
 	} else {
@@ -30,11 +30,11 @@ func (r *_DirMakeResp) Extract(v any) (err error) {
 	return
 }
 
-type DirMakeSpec struct {
-	base.JsonApiSpec[string, _DirMakeResp]
+type DirCreateSpec struct {
+	base.JsonApiSpec[string, _DirCreateResp]
 }
 
-func (s *DirMakeSpec) Init(parentId, name string) *DirMakeSpec {
+func (s *DirCreateSpec) Init(parentId, name string) *DirCreateSpec {
 	s.JsonApiSpec.Init("https://webapi.115.com/files/add")
 	s.FormSet("pid", parentId)
 	s.FormSet("cname", name)

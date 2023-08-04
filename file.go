@@ -3,6 +3,8 @@ package elevengo
 import (
 	"time"
 
+	"github.com/deadblue/elevengo/internal/api"
+	"github.com/deadblue/elevengo/internal/api/errors"
 	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/webapi"
 	"github.com/deadblue/elevengo/option"
@@ -35,7 +37,7 @@ type File struct {
 	ModifiedTime time.Time
 }
 
-func (f *File) from(info *webapi.FileInfo) *File {
+func (f *File) from(info *api.FileInfo) *File {
 	if info.FileId != "" {
 		f.FileId = info.FileId
 		f.ParentId = info.CategoryId
@@ -46,24 +48,24 @@ func (f *File) from(info *webapi.FileInfo) *File {
 		f.IsDirectory = true
 	}
 	f.Name = info.Name
-	f.Size = int64(info.Size)
+	f.Size = info.Size.Int64()
 	f.PickCode = info.PickCode
 	f.Sha1 = info.Sha1
 
-	f.Star = info.IsStar != 0
-	f.Labels = make([]*Label, len(info.Labels))
-	for i, l := range info.Labels {
-		f.Labels[i] = &Label{
-			Id:    l.Id,
-			Name:  l.Name,
-			Color: LabelColor(webapi.LabelColorMap[l.Color]),
-		}
-	}
+	f.Star = bool(info.IsStar)
+	// f.Labels = make([]*Label, len(info.Labels))
+	// for i, l := range info.Labels {
+	// 	f.Labels[i] = &Label{
+	// 		Id:    l.Id,
+	// 		Name:  l.Name,
+	// 		Color: LabelColor(webapi.LabelColorMap[l.Color]),
+	// 	}
+	// }
 
 	if info.UpdatedTime != "" {
-		f.ModifiedTime = webapi.ParseFileTime(info.UpdatedTime)
+		f.ModifiedTime = api.ParseFileTime(info.UpdatedTime)
 	} else {
-		f.ModifiedTime = webapi.ParseFileTime(info.ModifiedTime)
+		f.ModifiedTime = api.ParseFileTime(info.ModifiedTime)
 	}
 
 	return f
@@ -105,22 +107,23 @@ type FileInfo struct {
 }
 
 type fileIterator struct {
-	// Common parameters
-	dirId  string
-	offset int
-	order  string
-	asc    int
-	kind   int
-	// Function parameters
-	params map[string]string
+	// Parameters
+	dirId   string
+	offset  int
+	order   string
+	asc     int
+	options []option.FileOption
+
 	// Total count
 	count int
-	// Cached files
-	files []*webapi.FileInfo
+
 	// Cache index
 	index int
 	// Cache size
 	size int
+	// Cached files
+	files []*api.FileInfo
+
 	// Update function
 	update func(*fileIterator) error
 }
@@ -131,7 +134,7 @@ func (i *fileIterator) Next() (err error) {
 	}
 	i.offset += i.size
 	if i.offset >= i.count {
-		return webapi.ErrReachEnd
+		return errors.ErrReachEnd
 	}
 	return i.update(i)
 }
@@ -140,9 +143,13 @@ func (i *fileIterator) Index() int {
 	return i.offset + i.index
 }
 
+func (i *fileIterator) Count() int {
+	return i.count
+}
+
 func (i *fileIterator) Get(file *File) error {
 	if i.index >= i.size {
-		return webapi.ErrReachEnd
+		return errors.ErrReachEnd
 	}
 	if file != nil {
 		file.from(i.files[i.index])
@@ -150,29 +157,16 @@ func (i *fileIterator) Get(file *File) error {
 	return nil
 }
 
-func (i *fileIterator) Count() int {
-	return i.count
-}
-
-func (i *fileIterator) applyOptions(options []option.FileOption) {
-	for _, opt := range options {
-		switch opt := opt.(type) {
-		case option.FileKindOption:
-			i.kind = int(opt)
-		}
-	}
-}
-
 // FileIterate returns an iterator.
 func (a *Agent) FileIterate(dirId string, options ...option.FileOption) (it Iterator[File], err error) {
 	fi := &fileIterator{
-		dirId:  dirId,
-		order:  webapi.FileOrderByTime,
-		asc:    0,
-		offset: 0,
-		update: a.fileListInternal,
+		dirId:   dirId,
+		offset:  0,
+		order:   api.FileOrderDefault,
+		asc:     0,
+		options: options,
+		update:  a.fileListInternal,
 	}
-	fi.applyOptions(options)
 	if err = a.fileListInternal(fi); err == nil {
 		it = fi
 	}
@@ -180,136 +174,115 @@ func (a *Agent) FileIterate(dirId string, options ...option.FileOption) (it Iter
 }
 
 // FileStared lists all stared files.
-func (a *Agent) FileStared(options ...option.FileOption) (it Iterator[File], err error) {
-	fi := &fileIterator{
-		dirId:  "0",
-		order:  webapi.FileOrderByName,
-		asc:    0,
-		offset: 0,
-		params: map[string]string{
-			"star": "1",
-		},
-		update: a.fileListInternal,
-	}
-	fi.applyOptions(options)
-	if err = a.fileListInternal(fi); err == nil {
-		it = fi
-	}
-	return
-}
+// func (a *Agent) FileStared(options ...option.FileOption) (it Iterator[File], err error) {
+// 	fi := &fileIterator{
+// 		dirId:  "0",
+// 		order:  webapi.FileOrderByName,
+// 		asc:    0,
+// 		offset: 0,
+// 		params: map[string]string{
+// 			"star": "1",
+// 		},
+// 		update: a.fileListInternal,
+// 	}
+// 	if err = a.fileListInternal(fi); err == nil {
+// 		it = fi
+// 	}
+// 	return
+// }
 
 func (a *Agent) fileListInternal(fi *fileIterator) (err error) {
-	// Prepare request
-	qs := protocol.Params{}.
-		With("aid", "1").
-		With("show_dir", "1").
-		WithInt("type", fi.kind).
-		With("snap", "0").
-		With("natsort", "1").
-		With("fc_mix", "0").
-		With("format", "json").
-		With("cid", fi.dirId).
-		With("o", fi.order).
-		WithInt("asc", fi.asc).
-		WithInt("offset", fi.offset).
-		WithInt("limit", webapi.FileListLimit)
-	for pn, pv := range fi.params {
-		qs.With(pn, pv)
-	}
-	resp := &webapi.FileListResponse{}
-	for retry := true; retry; {
-		// Select API URL
-		apiUrl := webapi.ApiFileList
-		if fi.order == webapi.FileOrderByName {
-			apiUrl = webapi.ApiFileListByName
+	spec := (&api.FileListSpec{}).Init(fi.dirId, fi.offset)
+	spec.SetOrder(fi.order, fi.asc)
+	for _, opt := range fi.options {
+		switch opt := opt.(type) {
+		case option.FileStarOption:
+			if opt {
+				spec.SetStared()
+			}
 		}
-		// Call API
-		err = a.pc.CallJsonApi(apiUrl, qs, nil, resp)
-		if err == webapi.ErrOrderNotSupport {
-			// Update order & asc
-			fi.order, fi.asc = resp.Order, resp.IsAsc
-			qs.With("o", fi.order).WithInt("asc", fi.asc)
-			retry = true
+	}
+	for retry := true; retry; {
+		if err = a.pc.ExecuteApi(spec); err != nil {
+			if ferr, ok := err.(*errors.ErrFileOrderNotSupported); ok {
+				spec.SetOrder(ferr.Order, ferr.Asc)
+			} else {
+				return err
+			}
 		} else {
 			retry = false
 		}
 	}
-	if err != nil {
-		return
-	}
-	// When dirId not exists, 115 will return the files under root dir, that
-	// should be considered as an error.
-	if fi.dirId != string(resp.CategoryId) {
-		return webapi.ErrNotExist
-	}
-	// Parse response
-	if fi.count = resp.Count; fi.count > 0 {
-		fi.files = make([]*webapi.FileInfo, 0, webapi.FileListLimit)
-		if err = resp.Decode(&fi.files); err != nil {
-			return
-		}
-		fi.index, fi.size = 0, len(fi.files)
+	result := spec.Result
+	fi.order, fi.asc = result.Order, result.Asc
+	if fi.count = result.Count; fi.count > 0 {
+		fi.index, fi.size = 0, len(result.Files)
+		fi.files = make([]*api.FileInfo, fi.size)
+		copy(fi.files, result.Files)
 	}
 	return
 }
 
 // FileSearch recursively searches files under dirId, whose name contains keyword.
-func (a *Agent) FileSearch(dirId, keyword string, options ...option.FileOption) (it Iterator[File], err error) {
-	fi := &fileIterator{
-		dirId:  dirId,
-		offset: 0,
-		params: map[string]string{
-			"search_value": keyword,
-		},
-		update: a.fileSearchInternal,
-	}
-	fi.applyOptions(options)
-	if err = a.fileSearchInternal(fi); err == nil {
-		it = fi
-	}
+func (a *Agent) FileSearch(dirId string, options ...option.FileOption) (it Iterator[File], err error) {
+	// TODO
+	// fi := &fileIterator{
+	// 	dirId:  dirId,
+	// 	offset: 0,
+	// 	params: map[string]string{
+	// 		"search_value": keyword,
+	// 	},
+	// 	update: a.fileSearchInternal,
+	// }
+	// fi.applyOptions(options)
+	// if err = a.fileSearchInternal(fi); err == nil {
+	// 	it = fi
+	// }
 	return
 }
 
 // FileLabeled lists all files which has specific label.
 func (a *Agent) FileLabeled(labelId string, options ...option.FileOption) (it Iterator[File], err error) {
-	fi := &fileIterator{
-		dirId:  "0",
-		offset: 0,
-		params: map[string]string{
-			"file_label": labelId,
-		},
-		update: a.fileSearchInternal,
-	}
-	fi.applyOptions(options)
-	if err = a.fileSearchInternal(fi); err == nil {
-		it = fi
-	}
+	// TODO
+	// fi := &fileIterator{
+	// 	dirId:  "0",
+	// 	offset: 0,
+	// 	params: map[string]string{
+	// 		"file_label": labelId,
+	// 	},
+	// 	update: a.fileSearchInternal,
+	// }
+	// fi.applyOptions(options)
+	// if err = a.fileSearchInternal(fi); err == nil {
+	// 	it = fi
+	// }
 	return
 }
 
 func (a *Agent) fileSearchInternal(fi *fileIterator) (err error) {
+	// TODO
 	// Prepare request
-	qs := protocol.Params{}.
-		With("aid", "1").
-		With("cid", fi.dirId).
-		WithInt("offset", fi.offset).
-		WithInt("limit", webapi.FileListLimit).
-		With("format", "json")
-	for pn, pv := range fi.params {
-		qs.With(pn, pv)
-	}
-	resp := &webapi.FileListResponse{}
-	if err = a.pc.CallJsonApi(webapi.ApiFileSearch, qs, nil, resp); err != nil {
-		return
-	}
-	// Parse response
-	if fi.count = resp.Count; fi.count > 0 {
-		fi.files = make([]*webapi.FileInfo, 0, webapi.FileListLimit)
-		if err = resp.Decode(&fi.files); err != nil {
-			return
-		}
-		fi.index, fi.size = 0, len(fi.files)
-	}
+	// qs := protocol.Params{}.
+	// 	With("aid", "1").
+	// 	With("cid", fi.dirId).
+	// 	WithInt("offset", fi.offset).
+	// 	WithInt("limit", webapi.FileListLimit).
+	// 	With("format", "json")
+	// for pn, pv := range fi.params {
+	// 	qs.With(pn, pv)
+	// }
+	// resp := &webapi.FileListResponse{}
+	// if err = a.pc.CallJsonApi(webapi.ApiFileSearch, qs, nil, resp); err != nil {
+	// 	return
+	// }
+	// // Parse response
+	// if fi.count = resp.Count; fi.count > 0 {
+	// 	fi.files = make([]*webapi.FileInfo, 0, webapi.FileListLimit)
+	// 	if err = resp.Decode(&fi.files); err != nil {
+	// 		return
+	// 	}
+	// 	fi.index, fi.size = 0, len(fi.files)
+	// }
 	return
 }
 
@@ -321,7 +294,7 @@ func (a *Agent) FileGet(fileId string, file *File) (err error) {
 	if err = a.pc.CallJsonApi(webapi.ApiFileInfo, qs, nil, resp); err != nil {
 		return
 	}
-	data := make([]*webapi.FileInfo, 0, 1)
+	data := make([]*api.FileInfo, 0, 1)
 	if err = resp.Decode(&data); err == nil {
 		file.from(data[0])
 	}
@@ -363,12 +336,8 @@ func (a *Agent) FileMove(dirId string, fileIds []string) (err error) {
 	if len(fileIds) == 0 {
 		return
 	}
-	form := protocol.Params{}.
-		With("pid", dirId).
-		WithArray("fid", fileIds).
-		ToForm()
-	return a.pc.CallJsonApi(
-		webapi.ApiFileMove, nil, form, &webapi.BasicResponse{})
+	spec := (&api.FileMoveSpec{}).Init(dirId, fileIds)
+	return a.pc.ExecuteApi(spec)
 }
 
 // FileCopy copies files into target directory whose id is dirId.
@@ -376,22 +345,14 @@ func (a *Agent) FileCopy(dirId string, fileIds []string) (err error) {
 	if len(fileIds) == 0 {
 		return
 	}
-	form := protocol.Params{}.
-		With("pid", dirId).
-		WithArray("fid", fileIds).
-		ToForm()
-	return a.pc.CallJsonApi(
-		webapi.ApiFileCopy, nil, form, &webapi.BasicResponse{})
+	spec := (&api.FileCopySpec{}).Init(dirId, fileIds)
+	return a.pc.ExecuteApi(spec)
 }
 
 // FileRename renames file to new name.
 func (a *Agent) FileRename(fileId, newName string) (err error) {
-	form := protocol.Params{}.
-		WithMap("files_new_name", map[string]string{
-			fileId: newName,
-		}).ToForm()
-	return a.pc.CallJsonApi(
-		webapi.ApiFileRename, nil, form, &webapi.BasicResponse{})
+	spec := (&api.FileRenameSpec{}).Init(fileId, newName)
+	return a.pc.ExecuteApi(spec)
 }
 
 // FileDelete deletes files.
@@ -399,9 +360,8 @@ func (a *Agent) FileDelete(fileIds []string) (err error) {
 	if len(fileIds) == 0 {
 		return
 	}
-	form := protocol.Params{}.WithArray("fid", fileIds).ToForm()
-	return a.pc.CallJsonApi(
-		webapi.ApiFileDelete, nil, form, &webapi.BasicResponse{})
+	spec := (&api.FileDeleteSpec{}).Init(fileIds)
+	return a.pc.ExecuteApi(spec)
 }
 
 // FileFindDuplications finds all duplicate files which have the same SHA1 hash

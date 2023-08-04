@@ -17,8 +17,6 @@ var errorsMap = map[int]error{
 	50003: ErrNotExist,
 	// Common errors
 	990002: ErrInvalidParameters,
-	// File errors
-	20130827: ErrOrderNotSupport,
 	// Login errors
 	40101009: ErrPasswordIncorrect,
 	40101010: ErrLoginTwoStepVerify,

@@ -3,7 +3,6 @@ package elevengo
 import (
 	"github.com/deadblue/elevengo/internal/api"
 	"github.com/deadblue/elevengo/internal/protocol"
-	"github.com/deadblue/elevengo/internal/webapi"
 	"github.com/deadblue/elevengo/option"
 )
 
@@ -34,7 +33,6 @@ func (a *Agent) getAppVersion() (ver string, err error) {
 // New creates Agent with customized options.
 func New(options ...option.AgentOption) *Agent {
 	agent := &Agent{}
-	// name, appVer := "", ""
 	var cdMin, cdMax uint
 	var name string
 	// Apply options
@@ -52,7 +50,7 @@ func New(options ...option.AgentOption) *Agent {
 		agent.pc = protocol.NewClient(nil)
 	}
 	agent.uh.AppVer, _ = agent.getAppVersion()
-	agent.pc.SetUserAgent(webapi.MakeUserAgent(name, agent.uh.AppVer))
+	agent.pc.SetUserAgent(api.MakeUserAgent(name, agent.uh.AppVer))
 	agent.pc.SetupValve(cdMin, cdMax)
 
 	return agent
