@@ -51,7 +51,7 @@ func (a *Agent) QrcodeStart(session *QrcodeSession, options ...option.QrcodeOpti
 	session.sign = spec.Result.Sign
 	// Fetch QRcode image data
 	var reader io.ReadCloser
-	if reader, err = a.Get(api.QrcodeImageUrl(session.appType, session.uid)); err != nil {
+	if reader, err = a.Fetch(api.QrcodeImageUrl(session.appType, session.uid)); err != nil {
 		return
 	}
 	defer util.QuietlyClose(reader)

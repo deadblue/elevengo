@@ -52,8 +52,8 @@ func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (e
 	return
 }
 
-// Get gets content from url using agent underlying HTTP client.
-func (a *Agent) Get(url string) (body io.ReadCloser, err error) {
+// Fetch gets content from url using agent underlying HTTP client.
+func (a *Agent) Fetch(url string) (body io.ReadCloser, err error) {
 	return a.pc.Get(url, nil, nil)
 }
 
@@ -110,8 +110,8 @@ func RangeMiddle(offset, length int64) Range {
 	}
 }
 
-// GetRange gets partial content from |url|, which is located by |rng|.
-func (a *Agent) GetRange(url string, rng Range) (body io.ReadCloser, err error) {
+// FetchRange gets partial content from |url|, which is located by |rng|.
+func (a *Agent) FetchRange(url string, rng Range) (body io.ReadCloser, err error) {
 	headers := make(map[string]string)
 	if value := rng.headerValue(); value != "" {
 		headers["Range"] = value
