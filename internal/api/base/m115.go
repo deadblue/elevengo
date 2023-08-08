@@ -18,14 +18,15 @@ type M115ApiSpec[D any] struct {
 	key m115.Key
 	// API parameters.
 	params map[string]string
+	// Custom the extraction process.
+	extractor M115Extractor[D]
 	// Final result.
 	Result D
-	// Custom the extraction process.
-	Extractor M115Extractor[D]
 }
 
-func (s *M115ApiSpec[D]) Init(baseUrl string) {
+func (s *M115ApiSpec[D]) Init(baseUrl string, ex M115Extractor[D]) {
 	s._BaseApiSpec.Init(baseUrl)
+	s.extractor = ex
 	s.key = m115.GenerateKey()
 	s.params = make(map[string]string)
 }
@@ -56,8 +57,8 @@ func (s *M115ApiSpec[D]) Parse(r io.Reader) (err error) {
 		return
 	}
 	if result, err := m115.Decode(data, s.key); err == nil {
-		if s.Extractor != nil {
-			return s.Extractor(result, &s.Result)
+		if s.extractor != nil {
+			return s.extractor(result, &s.Result)
 		} else {
 			return json.Unmarshal(result, &s.Result)
 		}

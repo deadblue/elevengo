@@ -40,7 +40,7 @@ type DownloadSpec struct {
 }
 
 func (s *DownloadSpec) Init(pickcode string) *DownloadSpec {
-	s.M115ApiSpec.Init("https://proapi.115.com/app/chrome/downurl")
+	s.M115ApiSpec.Init("https://proapi.115.com/app/chrome/downurl", nil)
 	s.QuerySetNow("t")
 	s.ParamSet("pickcode", pickcode)
 	return s

@@ -136,9 +136,11 @@ func offlineAddUrlsResultExtractor(data []byte, result *OfflineAddUrlsResult) (e
 }
 
 func (s *OfflineAddUrlsSpec) Init(userId, appVer string, urls []string, saveDirId string) *OfflineAddUrlsSpec {
-	s.M115ApiSpec.Init("https://lixian.115.com/lixianssp/?ac=add_task_urls")
+	s.M115ApiSpec.Init(
+		"https://lixian.115.com/lixianssp/?ac=add_task_urls",
+		offlineAddUrlsResultExtractor,
+	)
 	s.M115ApiSpec.EnableCrypto()
-	s.M115ApiSpec.Extractor = offlineAddUrlsResultExtractor
 	s.ParamSetAll(map[string]string{
 		"ac":      "add_task_urls",
 		"app_ver": appVer,

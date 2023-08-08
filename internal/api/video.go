@@ -106,8 +106,9 @@ func videoPlayResultExtractor(data []byte, result *VideoPlayResult) (err error) 
 }
 
 func (s *VideoPlayPcSpec) Init(userId, appVer, pickcode string) *VideoPlayPcSpec {
-	s.M115ApiSpec.Init("https://proapi.115.com/pc/video/play")
-	s.Extractor = videoPlayResultExtractor
+	s.M115ApiSpec.Init(
+		"https://proapi.115.com/pc/video/play", videoPlayResultExtractor,
+	)
 	s.ParamSetAll(map[string]string{
 		"format":            "app",
 		"definition_filter": "1",
