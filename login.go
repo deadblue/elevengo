@@ -44,11 +44,11 @@ func (a *Agent) CredentialExport(cr *Credential) {
 
 func (a *Agent) afterSignIn(uid string) (err error) {
 	// Call UploadInfo API to get userId and userKey
-	uis := (&api.UploadInfoSpec{}).Init()
-	if err = a.pc.ExecuteApi(uis); err != nil {
+	spec := (&api.UploadInfoSpec{}).Init()
+	if err = a.pc.ExecuteApi(spec); err != nil {
 		return
 	} else {
-		a.uh.SetUserParams(uis.Result.UserId, uis.Result.UserKey)
+		a.uh.SetUserParams(spec.Result.UserId, spec.Result.UserKey)
 	}
 	// Check UID
 	parts := strings.Split(uid, "_")

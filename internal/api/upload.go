@@ -3,18 +3,21 @@ package api
 import (
 	"crypto/md5"
 	"crypto/sha1"
-	"io"
 	"strconv"
 	"time"
 
 	"github.com/deadblue/elevengo/internal/api/base"
 	"github.com/deadblue/elevengo/internal/api/errors"
 	"github.com/deadblue/elevengo/internal/crypto/hash"
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/util"
 )
 
 const (
 	uploadTokenSalt = "Qclm8MGWUv59TnrR0XPg"
+
+	UploadMaxSize       = 5 * 1024 * 1024 * 1024
+	UploadMaxSizeSample = 200 * 1024 * 1024
 )
 
 type UploadInfoResult struct {
@@ -95,6 +98,33 @@ func (h *UploadHelper) CalcToken(
 	return hash.ToHex(digester)
 }
 
+type UploadInitParams struct {
+	// File metadata
+	FileId   string
+	FileName string
+	FileSize int64
+	// Target directory
+	Target string
+	// Upload signature
+	Signature string
+	// Sign parameters for 2nd-pass
+	SignKey   string
+	SignValue string
+}
+
+type UploadInitResult struct {
+	Exists bool
+	// Upload parameters
+	Oss struct {
+		Bucket      string
+		Object      string
+		Callback    string
+		CallbackVar string
+	}
+	SignKey   string
+	SignCheck string
+}
+
 //lint:ignore U1000 This type is used in generic.
 type _UploadInitResp struct {
 	Request   string `json:"request"`
@@ -131,20 +161,171 @@ func (r *_UploadInitResp) Err() error {
 	return errors.ErrUnexpected
 }
 
-type UploadInitSpec struct {
-	base.JsonApiSpec[any, _UploadInitResp]
+func (r *_UploadInitResp) Extract(v any) (err error) {
+	if ptr, ok := v.(*UploadInitResult); !ok {
+		err = errors.ErrUnsupportedResult
+	} else {
+		switch r.Status {
+		case 1:
+			ptr.Oss.Bucket = r.Bucket
+			ptr.Oss.Object = r.Object
+			ptr.Oss.Callback = r.Callback.Callback
+			ptr.Oss.CallbackVar = r.Callback.CallbackVar
+		case 2:
+			ptr.Exists = true
+		case 7:
+			ptr.SignKey = r.SignKey
+			ptr.SignCheck = r.SignCheck
+		}
+	}
+	return
 }
 
-func (s *UploadInitSpec) Init(uh *UploadHelper, r io.ReadSeeker) *UploadInitSpec {
+type UploadInitSpec struct {
+	base.JsonApiSpec[UploadInitResult, _UploadInitResp]
+}
+
+func (s *UploadInitSpec) Init(params *UploadInitParams, helper *UploadHelper) *UploadInitSpec {
 	s.JsonApiSpec.Init("https://uplb.115.com/4.0/initupload.php")
 	s.EnableCrypto()
 	// Prepare parameters
 	now := time.Now().Unix()
-	s.FormSetAll(map[string]string{
-		"appid":      "0",
-		"appversion": uh.AppVer,
-		"userid":     uh.UserId,
-	})
+	s.FormSet("appid", "0")
+	s.FormSet("appversion", helper.AppVer)
+	s.FormSet("userid", helper.UserId)
+	s.FormSet("filename", params.FileName)
+	s.FormSetInt64("filesize", params.FileSize)
+	s.FormSet("fileid", params.FileId)
+	s.FormSet("target", params.Target)
+	s.FormSet("sig", params.Signature)
 	s.FormSetInt64("t", now)
+	if params.SignKey != "" && params.SignValue != "" {
+		s.FormSet("sign_key", params.SignKey)
+		s.FormSet("sign_val", params.SignValue)
+	}
+	s.FormSet("token", helper.CalcToken(
+		params.FileId, params.FileSize, params.SignKey, params.SignValue, now,
+	))
 	return s
+}
+
+type UploadTokenResult struct {
+	AccessKeyId     string
+	AccessKeySecret string
+	SecurityToken   string
+	Expiration      time.Time
+}
+
+//lint:ignore U1000 This type is used in generic.
+type _UploadTokenResp struct {
+	StatusCode      string `json:"StatusCode"`
+	AccessKeyId     string `json:"AccessKeyId"`
+	AccessKeySecret string `json:"AccessKeySecret"`
+	SecurityToken   string `json:"SecurityToken"`
+	Expiration      string `json:"Expiration"`
+}
+
+func (r *_UploadTokenResp) Err() error {
+	if r.StatusCode == "200" {
+		return nil
+	}
+	return errors.ErrUnexpected
+}
+
+func (r *_UploadTokenResp) Extract(v any) error {
+	if ptr, ok := v.(*UploadTokenResult); !ok {
+		return errors.ErrUnsupportedResult
+	} else {
+		ptr.AccessKeyId = r.AccessKeyId
+		ptr.AccessKeySecret = r.AccessKeySecret
+		ptr.SecurityToken = r.SecurityToken
+		ptr.Expiration, _ = time.Parse(time.RFC3339, r.Expiration)
+	}
+	return nil
+}
+
+type UploadTokenSpec struct {
+	base.JsonApiSpec[UploadTokenResult, _UploadTokenResp]
+}
+
+func (s *UploadTokenSpec) Init() *UploadTokenSpec {
+	s.JsonApiSpec.Init("https://uplb.115.com/3.0/gettoken.php")
+	return s
+}
+
+type UploadSampleInitResult struct {
+	Host        string
+	Object      string
+	Callback    string
+	AccessKeyId string
+	Policy      string
+	Signature   string
+}
+
+//lint:ignore U1000 This type is used in generic.
+type _UploadSampleInitResp struct {
+	Host        string `json:"host"`
+	Object      string `json:"object"`
+	Callback    string `json:"callback"`
+	AccessKeyId string `json:"accessid"`
+	Policy      string `json:"policy"`
+	Signature   string `json:"signature"`
+	Expire      int64  `json:"expire"`
+}
+
+func (r *_UploadSampleInitResp) Err() error {
+	return nil
+}
+
+func (r *_UploadSampleInitResp) Extract(v any) error {
+	if ptr, ok := v.(*UploadSampleInitResult); !ok {
+		return errors.ErrUnsupportedResult
+	} else {
+		ptr.Host = r.Host
+		ptr.Object = r.Object
+		ptr.Callback = r.Callback
+		ptr.AccessKeyId = r.AccessKeyId
+		ptr.Policy = r.Policy
+		ptr.Signature = r.Signature
+	}
+	return nil
+}
+
+type UploadSampleInitSpec struct {
+	base.JsonApiSpec[UploadSampleInitResult, _UploadSampleInitResp]
+}
+
+func (s *UploadSampleInitSpec) Init(userId string, fileName string, fileSize int64, target string) *UploadSampleInitSpec {
+	s.JsonApiSpec.Init("https://uplb.115.com/3.0/sampleinitupload.php")
+	s.FormSet("userid", userId)
+	s.FormSet("filename", fileName)
+	s.FormSetInt64("filesize", fileSize)
+	s.FormSet("target", target)
+	return s
+}
+
+type UploadSampleResult struct {
+	AreaId     base.IntNumber `json:"aid"`
+	CategoryId string         `json:"cid"`
+	FileId     string         `json:"file_id"`
+	FileName   string         `json:"file_name"`
+	FileSize   base.IntNumber `json:"file_size"`
+	FileSha1   string         `json:"sha1"`
+	PickCode   string         `json:"pick_code"`
+	CreateTime base.IntNumber `json:"file_ptime"`
+}
+
+type UploadSampleSpec struct {
+	base.JsonApiSpec[UploadSampleResult, base.StandardResp]
+	payload protocol.Payload
+}
+
+func (s *UploadSampleSpec) Init(url string, payload protocol.Payload) *UploadSampleSpec {
+	s.JsonApiSpec.Init(url)
+	s.payload = payload
+	return s
+}
+
+func (s *UploadSampleSpec) Payload() protocol.Payload {
+	return s.payload
 }

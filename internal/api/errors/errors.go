@@ -35,6 +35,8 @@ var (
 
 	ErrUploadDisabled = errors.New("upload function is disabled")
 
+	ErrUploadNothing = errors.New("nothing ot upload")
+
 	ErrUploadTooLarge = errors.New("upload reach the limit")
 
 	ErrInitUploadUnknowStatus = errors.New("unknown status from initupload")
