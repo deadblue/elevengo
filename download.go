@@ -54,7 +54,7 @@ func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (e
 
 // Fetch gets content from url using agent underlying HTTP client.
 func (a *Agent) Fetch(url string) (body io.ReadCloser, err error) {
-	return a.pc.Get(url, nil, nil)
+	return a.pc.Get(url, nil)
 }
 
 // Range is used in Agent.GetRange().
@@ -116,5 +116,5 @@ func (a *Agent) FetchRange(url string, rng Range) (body io.ReadCloser, err error
 	if value := rng.headerValue(); value != "" {
 		headers["Range"] = value
 	}
-	return a.pc.Get(url, nil, headers)
+	return a.pc.Get(url, headers)
 }

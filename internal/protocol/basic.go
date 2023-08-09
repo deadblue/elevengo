@@ -3,7 +3,6 @@ package protocol
 import (
 	"io"
 	"net/http"
-	"strings"
 
 	"github.com/deadblue/elevengo/internal/util"
 )
@@ -18,19 +17,7 @@ type Payload interface {
 	ContentLength() int64
 }
 
-func appendQueryString(url string, qs Params) string {
-	if !strings.ContainsRune(url, '?') {
-		url = url + "?" + qs.Encode()
-	} else {
-		url = url + "&" + qs.Encode()
-	}
-	return url
-}
-
-func (c *Client) Get(url string, qs Params, headers map[string]string) (body io.ReadCloser, err error) {
-	if qs != nil {
-		url = appendQueryString(url, qs)
-	}
+func (c *Client) Get(url string, headers map[string]string) (body io.ReadCloser, err error) {
 	var req *http.Request = nil
 	if req, err = http.NewRequest(http.MethodGet, url, nil); err != nil {
 		return
@@ -47,28 +34,7 @@ func (c *Client) Get(url string, qs Params, headers map[string]string) (body io.
 	return
 }
 
-func (c *Client) GetContent(url string, qs Params) (data []byte, err error) {
-	body, err := c.Get(url, qs, nil)
-	if err != nil {
-		return
-	}
-	defer util.QuietlyClose(body)
-	return io.ReadAll(body)
-}
-
-func (c *Client) Touch(url string, qs Params) error {
-	if body, err := c.Get(url, qs, nil); err == nil {
-		util.ConsumeReader(body)
-		return nil
-	} else {
-		return err
-	}
-}
-
-func (c *Client) Post(url string, qs Params, payload Payload) (body io.ReadCloser, err error) {
-	if qs != nil {
-		url = appendQueryString(url, qs)
-	}
+func (c *Client) Post(url string, payload Payload) (body io.ReadCloser, err error) {
 	req, err := http.NewRequest(http.MethodPost, url, payload)
 	if err != nil {
 		return
@@ -82,4 +48,22 @@ func (c *Client) Post(url string, qs Params, payload Payload) (body io.ReadClose
 		body = resp.Body
 	}
 	return
+}
+
+func (c *Client) GetContent(url string) (data []byte, err error) {
+	body, err := c.Get(url, nil)
+	if err != nil {
+		return
+	}
+	defer util.QuietlyClose(body)
+	return io.ReadAll(body)
+}
+
+func (c *Client) Touch(url string) error {
+	if body, err := c.Get(url, nil); err == nil {
+		util.ConsumeReader(body)
+		return nil
+	} else {
+		return err
+	}
 }

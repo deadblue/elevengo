@@ -31,9 +31,9 @@ func (c *Client) ExecuteApi(spec ApiSpec) (err error) {
 		defer c.v.ClockIn()
 		// Prepare request
 		if payload != nil {
-			body, err = c.Post(spec.Url(), nil, payload)
+			body, err = c.Post(spec.Url(), payload)
 		} else {
-			body, err = c.Get(spec.Url(), nil, nil)
+			body, err = c.Get(spec.Url(), nil)
 		}
 	}
 	if err != nil {
