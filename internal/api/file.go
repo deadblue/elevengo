@@ -70,7 +70,7 @@ type _FileListResp struct {
 	Count int `json:"count"`
 
 	Order string `json:"order"`
-	Asc   int    `json:"is_asc"`
+	IsAsc int    `json:"is_asc"`
 
 	Offset int `json:"offset"`
 	Limit  int `json:"limit"`
@@ -81,7 +81,7 @@ func (r *_FileListResp) Err() (err error) {
 	if r.ErrorCode2 == errors.CodeFileOrderNotSupported {
 		return &errors.ErrFileOrderNotSupported{
 			Order: r.Order,
-			Asc:   r.Asc,
+			Asc:   r.IsAsc,
 		}
 	}
 	return r.StandardResp.Err()
@@ -98,7 +98,7 @@ func (r *_FileListResp) Extract(v any) (err error) {
 	}
 	ptr.DirId = r.CategoryId.String()
 	ptr.Count = r.Count
-	ptr.Order, ptr.Asc = r.Order, r.Asc
+	ptr.Order, ptr.Asc = r.Order, r.IsAsc
 	return
 }
 
@@ -115,10 +115,8 @@ func (s *FileListSpec) Init(dirId string, offset int) *FileListSpec {
 	s.QuerySet("fc_mix", "0")
 	s.QuerySetInt("offset", offset)
 	s.QuerySetInt("limit", FileListLimit)
-	s.QuerySet("o", FileOrderDefault)
-	s.QuerySet("asc", "0")
-	s.QuerySet("snap", "0")
-	s.QuerySet("natsort", "1")
+	// s.QuerySet("snap", "0")
+	// s.QuerySet("natsort", "1")
 	return s
 }
 
@@ -140,6 +138,80 @@ func (s *FileListSpec) SetOrder(order string, asc int) {
 
 func (s *FileListSpec) SetStared() {
 	s.QuerySet("star", "1")
+}
+
+//lint:ignore U1000 This type is used in generic.
+type _FileSearchResp struct {
+	base.StandardResp
+
+	Folder struct {
+		CategoryId string `json:"cid"`
+		ParentId   string `json:"pid"`
+		Name       string `json:"name"`
+	} `json:"folder"`
+
+	Count       int `json:"count"`
+	FileCount   int `json:"file_count"`
+	FolderCount int `json:"folder_count"`
+
+	Order string `json:"order"`
+	IsAsc int    `json:"is_asc"`
+
+	Offset int `json:"offset"`
+	Limit  int `json:"page_size"`
+}
+
+func (r *_FileSearchResp) Extract(v any) (err error) {
+	ptr, ok := v.(*FileListResult)
+	if !ok {
+		return errors.ErrUnsupportedResult
+	}
+	ptr.Files = make([]*FileInfo, 0, FileListLimit)
+	if err = json.Unmarshal(r.Data, &ptr.Files); err != nil {
+		return
+	}
+	ptr.DirId = r.Folder.CategoryId
+	ptr.Count = r.Count
+	ptr.Order, ptr.Asc = r.Order, r.IsAsc
+	return
+}
+
+type FileSearchSpec struct {
+	base.JsonApiSpec[FileListResult, _FileSearchResp]
+}
+
+func (s *FileSearchSpec) Init(offset int) *FileSearchSpec {
+	s.JsonApiSpec.Init("https://webapi.115.com/files/search")
+	s.QuerySet("aid", "1")
+	s.QuerySet("show_dir", "1")
+	s.QuerySetInt("offset", offset)
+	s.QuerySetInt("limit", FileListLimit)
+	s.QuerySet("format", "json")
+	return s
+}
+
+func (s *FileSearchSpec) ByKeyword(dirId, keyword string) *FileSearchSpec {
+	s.QuerySet("cid", dirId)
+	s.QuerySet("search_value", keyword)
+	return s
+}
+
+func (s *FileSearchSpec) ByLabelId(labelId string) *FileSearchSpec {
+	s.QuerySet("cid", "0")
+	s.QuerySet("file_label", labelId)
+	return s
+}
+
+type FileGetResult []*FileInfo
+
+type FileGetSpec struct {
+	base.JsonApiSpec[FileGetResult, base.StandardResp]
+}
+
+func (s *FileGetSpec) Init(fileId string) *FileGetSpec {
+	s.JsonApiSpec.Init("https://webapi.115.com/files/get_info")
+	s.QuerySet("file_id", fileId)
+	return s
 }
 
 type FileRenameSpec struct {
