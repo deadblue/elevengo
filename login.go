@@ -7,7 +7,7 @@ import (
 	"github.com/deadblue/elevengo/internal/api/errors"
 )
 
-// Credential contains required information which upstream server uses to
+// Credential contains required information which 115 server uses to
 // authenticate a signed-in user.
 // In detail, three cookies are required: "UID", "CID", "SEID", caller can
 // find them from browser cookie storage.
@@ -19,8 +19,12 @@ type Credential struct {
 
 // UserInfo contains the basic information of a signed-in user.
 type UserInfo struct {
-	Id   int
+	// User ID
+	Id int
+	// User name
 	Name string
+	// Is user VIP
+	IsVip bool
 }
 
 // CredentialImport imports credentials into agent.
@@ -34,7 +38,7 @@ func (a *Agent) CredentialImport(cr *Credential) (err error) {
 	return a.afterSignIn(cr.UID)
 }
 
-// CredentialExport exports credentials for future-use.
+// CredentialExport exports current credentials for future-use.
 func (a *Agent) CredentialExport(cr *Credential) {
 	cookies := a.pc.ExportCookies(api.CookieUrl)
 	cr.UID = cookies[api.CookieNameUID]
@@ -59,20 +63,13 @@ func (a *Agent) afterSignIn(uid string) (err error) {
 	return
 }
 
-// UserGet retrieves user information from cloud.
-// func (a *Agent) UserGet(info *UserInfo) (err error) {
-// 	cb := fmt.Sprintf("jQuery%d_%d", rand.Uint64(), time.Now().Unix())
-// 	qs := protocol.Params{}.
-// 		With("callback", cb).
-// 		WithNow("_")
-// 	resp := webapi.BasicResponse{}
-// 	if err = a.pc.CallJsonpApi(webapi.ApiUserInfo, qs, &resp); err != nil {
-// 		return
-// 	}
-// 	result := webapi.UserInfoData{}
-// 	if err = resp.Decode(&result); err == nil {
-// 		info.Id = result.UserId
-// 		info.Name = result.UserName
-// 	}
-// 	return
-// }
+// UserGet get information of current signed-in user.
+func (a *Agent) UserGet(info *UserInfo) (err error) {
+	spec := (&api.UserInfoSpec{}).Init()
+	if err = a.pc.ExecuteApi(spec); err == nil {
+		info.Id = spec.Result.UserId
+		info.Name = spec.Result.UserName
+		info.IsVip = spec.Result.IsVip != 0
+	}
+	return
+}
