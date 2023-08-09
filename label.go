@@ -8,17 +8,38 @@ import (
 type LabelColor int
 
 const (
-	LabelNoColor LabelColor = iota
-	LabelRed
-	LabelOrange
-	LabelYellow
-	LabelGreen
-	LabelBlue
-	LabelPurple
-	LabelGray
+	LabelColorBlank LabelColor = iota
+	LabelColorRed
+	LabelColorOrange
+	LabelColorYellow
+	LabelColorGreen
+	LabelColorBlue
+	LabelColorPurple
+	LabelColorGray
+)
 
-	labelColorMin = LabelNoColor
-	labelColorMax = LabelGray
+var (
+	labelColorMap = map[LabelColor]string{
+		LabelColorBlank:  api.LabelColorBlank,
+		LabelColorRed:    api.LabelColorRed,
+		LabelColorOrange: api.LabelColorOrange,
+		LabelColorYellow: api.LabelColorYellow,
+		LabelColorGreen:  api.LabelColorGreen,
+		LabelColorBlue:   api.LabelColorBlue,
+		LabelColorPurple: api.LabelColorPurple,
+		LabelColorGray:   api.LabelColorGray,
+	}
+
+	labelColorRevMap = map[string]LabelColor{
+		api.LabelColorBlank:  LabelColorBlank,
+		api.LabelColorRed:    LabelColorRed,
+		api.LabelColorOrange: LabelColorOrange,
+		api.LabelColorYellow: LabelColorYellow,
+		api.LabelColorGreen:  LabelColorGreen,
+		api.LabelColorBlue:   LabelColorBlue,
+		api.LabelColorPurple: LabelColorPurple,
+		api.LabelColorGray:   LabelColorGray,
+	}
 )
 
 type Label struct {
@@ -68,7 +89,7 @@ func (i *labelIterator) Get(label *Label) error {
 	l := i.labels[i.index]
 	label.Id = l.Id
 	label.Name = l.Name
-	label.Color = LabelColor(api.LabelColorMap[l.Color])
+	label.Color = labelColorRevMap[l.Color]
 	return nil
 }
 
@@ -91,11 +112,10 @@ func (a *Agent) labelIterateInternal(i *labelIterator) (err error) {
 	if err = a.pc.ExecuteApi(spec); err != nil {
 		return
 	}
-	result := spec.Result
-	i.count = result.Total
-	i.index, i.size = 0, len(result.List)
+	i.count = spec.Result.Total
+	i.index, i.size = 0, len(spec.Result.List)
 	i.labels = make([]*api.LabelInfo, 0, i.size)
-	i.labels = append(i.labels, result.List...)
+	copy(i.labels, spec.Result.List)
 	return
 }
 
@@ -124,11 +144,12 @@ func (a *Agent) labelIterateInternal(i *labelIterator) (err error) {
 
 // LabelCreate creates a label with name and color, returns its ID.
 func (a *Agent) LabelCreate(name string, color LabelColor) (labelId string, err error) {
-	if color < labelColorMin || color > labelColorMax {
-		color = LabelNoColor
+	colorName, ok := labelColorMap[color]
+	if !ok {
+		colorName = api.LabelColorBlank
 	}
 	spec := (&api.LabelCreateSpec{}).Init(
-		name, api.LabelColors[color],
+		name, colorName,
 	)
 	if err = a.pc.ExecuteApi(spec); err != nil {
 		return
@@ -144,9 +165,12 @@ func (a *Agent) LabelUpdate(label *Label) (err error) {
 	if label == nil || label.Id == "" {
 		return
 	}
+	colorName, ok := labelColorMap[label.Color]
+	if !ok {
+		colorName = api.LabelColorBlank
+	}
 	spec := (&api.LabelEditSpec{}).Init(
-		label.Id, label.Name,
-		api.LabelColors[label.Color],
+		label.Id, label.Name, colorName,
 	)
 	return a.pc.ExecuteApi(spec)
 }
@@ -157,6 +181,13 @@ func (a *Agent) LabelDelete(labelId string) (err error) {
 		return
 	}
 	spec := (&api.LabelDeleteSpec{}).Init(labelId)
+	return a.pc.ExecuteApi(spec)
+}
+
+func (a *Agent) LabelSetOrder(labelId string, order FileOrder, asc bool) (err error) {
+	spec := (&api.LabelSetOrderSpec{}).Init(
+		labelId, getOrderName(order), asc,
+	)
 	return a.pc.ExecuteApi(spec)
 }
 

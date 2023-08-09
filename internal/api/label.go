@@ -1,41 +1,20 @@
 package api
 
-import "github.com/deadblue/elevengo/internal/api/base"
+import (
+	"github.com/deadblue/elevengo/internal/api/base"
+)
 
 const (
 	LabelListLimit = 30
-)
 
-var (
-	LabelColors = []string{
-		// No Color
-		"#000000",
-		// Red
-		"#FF4B30",
-		// Orange
-		"#F78C26",
-		// Yellow
-		"#FFC032",
-		// Green
-		"#43BA80",
-		// Blue
-		"#2670FC",
-		// Purple
-		"#8B69FE",
-		// Gray
-		"#CCCCCC",
-	}
-
-	LabelColorMap = map[string]int{
-		"#000000": 0,
-		"#FF4B30": 1,
-		"#F78C26": 2,
-		"#FFC032": 3,
-		"#43BA80": 4,
-		"#2670FC": 5,
-		"#8B69FE": 6,
-		"#CCCCCC": 7,
-	}
+	LabelColorBlank  = "#000000"
+	LabelColorRed    = "#FF4B30"
+	LabelColorOrange = "#F78C26"
+	LabelColorYellow = "#FFC032"
+	LabelColorGreen  = "#43BA80"
+	LabelColorBlue   = "#2670FC"
+	LabelColorPurple = "#8B69FE"
+	LabelColorGray   = "#CCCCCC"
 )
 
 type LabelInfo struct {
@@ -100,5 +79,25 @@ type LabelDeleteSpec struct {
 func (s *LabelDeleteSpec) Init(labelId string) *LabelDeleteSpec {
 	s.JsonApiSpec.Init("https://webapi.115.com/label/delete")
 	s.FormSet("id", labelId)
+	return s
+}
+
+type LabelSetOrderSpec struct {
+	base.JsonApiSpec[base.VoidResult, base.BasicResp]
+}
+
+func (s *LabelSetOrderSpec) Init(labelId string, order string, asc bool) *LabelSetOrderSpec {
+	s.JsonApiSpec.Init("https://webapi.115.com/files/order")
+	s.FormSetAll(map[string]string{
+		"module":     "label_search",
+		"file_id":    labelId,
+		"fc_mix":     "0",
+		"user_order": order,
+	})
+	if asc {
+		s.FormSet("user_asc", "1")
+	} else {
+		s.FormSet("user_asc", "0")
+	}
 	return s
 }

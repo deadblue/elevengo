@@ -14,7 +14,8 @@ type BasicResp struct {
 	ErrorCode  IntNumber `json:"errno,omitempty"`
 	ErrorCode2 int       `json:"errNo,omitempty"`
 	ErrorCode3 int       `json:"errcode,omitempty"`
-	ErrorCode4 int       `json:"code,omitempty"`
+	ErrorCode4 int       `json:"errCode,omitempty"`
+	ErrorCode5 int       `json:"code,omitempty"`
 	// Possible error message fields
 	ErrorMessage  string `json:"error,omitempty"`
 	ErrorMessage2 string `json:"message,omitempty"`
@@ -30,6 +31,7 @@ func (r *BasicResp) Err() error {
 		r.ErrorCode2,
 		r.ErrorCode3,
 		r.ErrorCode4,
+		r.ErrorCode5,
 	)
 	return errors.Get(errCode)
 }
