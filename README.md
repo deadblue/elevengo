@@ -1,6 +1,6 @@
 # ElevenGo
 
-![Version](https://img.shields.io/badge/release-v0.4.5-brightgreen?style=flat-square)
+![Version](https://img.shields.io/badge/release-v0.5.1-brightgreen?style=flat-square)
 [![Reference](https://img.shields.io/badge/Go-Reference-blue.svg?style=flat-square)](https://pkg.go.dev/github.com/deadblue/elevengo)
 ![License](https://img.shields.io/:License-MIT-green.svg?style=flat-square)
 
@@ -43,9 +43,9 @@ More examples can be found in [reference](https://pkg.go.dev/github.com/deadblue
 ## Features
 
 * Login
-  * [x] Import credential from cookies
+  * [x] Import Credential from Cookies
   * [x] Login via QRCode
-  * [x] Get signed-in user information
+  * [x] Get Information signed-in User
 * File
   * [x] List
   * [x] Search
@@ -59,15 +59,13 @@ More examples can be found in [reference](https://pkg.go.dev/github.com/deadblue
   * [x] Upload
   * [x] Make Directory
 * Media
-  * [x] Get Video data
-  * [X] Get Image URL
+  * [x] Get Play URL of Video File
+  * [X] Get Directly-Access URL of Image File
 * Offline
-  * [x] List tasks
-  * [x] Create task by URL
-  * [x] Delete tasks
-  * [x] Clear tasks
-* Other
-  * [x] Captcha
+  * [x] List Tasks
+  * [x] Create Task by URL
+  * [x] Delete Tasks
+  * [x] Clear Tasks
 
 ## License
 
