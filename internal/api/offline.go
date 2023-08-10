@@ -76,6 +76,10 @@ type OfflineDeleteSpec struct {
 
 func (s *OfflineDeleteSpec) Init(hashes []string, deleteFiles bool) *OfflineDeleteSpec {
 	s.JsonApiSpec.Init("https://lixian.115.com/lixian/?ct=lixian&ac=task_del")
+	for index, hash := range hashes {
+		key := fmt.Sprintf("hash[%d]", index)
+		s.FormSet(key, hash)
+	}
 	if deleteFiles {
 		s.FormSet("flag", "1")
 	} else {
@@ -126,10 +130,14 @@ func offlineAddUrlsResultExtractor(data []byte, result *OfflineAddUrlsResult) (e
 	}
 	tasks := make([]*OfflineTask, len(obj.Result))
 	for i, r := range obj.Result {
-		tasks[i] = &OfflineTask{}
-		tasks[i].InfoHash = r.InfoHash
-		tasks[i].Name = r.Name
-		tasks[i].Url = r.Url
+		if r.State || r.ErrCode == errors.CodeOfflineTaskExists {
+			tasks[i] = &OfflineTask{}
+			tasks[i].InfoHash = r.InfoHash
+			tasks[i].Name = r.Name
+			tasks[i].Url = r.Url
+		} else {
+			tasks[i] = nil
+		}
 	}
 	*result = tasks
 	return

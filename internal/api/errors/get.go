@@ -7,7 +7,6 @@ var errorsMap = map[int]error{
 	990001: ErrNotLogin,
 	// Offline errors
 	10004: ErrOfflineInvalidLink,
-	10008: ErrOfflineTaskExisted,
 	// File errors
 	20004: ErrExist,
 	20022: ErrInvalidOperation,
@@ -25,6 +24,9 @@ var errorsMap = map[int]error{
 	40101037: ErrSessionExited,
 	// QRCode errors
 	40199002: ErrQrcodeExpired,
+
+	// Whitelist errors
+	CodeOfflineTaskExists: nil,
 }
 
 func Get(code int) error {

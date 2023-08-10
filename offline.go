@@ -133,18 +133,19 @@ func (a *Agent) offlineIterateInternal(oi *offlineIterator) (err error) {
 }
 
 // OfflineDelete deletes tasks.
-func (a *Agent) OfflineDelete(hashes []string, options ...option.OfflineOption) (err error) {
+func (a *Agent) OfflineDelete(hashes []string, opts ...option.OfflineDeleteOption) (err error) {
 	if len(hashes) == 0 {
 		return
 	}
-	// Check options
+	// Apply options
 	deleteFiles := false
-	for _, opt := range options {
+	for _, opt := range opts {
 		switch opt := opt.(type) {
-		case option.OfflineDeleteOption:
+		case option.OfflineDeleteFilesOfTasks:
 			deleteFiles = bool(opt)
 		}
 	}
+	// Call API
 	spec := (&api.OfflineDeleteSpec{}).Init(hashes, deleteFiles)
 	return a.pc.ExecuteApi(spec)
 }
@@ -158,25 +159,44 @@ func (a *Agent) OfflineClear(flag OfflineClearFlag) (err error) {
 	return a.pc.ExecuteApi(spec)
 }
 
-// OfflineAddUrl adds offline tasks from urls.
-// TODO: Design the return value.
-func (a *Agent) OfflineAddUrl(urls []string, options ...option.OfflineOption) (err error) {
+// OfflineAddUrl adds offline tasks by download URLs.
+// It returns an info hash list related to the given urls, the info hash will
+// be empty if the related URL is invalid.
+//
+// You can use options to change the download directory:
+//
+//	agent := Default()
+//	agent.CredentialImport(&Credential{UID: "", CID: "", SEID: ""})
+//	hashes, err := agent.OfflineAddUrl([]string{
+//		"https://foo.bar/file.zip",
+//		"magent:?xt=urn:btih:111222",
+//		"ed2k://|file|name|size|md4|",
+//	}, option.OfflineSaveDownloadedFileTo("dirId"))
+func (a *Agent) OfflineAddUrl(urls []string, opts ...option.OfflineAddOption) (hashes []string, err error) {
 	// Prepare results buffer
 	if urlCount := len(urls); urlCount == 0 {
 		return
+	} else {
+		hashes = make([]string, urlCount)
 	}
-	var saveDirId string
-	for _, opt := range options {
+	// Apply options
+	saveDirId := ""
+	for _, opt := range opts {
 		switch opt := opt.(type) {
-		case option.OfflineSaveOption:
+		case option.OfflineSaveDownloadedFileTo:
 			saveDirId = string(opt)
 		}
 	}
+	// Call API
 	spec := (&api.OfflineAddUrlsSpec{}).Init(
 		a.uh.UserId, a.uh.AppVer, urls, saveDirId,
 	)
-	if err = a.pc.ExecuteApi(spec); err != nil {
-		return
+	if err = a.pc.ExecuteApi(spec); err == nil {
+		for i, task := range spec.Result {
+			if task != nil {
+				hashes[i] = task.InfoHash
+			}
+		}
 	}
 	return
 }

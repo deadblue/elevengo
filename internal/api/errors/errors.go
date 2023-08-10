@@ -8,7 +8,6 @@ var (
 	ErrCaptchaRequired = errors.New("please resolve captcha")
 
 	ErrOfflineInvalidLink = errors.New("invalid download link")
-	ErrOfflineTaskExisted = errors.New("offline task existed")
 
 	ErrPasswordIncorrect    = errors.New("password incorrect")
 	ErrLoginTwoStepVerify   = errors.New("requires two-step verification")

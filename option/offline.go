@@ -1,19 +1,17 @@
 package option
 
-type OfflineOption interface {
-	isOfflineOption()
+type OfflineDeleteOption interface {
+	isOfflineDeleteOption()
 }
 
-type OfflineDeleteOption bool
+type OfflineDeleteFilesOfTasks bool
 
-func (o OfflineDeleteOption) isOfflineOption() {}
+func (o OfflineDeleteFilesOfTasks) isOfflineDeleteOption() {}
 
-const OfflineDeleteFiles = OfflineDeleteOption(true)
-
-type OfflineSaveOption string
-
-func (o OfflineSaveOption) isOfflineOption() {}
-
-func OfflineSaveAt(dirId string) OfflineOption {
-	return OfflineSaveOption(dirId)
+type OfflineAddOption interface {
+	isOfflineAddOption()
 }
+
+type OfflineSaveDownloadedFileTo string
+
+func (o OfflineSaveDownloadedFileTo) isOfflineAddOption() {}
