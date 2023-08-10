@@ -1,6 +1,6 @@
 package elevengo
 
-import "github.com/deadblue/elevengo/internal/webapi"
+import "github.com/deadblue/elevengo/internal/api/errors"
 
 // Iterator iterate items.
 type Iterator[T any] interface {
@@ -19,5 +19,5 @@ type Iterator[T any] interface {
 }
 
 func IsIteratorEnd(err error) bool {
-	return err == webapi.ErrReachEnd
+	return err == errors.ErrReachEnd
 }

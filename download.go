@@ -1,14 +1,12 @@
 package elevengo
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
-	"strings"
 
-	"github.com/deadblue/elevengo/internal/crypto/m115"
-	"github.com/deadblue/elevengo/internal/protocol"
-	"github.com/deadblue/elevengo/internal/webapi"
+	"github.com/deadblue/elevengo/internal/api"
+	"github.com/deadblue/elevengo/internal/api/errors"
+	"github.com/deadblue/elevengo/internal/util"
 )
 
 // DownloadTicket contains all required information to download a file.
@@ -27,67 +25,36 @@ type DownloadTicket struct {
 // to download a file. Caller can use third-party tools/libraries to download
 // file, such as wget/curl/aria2.
 func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (err error) {
-	// Generate key for encrypt/decrypt
-	key := m115.GenerateKey()
-
-	// Prepare request
-	data, _ := json.Marshal(&webapi.DownloadRequest{Pickcode: pickcode})
-	qs := protocol.Params{}.WithNow("t")
-	form := protocol.Params{}.With("data", m115.Encode(data, key)).ToForm()
-	// Send request
-	resp := &webapi.M115Response{}
-	if err = a.pc.CallJsonApi(webapi.ApiDownloadGetUrl, qs, form, resp); err != nil {
+	// Prepare API spec.
+	spec := (&api.DownloadSpec{}).Init(pickcode)
+	if err = a.pc.ExecuteApi(spec); err != nil {
 		return
 	}
-	// Parse response
-	if data, err = m115.Decode(resp.Data, key); err != nil {
-		return
+	// Convert result.
+	if len(spec.Result) == 0 {
+		return errors.ErrDownloadEmpty
 	}
-	result := webapi.DownloadData{}
-	if err = json.Unmarshal(data, &result); err != nil {
-		return
-	}
-	if !result.IsValid() {
-		return webapi.ErrDownloadEmpty
-	}
-	for _, info := range result {
-		if info.FileSize == 0 {
-			err = webapi.ErrDownloadDirectory
-		} else {
-			a.convertDownloadTicket(info, ticket)
+	for _, info := range spec.Result {
+		ticket.FileSize, _ = info.FileSize.Int64()
+		if ticket.FileSize == 0 {
+			return errors.ErrDownloadDirectory
+		}
+		ticket.FileName = info.FileName
+		ticket.Url = info.Url.Url
+		ticket.Headers = map[string]string{
+			// User-Agent header
+			"User-Agent": a.pc.GetUserAgent(),
+			// Cookie header
+			"Cookie": util.MarshalCookies(a.pc.ExportCookies(ticket.Url)),
 		}
 		break
 	}
 	return
 }
 
-func (a *Agent) convertDownloadTicket(info *webapi.DownloadInfo, ticket *DownloadTicket) {
-	ticket.FileName = info.FileName
-	ticket.FileSize = int64(info.FileSize)
-	ticket.Url = info.Url.Url
-	ticket.Headers = map[string]string{
-		"User-Agent": a.pc.GetUserAgent(),
-	}
-	// Serialize cookie
-	cookies := a.pc.ExportCookies(ticket.Url)
-	if len(cookies) > 0 {
-		buf, isFirst := strings.Builder{}, true
-		for ck, cv := range cookies {
-			if !isFirst {
-				buf.WriteString("; ")
-			}
-			buf.WriteString(ck)
-			buf.WriteRune('=')
-			buf.WriteString(cv)
-			isFirst = false
-		}
-		ticket.Headers["Cookie"] = buf.String()
-	}
-}
-
-// Get gets content from url using agent underlying HTTP client.
-func (a *Agent) Get(url string) (body io.ReadCloser, err error) {
-	return a.pc.Get(url, nil, nil)
+// Fetch gets content from url using agent underlying HTTP client.
+func (a *Agent) Fetch(url string) (body io.ReadCloser, err error) {
+	return a.pc.Get(url, nil)
 }
 
 // Range is used in Agent.GetRange().
@@ -143,11 +110,11 @@ func RangeMiddle(offset, length int64) Range {
 	}
 }
 
-// GetRange gets partial content from |url|, which is located by |rng|.
-func (a *Agent) GetRange(url string, rng Range) (body io.ReadCloser, err error) {
+// FetchRange gets partial content from |url|, which is located by |rng|.
+func (a *Agent) FetchRange(url string, rng Range) (body io.ReadCloser, err error) {
 	headers := make(map[string]string)
 	if value := rng.headerValue(); value != "" {
 		headers["Range"] = value
 	}
-	return a.pc.Get(url, nil, headers)
+	return a.pc.Get(url, headers)
 }

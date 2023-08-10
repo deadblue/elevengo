@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/deadblue/elevengo/internal/api"
+	"github.com/deadblue/elevengo/internal/api/errors"
 	"github.com/deadblue/elevengo/internal/crypto/hash"
 	"github.com/deadblue/elevengo/internal/util"
-	"github.com/deadblue/elevengo/internal/webapi"
 )
 
 type ErrImportNeedCheck struct {
@@ -40,29 +41,27 @@ type ImportTicket struct {
 // Import imports(aka. fast-upload) a file to your 115 cloud storage.
 // Please check example code for the detailed usage.
 func (a *Agent) Import(dirId string, ticket *ImportTicket) (err error) {
-	if err = a.uploadInitHelper(); err != nil {
-		return
-	}
 	target := fmt.Sprintf("U_1_%s", dirId)
-	initData := &webapi.UploadInitData{
+	params := &api.UploadInitParams{
 		FileId:    ticket.FileSha1,
 		FileName:  ticket.FileName,
 		FileSize:  ticket.FileSize,
 		Target:    target,
-		Signature: a.uh.CalculateSignature(ticket.FileSha1, target),
+		Signature: a.uh.CalcSign(ticket.FileSha1, target),
 		SignKey:   ticket.SignKey,
 		SignValue: ticket.SignValue,
 	}
-	exist, checkRange := false, ""
-	if exist, checkRange, err = a.uploadInitInternal(initData, nil); err == nil {
-		if checkRange != "" {
-			err = &ErrImportNeedCheck{
-				SignKey:   initData.SignKey,
-				SignRange: checkRange,
-			}
-		} else if !exist {
-			err = webapi.ErrNotExist
+	spec := (&api.UploadInitSpec{}).Init(params, &a.uh)
+	if err = a.pc.ExecuteApi(spec); err != nil {
+		return
+	}
+	if spec.Result.SignCheck != "" {
+		err = &ErrImportNeedCheck{
+			SignKey:   spec.Result.SignKey,
+			SignRange: spec.Result.SignCheck,
 		}
+	} else if !spec.Result.Exists {
+		err = errors.ErrNotExist
 	}
 	return
 }
@@ -98,7 +97,7 @@ func (a *Agent) ImportCalculateSignValue(pickcode string, signRange string) (val
 	}
 	// Get range content
 	var body io.ReadCloser
-	if body, err = a.GetRange(ticket.Url, Range{start, end}); err != nil {
+	if body, err = a.FetchRange(ticket.Url, Range{start, end}); err != nil {
 		return
 	}
 	defer util.QuietlyClose(body)

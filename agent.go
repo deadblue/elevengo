@@ -1,69 +1,57 @@
 package elevengo
 
 import (
+	"github.com/deadblue/elevengo/internal/api"
 	"github.com/deadblue/elevengo/internal/protocol"
-	"github.com/deadblue/elevengo/internal/webapi"
 	"github.com/deadblue/elevengo/option"
 )
 
 // Agent holds signed-in user's credentials, and provides methods to access upstream
 // server's features, such as file management, offline download, etc.
 type Agent struct {
+	// isWeb indicates whether the credential is for web.
+	// Some API should use PC version when credential is not for web.
+	isWeb bool
+
 	// |pc| is the underlying protocol client
 	pc *protocol.Client
 
-	// User ID
-	uid int
-	// Offline token
-	ot webapi.OfflineToken
 	// Upload helper
-	uh webapi.UploadHelper
+	uh api.UploadHelper
 }
 
 // getAppVersion gets desktop client version from 115.
 func (a *Agent) getAppVersion() (ver string, err error) {
-	qs := protocol.Params{}.
-		With("callback", "get_version")
-	resp := webapi.BasicResponse{}
-	if err = a.pc.CallJsonpApi(webapi.ApiGetVersion, qs, &resp); err != nil {
+	spec := (&api.AppVersionSpec{}).Init()
+	if err = a.pc.ExecuteApi(spec); err != nil {
 		return
 	}
-	data := webapi.VersionData{}
-	if err = resp.Decode(&data); err != nil {
-		return
-	}
-	ver = data.LinuxApp.VersionCode
+	ver = spec.Result.LinuxApp.VersionCode
 	return
 }
 
 // New creates Agent with customized options.
-func New(options ...option.Option) *Agent {
+func New(options ...option.AgentOption) *Agent {
 	agent := &Agent{}
-	name, appVer := "", ""
 	var cdMin, cdMax uint
+	var name string
 	// Apply options
 	for _, opt := range options {
 		switch opt := opt.(type) {
-		case option.NameOption:
+		case option.AgentNameOption:
 			name = string(opt)
-		case option.AppVersionOption:
-			appVer = string(opt)
-		case *option.HttpOption:
-			agent.pc = protocol.NewClient(opt.Client)
-		case option.CooldownOption:
+		case option.AgentCooldownOption:
 			cdMin, cdMax = opt.Min, opt.Max
+		case *option.AgentHttpOption:
+			agent.pc = protocol.NewClient(opt.Client)
 		}
 	}
 	if agent.pc == nil {
 		agent.pc = protocol.NewClient(nil)
 	}
+	agent.uh.AppVer, _ = agent.getAppVersion()
+	agent.pc.SetUserAgent(api.MakeUserAgent(name, agent.uh.AppVer))
 	agent.pc.SetupValve(cdMin, cdMax)
-	if appVer == "" {
-		// Get latest app version from cloud
-		appVer, _ = agent.getAppVersion()
-	}
-	agent.uh.SetAppVersion(appVer)
-	agent.pc.SetUserAgent(webapi.MakeUserAgent(name, appVer))
 
 	return agent
 }

@@ -1,3 +1,3 @@
-// Package elevengo is an API client of 115 Cloud Storage Service, it bases on
-// 115 web APIs which captured from their web pages.
+// Package elevengo is an API client for 115 Cloud Storage Service, it bases on
+// the official APIs that are captures from Web and Desktop App.
 package elevengo

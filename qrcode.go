@@ -1,123 +1,86 @@
 package elevengo
 
 import (
-	"github.com/deadblue/elevengo/internal/protocol"
-	"github.com/deadblue/elevengo/internal/webapi"
+	"errors"
+	"io"
+
+	"github.com/deadblue/elevengo/internal/api"
+	"github.com/deadblue/elevengo/internal/util"
+	"github.com/deadblue/elevengo/option"
 )
 
 // QrcodeSession holds the information during a QRCode login process.
 type QrcodeSession struct {
-	// The raw data of QRCode, caller should use third-party tools/libraries
-	// to convert it into QRCode matrix or image.
-	// 
-	// Deprecated: Please use `ImageUrl` instead.
-	Content string
-	// URL of QRCode image.
-	ImageUrl string
-	// Hidden fields
-	uid  string
-	time int64
-	sign string
-	platform string
+	// QRCode image content.
+	Image []byte
+	// Hidden fields.
+	appType string
+	uid     string
+	time    int64
+	sign    string
 }
 
-type QrcodePlatform string
+var ErrQrcodeCancelled = errors.New("QRcode cancelled")
 
-const (
-	QrcodePlatformLinux   QrcodePlatform = "linux"
-	QrcodePlatformMac     QrcodePlatform = "mac"
-	QrcodePlatformWindows QrcodePlatform = "windows"
-	QrcodePlatformWeb     QrcodePlatform = "web"
-)
-
-// QrcodeStatus is returned by `Agent.QrcodeStatus()`.
-// You can call `QrcodeStatus.IsXXX()` method to check the status,
-// or directly check its value.
-type QrcodeStatus int
-
-func (s QrcodeStatus) IsWaiting() bool {
-	return s == 0
-}
-func (s QrcodeStatus) IsScanned() bool {
-	return s == 1
-}
-func (s QrcodeStatus) IsAllowed() bool {
-	return s == 2
-}
-func (s QrcodeStatus) IsCanceled() bool {
-	return s == -2
-}
-
-func (a *Agent) qrcodeCallApi(url string, qs protocol.Params, form protocol.Payload, data interface{}) (err error) {
-	resp := &webapi.LoginBasicResponse{}
-	if err = a.pc.CallJsonApi(url, qs, form, resp); err != nil {
-		return err
-	}
-	return resp.Decode(data)
-}
-
-// QrcodeStart starts a QRCode login session for web.
-func (a *Agent) QrcodeStart(session *QrcodeSession) (err error) {
-	return a.QrcodeStartForPlatform(session, QrcodePlatformWeb)
-}
-
-// QrcodeStartForPlatform starts a QRCode login session for specific platform.
-func (a *Agent) QrcodeStartForPlatform(session *QrcodeSession, platform QrcodePlatform) (err error) {
-	data := &webapi.QrcodeTokenData{}
-	if err = a.qrcodeCallApi(webapi.QrcodeTokenApi(string(platform)), nil, nil, data); err == nil {
-		session.platform = string(platform)
-		session.uid = data.Uid
-		session.time = data.Time
-		session.sign = data.Sign
-		session.ImageUrl = webapi.QrcodeImageUrl(session.platform, data.Uid)
-		if platform == QrcodePlatformWeb {
-			session.Content = data.Qrcode
+// QrcodeStart starts a QRcode sign-in session.
+// The session is for web by default, you can change sign-in app by passing a
+// "option.QrcodeLoginOption".
+//
+// Example:
+//
+//	agent := elevengo.Default()
+//	session := elevengo.QrcodeSession()
+//	agent.QrcodeStart(session, option.QrcodeLoginLinux)
+func (a *Agent) QrcodeStart(session *QrcodeSession, options ...option.QrcodeOption) (err error) {
+	// Apply options
+	for _, opt := range options {
+		switch opt := opt.(type) {
+		case option.QrcodeLoginOption:
+			session.appType = string(opt)
 		}
 	}
-	return
-}
-
-/*
-QrcodeStatus returns the status of QRCode login session.
-
-The upstream API uses a long-pull request for 30 seconds, so this API will
-also block at most 30 seconds, be careful to use it in main goroutine.
-
-There will be 4 kinds of status:
-
-  - Waiting
-  - Scanned
-  - Allowed
-  - Canceled
-
-The QRCode will expire in 5 minutes, when it expired, an error will be return, caller
-can use IsQrcodeExpire() to check that.
-*/
-func (a *Agent) QrcodeStatus(session *QrcodeSession) (status QrcodeStatus, err error) {
-	qs := protocol.Params{}.
-		With("uid", session.uid).
-		WithInt64("time", session.time).
-		With("sign", session.sign).
-		WithNow("_")
-	data := &webapi.QrcodeStatusData{}
-	if err = a.qrcodeCallApi(webapi.ApiQrcodeStatus, qs, nil, data); err == nil {
-		status = QrcodeStatus(data.Status)
+	if session.appType == "" {
+		session.appType = string(option.QrcodeLoginWeb)
 	}
+	spec := (&api.QrcodeTokenSpec{}).Init(session.appType)
+	if err = a.pc.ExecuteApi(spec); err != nil {
+		return
+	}
+	session.uid = spec.Result.Uid
+	session.time = spec.Result.Time
+	session.sign = spec.Result.Sign
+	// Fetch QRcode image data
+	var reader io.ReadCloser
+	if reader, err = a.Fetch(api.QrcodeImageUrl(session.appType, session.uid)); err != nil {
+		return
+	}
+	defer util.QuietlyClose(reader)
+	session.Image, err = io.ReadAll(reader)
 	return
 }
 
-// QrcodeLogin logins user through QRCode.
-// You SHOULD call this method ONLY when `QrcodeStatus.IsAllowed()` is true.
-func (a *Agent) QrcodeLogin(session *QrcodeSession) (err error) {
-	form := protocol.Params{}.
-		With("account", session.uid).
-		With("app", session.platform).
-		ToForm()
-	data := &webapi.LoginUserData{}
-	if err = a.qrcodeCallApi(
-		webapi.QrcodeLoginApi(session.platform), nil, form, data,
-	); err == nil {
-		a.uid = data.Id
+func (a *Agent) qrcodeSignIn(session *QrcodeSession) (err error) {
+	spec := (&api.QrcodeLoginSpec{}).Init(session.appType, session.uid)
+	if err = a.pc.ExecuteApi(spec); err != nil {
+		return
+	}
+	return a.afterSignIn(spec.Result.Cookie.UID)
+}
+
+// QrcodePoll polls the session state, and automatically sin
+func (a *Agent) QrcodePoll(session *QrcodeSession) (done bool, err error) {
+	spec := (&api.QrcodeStatusSpec{}).Init(
+		session.uid, session.time, session.sign,
+	)
+	if err = a.pc.ExecuteApi(spec); err != nil {
+		return
+	}
+	switch spec.Result.Status {
+	case -2:
+		err = ErrQrcodeCancelled
+	case 2:
+		err = a.qrcodeSignIn(session)
+		done = err == nil
 	}
 	return
 }
