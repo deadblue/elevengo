@@ -1,17 +1,19 @@
 package option
 
-type FileFilterOption interface {
-	isFileFilterOption()
+type FileListOption interface {
+	isFileListOption()
 }
 
-type FileFilterByKind int
+type FileListTypeOption int
+
+func (o FileListTypeOption) isFileListOption() {}
 
 const (
-	FileKindAll FileFilterByKind = iota
-	FileKindDocument
-	FileKindImage
-	FileKindAudio
-	FileKindVideo
-	FileKindArchive
-	FileKindApplication
+	FileTypeAll FileListTypeOption = iota
+	FileTypeDocument
+	FileTypeImage
+	FileTypeAudio
+	FileTypeVideo
+	FileTypeArchive
+	FileTypeApplication
 )

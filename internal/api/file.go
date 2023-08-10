@@ -140,6 +140,12 @@ func (s *FileListSpec) SetStared() {
 	s.QuerySet("star", "1")
 }
 
+func (s *FileListSpec) SetFileType(fileType int) {
+	if fileType != 0 {
+		s.QuerySetInt("type", fileType)
+	}
+}
+
 //lint:ignore U1000 This type is used in generic.
 type _FileSearchResp struct {
 	base.StandardResp
@@ -190,16 +196,20 @@ func (s *FileSearchSpec) Init(offset int) *FileSearchSpec {
 	return s
 }
 
-func (s *FileSearchSpec) ByKeyword(dirId, keyword string) *FileSearchSpec {
+func (s *FileSearchSpec) ByKeyword(dirId, keyword string) {
 	s.QuerySet("cid", dirId)
 	s.QuerySet("search_value", keyword)
-	return s
 }
 
-func (s *FileSearchSpec) ByLabelId(labelId string) *FileSearchSpec {
+func (s *FileSearchSpec) ByLabelId(labelId string) {
 	s.QuerySet("cid", "0")
 	s.QuerySet("file_label", labelId)
-	return s
+}
+
+func (s *FileSearchSpec) SetFileType(fileType int) {
+	if fileType != 0 {
+		s.QuerySetInt("type", fileType)
+	}
 }
 
 type FileGetResult []*FileInfo

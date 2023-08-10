@@ -5,6 +5,7 @@ import (
 
 	"github.com/deadblue/elevengo/internal/api"
 	"github.com/deadblue/elevengo/internal/api/errors"
+	"github.com/deadblue/elevengo/option"
 )
 
 // File describe a file or directory on cloud storage.
@@ -88,6 +89,8 @@ type fileIterator struct {
 	keyword string
 	// Label Id
 	labelId string
+	// File type
+	fileType int
 
 	// Total count
 	count int
@@ -131,7 +134,7 @@ func (i *fileIterator) Get(file *File) error {
 	return nil
 }
 
-// FileIterate returns an iterator.
+// FileIterate list files under directory, whose id is |dirId|.
 func (a *Agent) FileIterate(dirId string) (it Iterator[File], err error) {
 	fi := &fileIterator{
 		mode:   1,
@@ -149,7 +152,8 @@ func (a *Agent) FileIterate(dirId string) (it Iterator[File], err error) {
 	return
 }
 
-func (a *Agent) FileWithStar() (it Iterator[File], err error) {
+// FileWithStar lists files with star.
+func (a *Agent) FileWithStar(opts ...option.FileListOption) (it Iterator[File], err error) {
 	fi := &fileIterator{
 		mode:   2,
 		offset: 0,
@@ -157,6 +161,13 @@ func (a *Agent) FileWithStar() (it Iterator[File], err error) {
 		dirId: "0",
 
 		update: a.fileIterateInternal,
+	}
+	// Apply options
+	for _, opt := range opts {
+		switch opt := opt.(type) {
+		case option.FileListTypeOption:
+			fi.fileType = int(opt)
+		}
 	}
 	if err = a.fileIterateInternal(fi); err == nil {
 		it = fi
@@ -166,6 +177,7 @@ func (a *Agent) FileWithStar() (it Iterator[File], err error) {
 
 func (a *Agent) fileIterateInternal(fi *fileIterator) (err error) {
 	spec := (&api.FileListSpec{}).Init(fi.dirId, fi.offset)
+	spec.SetFileType(fi.fileType)
 	switch fi.mode {
 	case 1:
 		spec.SetOrder(fi.order, fi.asc)
@@ -193,8 +205,9 @@ func (a *Agent) fileIterateInternal(fi *fileIterator) (err error) {
 	return
 }
 
-// FileSearch recursively searches files under dirId, whose name contains keyword.
-func (a *Agent) FileSearch(dirId, keyword string) (it Iterator[File], err error) {
+// FileSearch recursively searches files under a directory, whose name contains
+// the given keyword.
+func (a *Agent) FileSearch(dirId, keyword string, opts ...option.FileListOption) (it Iterator[File], err error) {
 	fi := &fileIterator{
 		mode:   3,
 		offset: 0,
@@ -204,14 +217,21 @@ func (a *Agent) FileSearch(dirId, keyword string) (it Iterator[File], err error)
 
 		update: a.fileSearchInternal,
 	}
+	// Apply options
+	for _, opt := range opts {
+		switch opt := opt.(type) {
+		case option.FileListTypeOption:
+			fi.fileType = int(opt)
+		}
+	}
 	if err = a.fileSearchInternal(fi); err == nil {
 		it = fi
 	}
 	return
 }
 
-// FileLabeled lists all files which has specific label.
-func (a *Agent) FileWithLabel(labelId string) (it Iterator[File], err error) {
+// FileLabeled lists files which has specific label.
+func (a *Agent) FileWithLabel(labelId string, opts ...option.FileListOption) (it Iterator[File], err error) {
 	fi := &fileIterator{
 		mode:   4,
 		offset: 0,
@@ -221,6 +241,13 @@ func (a *Agent) FileWithLabel(labelId string) (it Iterator[File], err error) {
 
 		update: a.fileSearchInternal,
 	}
+	// Apply options
+	for _, opt := range opts {
+		switch opt := opt.(type) {
+		case option.FileListTypeOption:
+			fi.fileType = int(opt)
+		}
+	}
 	if err = a.fileSearchInternal(fi); err == nil {
 		it = fi
 	}
@@ -229,6 +256,7 @@ func (a *Agent) FileWithLabel(labelId string) (it Iterator[File], err error) {
 
 func (a *Agent) fileSearchInternal(fi *fileIterator) (err error) {
 	spec := (&api.FileSearchSpec{}).Init(fi.offset)
+	spec.SetFileType(fi.fileType)
 	switch fi.mode {
 	case 3:
 		spec.ByKeyword(fi.dirId, fi.keyword)
