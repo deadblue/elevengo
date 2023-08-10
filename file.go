@@ -305,7 +305,23 @@ func (a *Agent) FileCopy(dirId string, fileIds []string) (err error) {
 
 // FileRename renames file to new name.
 func (a *Agent) FileRename(fileId, newName string) (err error) {
-	spec := (&api.FileRenameSpec{}).Init(fileId, newName)
+	if fileId == "" || newName == "" {
+		return
+	}
+	spec := (&api.FileRenameSpec{}).Init()
+	spec.Add(fileId, newName)
+	return a.pc.ExecuteApi(spec)
+}
+
+// FileBatchRename renames multiple files.
+func (a *Agent) FileBatchRename(nameMap map[string]string) (err error) {
+	spec := (&api.FileRenameSpec{}).Init()
+	for fileId, newName := range nameMap {
+		if fileId == "" || newName == "" {
+			continue
+		}
+		spec.Add(fileId, newName)
+	}
 	return a.pc.ExecuteApi(spec)
 }
 

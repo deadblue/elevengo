@@ -228,13 +228,14 @@ type FileRenameSpec struct {
 	base.JsonApiSpec[base.VoidResult, base.BasicResp]
 }
 
-func (s *FileRenameSpec) Init(fileId, newName string) *FileRenameSpec {
+func (s *FileRenameSpec) Init() *FileRenameSpec {
 	s.JsonApiSpec.Init("https://webapi.115.com/files/batch_rename")
-	if fileId != "" {
-		key := fmt.Sprintf("files_new_name[%s]", fileId)
-		s.FormSet(key, newName)
-	}
 	return s
+}
+
+func (s *FileRenameSpec) Add(fileId, newName string) {
+	key := fmt.Sprintf("files_new_name[%s]", fileId)
+	s.FormSet(key, newName)
 }
 
 type FileMoveSpec struct {
