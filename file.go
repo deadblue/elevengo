@@ -72,8 +72,8 @@ func (f *File) from(info *api.FileInfo) *File {
 type fileIterator struct {
 	// Iterate mode:
 	//  - 1: list
-	//  - 2: search
-	//  - 3: star
+	//  - 2: star
+	//  - 3: search
 	//  - 4: label
 	mode int
 	// Data offset
@@ -195,12 +195,11 @@ func (a *Agent) fileIterateInternal(fi *fileIterator) (err error) {
 			retry = false
 		}
 	}
-	result := spec.Result
-	fi.order, fi.asc = result.Order, result.Asc
-	if fi.count = result.Count; fi.count > 0 {
-		fi.index, fi.size = 0, len(result.Files)
+	fi.order, fi.asc = spec.Result.Order, spec.Result.Asc
+	if fi.count = spec.Result.Count; fi.count > 0 {
+		fi.index, fi.size = 0, len(spec.Result.Files)
 		fi.files = make([]*api.FileInfo, fi.size)
-		copy(fi.files, result.Files)
+		copy(fi.files, spec.Result.Files)
 	}
 	return
 }
@@ -266,12 +265,11 @@ func (a *Agent) fileSearchInternal(fi *fileIterator) (err error) {
 	if err = a.pc.ExecuteApi(spec); err != nil {
 		return
 	}
-	result := spec.Result
-	fi.order, fi.asc = result.Order, result.Asc
-	if fi.count = result.Count; fi.count > 0 {
-		fi.index, fi.size = 0, len(result.Files)
+	fi.order, fi.asc = spec.Result.Order, spec.Result.Asc
+	if fi.count = spec.Result.Count; fi.count > 0 {
+		fi.index, fi.size = 0, len(spec.Result.Files)
 		fi.files = make([]*api.FileInfo, fi.size)
-		copy(fi.files, result.Files)
+		copy(fi.files, spec.Result.Files)
 	}
 	return
 }
