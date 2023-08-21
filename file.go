@@ -29,7 +29,7 @@ type File struct {
 	// Is file stared
 	Star bool
 	// File labels
-	Labels []*Label
+	Labels []Label
 
 	// Last modified time
 	ModifiedTime time.Time
@@ -51,14 +51,12 @@ func (f *File) from(info *api.FileInfo) *File {
 	f.Sha1 = info.Sha1
 
 	f.Star = bool(info.IsStar)
-	// f.Labels = make([]*Label, len(info.Labels))
-	// for i, l := range info.Labels {
-	// 	f.Labels[i] = &Label{
-	// 		Id:    l.Id,
-	// 		Name:  l.Name,
-	// 		Color: LabelColor(webapi.LabelColorMap[l.Color]),
-	// 	}
-	// }
+	f.Labels = make([]Label, len(info.Labels))
+	for i, l := range info.Labels {
+		f.Labels[i].Id = l.Id
+		f.Labels[i].Name = l.Name
+		f.Labels[i].Color = labelColorRevMap[l.Color]
+	}
 
 	if info.UpdatedTime != "" {
 		f.ModifiedTime = api.ParseFileTime(info.UpdatedTime)
