@@ -7,6 +7,24 @@ import (
 	"github.com/deadblue/elevengo/internal/util"
 )
 
+// VideoDefinition values from 115.
+type VideoDefinition int
+
+const (
+	// Standard Definition, aka. 480P.
+	VideoDefinitionSD VideoDefinition = 1
+	// High Definition, aka. 720P.
+	VideoDefinitionHD VideoDefinition = 2
+	// Full-HD, aka. 1080P.
+	VideoDefinitionFHD VideoDefinition = 3
+	// Another 1080P, what the fuck?
+	VideoDefinition1080P VideoDefinition = 4
+	// 4K Definition, aka. Ultra-HD.
+	VideoDefinition4K VideoDefinition = 5
+	// The fallback definition, usually for non-standard resolution.
+	VideoDefinitionOrigin VideoDefinition = 100
+)
+
 // VideoTicket contains all required arguments to play a cloud video.
 type VideoTicket struct {
 	// Play URL, it is normally a m3u8 URL.
