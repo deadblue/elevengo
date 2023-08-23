@@ -12,6 +12,7 @@ import (
 type File struct {
 	// Marks is the file a directory.
 	IsDirectory bool
+
 	// Unique identifier of the file on the cloud storage.
 	FileId string
 	// FileId of the parent directory.
@@ -29,10 +30,17 @@ type File struct {
 	// Is file stared
 	Star bool
 	// File labels
-	Labels []*Label
+	Labels []Label
 
 	// Last modified time
 	ModifiedTime time.Time
+
+	// Play duration in seconds, for audio/video files.
+	MediaDuration float64
+	// Is file a video.
+	IsVideo bool
+	// Definition of the video file.
+	VideoDefinition VideoDefinition
 }
 
 func (f *File) from(info *api.FileInfo) *File {
@@ -51,19 +59,23 @@ func (f *File) from(info *api.FileInfo) *File {
 	f.Sha1 = info.Sha1
 
 	f.Star = bool(info.IsStar)
-	// f.Labels = make([]*Label, len(info.Labels))
-	// for i, l := range info.Labels {
-	// 	f.Labels[i] = &Label{
-	// 		Id:    l.Id,
-	// 		Name:  l.Name,
-	// 		Color: LabelColor(webapi.LabelColorMap[l.Color]),
-	// 	}
-	// }
+	f.Labels = make([]Label, len(info.Labels))
+	for i, l := range info.Labels {
+		f.Labels[i].Id = l.Id
+		f.Labels[i].Name = l.Name
+		f.Labels[i].Color = labelColorRevMap[l.Color]
+	}
 
 	if info.UpdatedTime != "" {
 		f.ModifiedTime = api.ParseFileTime(info.UpdatedTime)
 	} else {
 		f.ModifiedTime = api.ParseFileTime(info.ModifiedTime)
+	}
+
+	f.MediaDuration = info.MediaDuration
+	f.IsVideo = info.VideoFlag == 1
+	if f.IsVideo {
+		f.VideoDefinition = VideoDefinition(info.VideoDefinition)
 	}
 
 	return f
@@ -72,8 +84,8 @@ func (f *File) from(info *api.FileInfo) *File {
 type fileIterator struct {
 	// Iterate mode:
 	//  - 1: list
-	//  - 2: search
-	//  - 3: star
+	//  - 2: star
+	//  - 3: search
 	//  - 4: label
 	mode int
 	// Data offset
@@ -195,12 +207,11 @@ func (a *Agent) fileIterateInternal(fi *fileIterator) (err error) {
 			retry = false
 		}
 	}
-	result := spec.Result
-	fi.order, fi.asc = result.Order, result.Asc
-	if fi.count = result.Count; fi.count > 0 {
-		fi.index, fi.size = 0, len(result.Files)
+	fi.order, fi.asc = spec.Result.Order, spec.Result.Asc
+	if fi.count = spec.Result.Count; fi.count > 0 {
+		fi.index, fi.size = 0, len(spec.Result.Files)
 		fi.files = make([]*api.FileInfo, fi.size)
-		copy(fi.files, result.Files)
+		copy(fi.files, spec.Result.Files)
 	}
 	return
 }
@@ -266,12 +277,11 @@ func (a *Agent) fileSearchInternal(fi *fileIterator) (err error) {
 	if err = a.pc.ExecuteApi(spec); err != nil {
 		return
 	}
-	result := spec.Result
-	fi.order, fi.asc = result.Order, result.Asc
-	if fi.count = result.Count; fi.count > 0 {
-		fi.index, fi.size = 0, len(result.Files)
+	fi.order, fi.asc = spec.Result.Order, spec.Result.Asc
+	if fi.count = spec.Result.Count; fi.count > 0 {
+		fi.index, fi.size = 0, len(spec.Result.Files)
 		fi.files = make([]*api.FileInfo, fi.size)
-		copy(fi.files, result.Files)
+		copy(fi.files, spec.Result.Files)
 	}
 	return
 }

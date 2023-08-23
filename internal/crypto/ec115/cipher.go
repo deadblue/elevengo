@@ -26,6 +26,9 @@ type Cipher struct {
 	aesIv  []byte
 }
 
+// WARNING:
+// Some elliptic APIs are deprecated since 1.21.0, but the replacing APIs do not
+// support P224.
 func New() *Cipher {
 	curve := elliptic.P224()
 	// Generate client key-pair
