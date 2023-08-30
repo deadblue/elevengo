@@ -46,6 +46,18 @@ func (s *LabelListSpec) Init(offset int) *LabelListSpec {
 	return s
 }
 
+type LabelSearchSpec struct {
+	base.JsonApiSpec[LabelListResult, base.StandardResp]
+}
+
+func (s *LabelSearchSpec) Init(keyword string, offset int) *LabelSearchSpec {
+	s.JsonApiSpec.Init("https://webapi.115.com/label/list")
+	s.QuerySet("keyword", keyword)
+	s.QuerySetInt("offset", offset)
+	s.QuerySetInt("limit", LabelListLimit)
+	return s
+}
+
 type LabelCreateResult []*LabelInfo
 
 type LabelCreateSpec struct {
