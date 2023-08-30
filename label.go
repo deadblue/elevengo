@@ -114,33 +114,28 @@ func (a *Agent) labelIterateInternal(i *labelIterator) (err error) {
 	}
 	i.count = spec.Result.Total
 	i.index, i.size = 0, len(spec.Result.List)
-	i.labels = make([]*api.LabelInfo, 0, i.size)
+	i.labels = make([]*api.LabelInfo, i.size)
 	copy(i.labels, spec.Result.List)
 	return
 }
 
 // LabelFind finds label whose name is name, and returns it.
-// func (a *Agent) LabelFind(name string, label *Label) (err error) {
-// 	qs := protocol.Params{}.
-// 		With("keyword", name).
-// 		WithInt("limit", 10)
-// 	resp := &webapi.BasicResponse{}
-// 	if err = a.pc.CallJsonApi(webapi.ApiLabelList, qs, nil, resp); err != nil {
-// 		return
-// 	}
-// 	data := &webapi.LabelListData{}
-// 	if err = resp.Decode(data); err != nil {
-// 		return
-// 	}
-// 	if data.Total == 0 || data.List[0].Name != name {
-// 		err = webapi.ErrNotExist
-// 	} else {
-// 		label.Id = data.List[0].Id
-// 		label.Name = data.List[0].Name
-// 		label.Color = LabelColor(webapi.LabelColorMap[data.List[0].Color])
-// 	}
-// 	return
-// }
+func (a *Agent) LabelFind(name string, label *Label) (err error) {
+	spec := (&api.LabelSearchSpec{}).Init(name, 0)
+	if err = a.pc.ExecuteApi(spec); err != nil {
+		return
+	}
+
+	if spec.Result.Total == 0 || spec.Result.List[0].Name != name {
+		err = errors.ErrNotExist
+	} else {
+		li := spec.Result.List[0]
+		label.Id = li.Id
+		label.Name = li.Name
+		label.Color = labelColorRevMap[li.Color]
+	}
+	return
+}
 
 // LabelCreate creates a label with name and color, returns its ID.
 func (a *Agent) LabelCreate(name string, color LabelColor) (labelId string, err error) {
