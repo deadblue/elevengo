@@ -114,7 +114,7 @@ func (a *Agent) labelIterateInternal(i *labelIterator) (err error) {
 	}
 	i.count = spec.Result.Total
 	i.index, i.size = 0, len(spec.Result.List)
-	i.labels = make([]*api.LabelInfo, 0, i.size)
+	i.labels = make([]*api.LabelInfo, i.size)
 	copy(i.labels, spec.Result.List)
 	return
 }
