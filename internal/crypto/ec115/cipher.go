@@ -1,8 +1,11 @@
 package ec115
 
 import (
+	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+
+	"filippo.io/nistec"
 )
 
 var (
@@ -26,21 +29,18 @@ type Cipher struct {
 	aesIv  []byte
 }
 
-// WARNING:
-// Some elliptic APIs are deprecated since 1.21.0, but the replacing APIs do not
-// support P224.
 func New() *Cipher {
 	curve := elliptic.P224()
-	// Generate client key-pair
-	privKey, x, y, _ := elliptic.GenerateKey(
-		curve, rand.Reader,
-	)
-	pubKey := elliptic.MarshalCompressed(curve, x, y)
-	// Parse server key
-	serverX, serverY := elliptic.Unmarshal(curve, serverKey)
+	// Generate local key
+	localKey, _ := ecdsa.GenerateKey(curve, rand.Reader)
+	scalar := make([]byte, (curve.Params().BitSize+7)/8)
+	localKey.D.FillBytes(scalar)
+	pubKey := elliptic.MarshalCompressed(curve, localKey.X, localKey.Y)
+	// Parse remote key
+	remoteKey, _ := nistec.NewP224Point().SetBytes(serverKey)
 	// ECDH key exchange
-	sharedX, _ := curve.ScalarMult(serverX, serverY, privKey)
-	sharedSecret := sharedX.Bytes()
+	sharedPoint, _ := nistec.NewP224Point().ScalarMult(remoteKey, scalar)
+	sharedSecret, _ := sharedPoint.BytesX()
 	// Instantiate cipher
 	pubKeySize, sharedSecretSize := len(pubKey), len(sharedSecret)
 	cipher := &Cipher{
