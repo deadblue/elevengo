@@ -6,7 +6,7 @@ import (
 	"github.com/deadblue/elevengo/internal/api/base"
 )
 
-type _DownloadUrlObject struct {
+type _DownloadUrlProto struct {
 	Url    string `json:"url"`
 	Client int    `json:"client"`
 	OssId  string `json:"oss_id"`
@@ -18,9 +18,9 @@ type _DownloadUrl struct {
 
 func (u *_DownloadUrl) UnmarshalJSON(b []byte) (err error) {
 	if len(b) > 0 && b[0] == '{' {
-		obj := &_DownloadUrlObject{}
-		if err = json.Unmarshal(b, obj); err == nil {
-			u.Url = obj.Url
+		proto := &_DownloadUrlProto{}
+		if err = json.Unmarshal(b, proto); err == nil {
+			u.Url = proto.Url
 		}
 	}
 	return

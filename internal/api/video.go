@@ -118,3 +118,57 @@ func (s *VideoPlayPcSpec) Init(userId, appVer, pickcode string) *VideoPlayPcSpec
 	})
 	return s
 }
+
+type _VideoSubtitleProto struct {
+	SubtitleId string `json:"sid"`
+	Language   string `json:"language"`
+
+	Title string `json:"title"`
+	Type  string `json:"type"`
+	Url   string `json:"url"`
+
+	SyncTime int `json:"sync_time"`
+
+	IsCaptionMap int    `json:"is_caption_map"`
+	CaptionMapId string `json:"caption_map_id"`
+
+	FileId   string `json:"file_id"`
+	FileName string `json:"file_name"`
+	PickCode string `json:"pick_code"`
+	Sha1     string `json:"sha1"`
+}
+
+type VideoSubtitleInfo struct {
+	Language string
+	Title    string
+	Type     string
+	Url      string
+}
+
+func (i *VideoSubtitleInfo) UnmarshalJSON(data []byte) (err error) {
+	if len(data) > 0 && data[0] == '{' {
+		proto := &_VideoSubtitleProto{}
+		if err = json.Unmarshal(data, proto); err == nil {
+			i.Language = proto.Language
+			i.Title = proto.Title
+			i.Type = proto.Type
+			i.Url = proto.Url
+		}
+	}
+	return
+}
+
+type VideoSubtitleResult struct {
+	AutoLoad VideoSubtitleInfo   `json:"autoload"`
+	List     []VideoSubtitleInfo `json:"list"`
+}
+
+type VideoSubtitleSpec struct {
+	base.JsonApiSpec[VideoSubtitleResult, base.StandardResp]
+}
+
+func (s *VideoSubtitleSpec) Init(pickcode string) *VideoSubtitleSpec {
+	s.JsonApiSpec.Init("https://webapi.115.com/movies/subtitle")
+	s.QuerySet("pickcode", pickcode)
+	return s
+}
