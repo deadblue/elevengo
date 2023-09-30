@@ -1,6 +1,6 @@
 package api
 
-import "github.com/deadblue/elevengo/internal/api/base"
+import "github.com/deadblue/elevengo/internal/apibase"
 
 type UserInfoResult struct {
 	UserId    int    `json:"user_id"`
@@ -10,7 +10,7 @@ type UserInfoResult struct {
 }
 
 type UserInfoSpec struct {
-	base.JsonApiSpec[UserInfoResult, base.StandardResp]
+	apibase.JsonApiSpec[UserInfoResult, apibase.StandardResp]
 }
 
 func (s *UserInfoSpec) Init() *UserInfoSpec {

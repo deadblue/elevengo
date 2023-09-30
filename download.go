@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/deadblue/elevengo/internal/api"
-	"github.com/deadblue/elevengo/internal/api/errors"
 	"github.com/deadblue/elevengo/internal/util"
+	"github.com/deadblue/elevengo/lowlevel/api"
+	"github.com/deadblue/elevengo/lowlevel/errors"
 )
 
 // DownloadTicket contains all required information to download a file.

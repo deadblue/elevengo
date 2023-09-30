@@ -1,7 +1,7 @@
 package elevengo
 
 import (
-	"github.com/deadblue/elevengo/internal/api"
+	"github.com/deadblue/elevengo/lowlevel/api"
 )
 
 // StorageInfo describes storage space usage.

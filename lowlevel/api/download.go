@@ -3,7 +3,7 @@ package api
 import (
 	"encoding/json"
 
-	"github.com/deadblue/elevengo/internal/api/base"
+	"github.com/deadblue/elevengo/internal/apibase"
 )
 
 type _DownloadUrlProto struct {
@@ -12,11 +12,11 @@ type _DownloadUrlProto struct {
 	OssId  string `json:"oss_id"`
 }
 
-type _DownloadUrl struct {
+type DownloadUrl struct {
 	Url string
 }
 
-func (u *_DownloadUrl) UnmarshalJSON(b []byte) (err error) {
+func (u *DownloadUrl) UnmarshalJSON(b []byte) (err error) {
 	if len(b) > 0 && b[0] == '{' {
 		proto := &_DownloadUrlProto{}
 		if err = json.Unmarshal(b, proto); err == nil {
@@ -26,17 +26,17 @@ func (u *_DownloadUrl) UnmarshalJSON(b []byte) (err error) {
 	return
 }
 
-type _DownloadInfo struct {
-	FileName string       `json:"file_name"`
-	FileSize json.Number  `json:"file_size"`
-	PickCode string       `json:"pick_code"`
-	Url      _DownloadUrl `json:"url"`
+type DownloadInfo struct {
+	FileName string      `json:"file_name"`
+	FileSize json.Number `json:"file_size"`
+	PickCode string      `json:"pick_code"`
+	Url      DownloadUrl `json:"url"`
 }
 
-type DownloadResult map[string]*_DownloadInfo
+type DownloadResult map[string]*DownloadInfo
 
 type DownloadSpec struct {
-	base.M115ApiSpec[DownloadResult]
+	apibase.M115ApiSpec[DownloadResult]
 }
 
 func (s *DownloadSpec) Init(pickcode string) *DownloadSpec {

@@ -1,7 +1,7 @@
 package elevengo
 
 import (
-	"github.com/deadblue/elevengo/internal/api"
+	"github.com/deadblue/elevengo/lowlevel/api"
 )
 
 // FileSetStar adds/removes star from a file, whose ID is fileId.

@@ -1,6 +1,6 @@
 package api
 
-import "github.com/deadblue/elevengo/internal/api/base"
+import "github.com/deadblue/elevengo/internal/apibase"
 
 type ImageGetResult struct {
 	FileName string `json:"file_name"`
@@ -14,11 +14,11 @@ type ImageGetResult struct {
 }
 
 type ImageGetSpec struct {
-	base.JsonApiSpec[ImageGetResult, base.StandardResp]
+	apibase.StandardApiSpec[ImageGetResult]
 }
 
 func (s *ImageGetSpec) Init(pickcode string) *ImageGetSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/files/image")
+	s.StandardApiSpec.Init("https://webapi.115.com/files/image")
 	s.QuerySet("pickcode", pickcode)
 	s.QuerySetNow("_")
 	return s

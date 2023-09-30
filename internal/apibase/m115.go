@@ -1,4 +1,4 @@
-package base
+package apibase
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"net/url"
 
 	"github.com/deadblue/elevengo/internal/crypto/m115"
-	"github.com/deadblue/elevengo/internal/protocol"
+	"github.com/deadblue/elevengo/lowlevel/protocol"
 )
 
 type M115Extractor[D any] func([]byte, *D) error
@@ -14,6 +14,7 @@ type M115Extractor[D any] func([]byte, *D) error
 // M115ApiSpec is the base struct for all m115 ApiSpec.
 type M115ApiSpec[D any] struct {
 	_BaseApiSpec
+
 	// Cipher key for encrypt/decrypt.
 	key m115.Key
 	// API parameters.

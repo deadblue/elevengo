@@ -3,8 +3,9 @@ package api
 import (
 	"encoding/json"
 
-	"github.com/deadblue/elevengo/internal/api/base"
-	"github.com/deadblue/elevengo/internal/api/errors"
+	"github.com/deadblue/elevengo/internal/apibase"
+	"github.com/deadblue/elevengo/internal/util"
+	"github.com/deadblue/elevengo/lowlevel/errors"
 )
 
 type VideoPlayResult struct {
@@ -20,17 +21,18 @@ type VideoPlayResult struct {
 
 //lint:ignore U1000 This type is used in generic.
 type _VideoPlayWebResp struct {
-	base.BasicResp
+	apibase.BasicResp
+
 	FileId        string           `json:"file_id"`
 	ParentId      string           `json:"parent_id"`
 	FileName      string           `json:"file_name"`
-	FileSize      base.IntNumber   `json:"file_size"`
+	FileSize      util.IntNumber   `json:"file_size"`
 	FileSha1      string           `json:"sha1"`
 	PickCode      string           `json:"pick_code"`
 	FileStatus    int              `json:"file_status"`
-	VideoDuration base.FloatNumner `json:"play_long"`
-	VideoWidth    base.IntNumber   `json:"width"`
-	VideoHeight   base.IntNumber   `json:"height"`
+	VideoDuration util.FloatNumner `json:"play_long"`
+	VideoWidth    util.IntNumber   `json:"width"`
+	VideoHeight   util.IntNumber   `json:"height"`
 	VideoUrl      string           `json:"video_url"`
 }
 
@@ -51,7 +53,7 @@ func (r *_VideoPlayWebResp) Extract(v any) error {
 }
 
 type VideoPlayWebSpec struct {
-	base.JsonApiSpec[VideoPlayResult, _VideoPlayWebResp]
+	apibase.JsonApiSpec[VideoPlayResult, _VideoPlayWebResp]
 }
 
 func (s *VideoPlayWebSpec) Init(pickcode string) *VideoPlayWebSpec {
@@ -63,8 +65,8 @@ func (s *VideoPlayWebSpec) Init(pickcode string) *VideoPlayWebSpec {
 type _VideoUrl struct {
 	Title      string         `json:"title"`
 	Definition int            `json:"definition"`
-	Width      base.IntNumber `json:"width"`
-	Height     base.IntNumber `json:"height"`
+	Width      util.IntNumber `json:"width"`
+	Height     util.IntNumber `json:"height"`
 	Url        string         `json:"url"`
 }
 
@@ -72,16 +74,16 @@ type _VideoPlayPcData struct {
 	FileId        string           `json:"file_id"`
 	ParentId      string           `json:"parent_id"`
 	FileName      string           `json:"file_name"`
-	FileSize      base.IntNumber   `json:"file_size"`
+	FileSize      util.IntNumber   `json:"file_size"`
 	FileSha1      string           `json:"file_sha1"`
 	PickCode      string           `json:"pick_code"`
 	FileStatus    int              `json:"file_status"`
-	VideoDuration base.FloatNumner `json:"play_long"`
+	VideoDuration util.FloatNumner `json:"play_long"`
 	VideoUrls     []*_VideoUrl     `json:"video_url"`
 }
 
 type VideoPlayPcSpec struct {
-	base.M115ApiSpec[VideoPlayResult]
+	apibase.M115ApiSpec[VideoPlayResult]
 }
 
 func videoPlayResultExtractor(data []byte, result *VideoPlayResult) (err error) {
@@ -164,7 +166,7 @@ type VideoSubtitleResult struct {
 }
 
 type VideoSubtitleSpec struct {
-	base.JsonApiSpec[VideoSubtitleResult, base.StandardResp]
+	apibase.JsonApiSpec[VideoSubtitleResult, apibase.StandardResp]
 }
 
 func (s *VideoSubtitleSpec) Init(pickcode string) *VideoSubtitleSpec {

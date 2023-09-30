@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/deadblue/elevengo/internal/api/base"
-	"github.com/deadblue/elevengo/internal/api/errors"
+	"github.com/deadblue/elevengo/internal/apibase"
 	"github.com/deadblue/elevengo/internal/crypto/hash"
-	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/util"
+	"github.com/deadblue/elevengo/lowlevel/errors"
+	"github.com/deadblue/elevengo/lowlevel/protocol"
 )
 
 const (
@@ -27,7 +27,7 @@ type UploadInfoResult struct {
 
 //lint:ignore U1000 This type is used in generic.
 type _UploadInfoResp struct {
-	base.BasicResp
+	apibase.BasicResp
 	UserId  int    `json:"user_id"`
 	UserKey string `json:"userkey"`
 }
@@ -43,7 +43,7 @@ func (r *_UploadInfoResp) Extract(v any) error {
 }
 
 type UploadInfoSpec struct {
-	base.JsonApiSpec[UploadInfoResult, _UploadInfoResp]
+	apibase.JsonApiSpec[UploadInfoResult, _UploadInfoResp]
 }
 
 func (s *UploadInfoSpec) Init() *UploadInfoSpec {
@@ -182,7 +182,7 @@ func (r *_UploadInitResp) Extract(v any) (err error) {
 }
 
 type UploadInitSpec struct {
-	base.JsonApiSpec[UploadInitResult, _UploadInitResp]
+	apibase.JsonApiSpec[UploadInitResult, _UploadInitResp]
 }
 
 func (s *UploadInitSpec) Init(params *UploadInitParams, helper *UploadHelper) *UploadInitSpec {
@@ -245,7 +245,7 @@ func (r *_UploadTokenResp) Extract(v any) error {
 }
 
 type UploadTokenSpec struct {
-	base.JsonApiSpec[UploadTokenResult, _UploadTokenResp]
+	apibase.JsonApiSpec[UploadTokenResult, _UploadTokenResp]
 }
 
 func (s *UploadTokenSpec) Init() *UploadTokenSpec {
@@ -292,7 +292,7 @@ func (r *_UploadSampleInitResp) Extract(v any) error {
 }
 
 type UploadSampleInitSpec struct {
-	base.JsonApiSpec[UploadSampleInitResult, _UploadSampleInitResp]
+	apibase.JsonApiSpec[UploadSampleInitResult, _UploadSampleInitResp]
 }
 
 func (s *UploadSampleInitSpec) Init(userId string, fileName string, fileSize int64, target string) *UploadSampleInitSpec {
@@ -305,18 +305,18 @@ func (s *UploadSampleInitSpec) Init(userId string, fileName string, fileSize int
 }
 
 type UploadSampleResult struct {
-	AreaId     base.IntNumber `json:"aid"`
+	AreaId     util.IntNumber `json:"aid"`
 	CategoryId string         `json:"cid"`
 	FileId     string         `json:"file_id"`
 	FileName   string         `json:"file_name"`
-	FileSize   base.IntNumber `json:"file_size"`
+	FileSize   util.IntNumber `json:"file_size"`
 	FileSha1   string         `json:"sha1"`
 	PickCode   string         `json:"pick_code"`
-	CreateTime base.IntNumber `json:"file_ptime"`
+	CreateTime util.IntNumber `json:"file_ptime"`
 }
 
 type UploadSampleSpec struct {
-	base.JsonApiSpec[UploadSampleResult, base.StandardResp]
+	apibase.JsonApiSpec[UploadSampleResult, apibase.StandardResp]
 	payload protocol.Payload
 }
 

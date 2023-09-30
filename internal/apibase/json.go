@@ -1,4 +1,4 @@
-package base
+package apibase
 
 import (
 	"bytes"
@@ -7,18 +7,8 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/deadblue/elevengo/internal/protocol"
+	"github.com/deadblue/elevengo/lowlevel/protocol"
 )
-
-type _ApiResp interface {
-	// Err returns an error if API failed.
-	Err() error
-}
-
-type _DataResp interface {
-	// Extract extracts result from response to |v|.
-	Extract(v any) error
-}
 
 // JsonApiSpec is the base spec for all JSON ApiSpec.
 //
@@ -27,6 +17,7 @@ type _DataResp interface {
 //   - R: Response type.
 type JsonApiSpec[D, R any] struct {
 	_BaseApiSpec
+	// Request parameters in form
 	form url.Values
 	// The API result, its value will be filled after |Parse| called.
 	Result D
@@ -78,6 +69,14 @@ func (s *JsonApiSpec[D, R]) FormSetInt(key string, value int) {
 
 func (s *JsonApiSpec[D, R]) FormSetInt64(key string, value int64) {
 	s.form.Set(key, strconv.FormatInt(value, 10))
+}
+
+// JsonApiSpec is the base spec for all standard JSON ApiSpec.
+//
+// Type parameters:
+//   - D: Result type.
+type StandardApiSpec[D any] struct {
+	JsonApiSpec[D, StandardResp]
 }
 
 // JsonpApiSpec is the base spec for all JSON-P ApiSpec.

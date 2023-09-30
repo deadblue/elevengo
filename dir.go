@@ -4,7 +4,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/deadblue/elevengo/internal/api"
+	"github.com/deadblue/elevengo/lowlevel/api"
 )
 
 // DirMake makes directory under parentId, and returns its ID.

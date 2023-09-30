@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/deadblue/elevengo/internal/api/base"
-	"github.com/deadblue/elevengo/internal/api/errors"
+	"github.com/deadblue/elevengo/internal/apibase"
+	"github.com/deadblue/elevengo/internal/util"
+	"github.com/deadblue/elevengo/lowlevel/errors"
 )
 
 const (
@@ -22,18 +23,18 @@ const (
 )
 
 type FileInfo struct {
-	AreaId     base.IntNumber `json:"aid"`
+	AreaId     util.IntNumber `json:"aid"`
 	CategoryId string         `json:"cid"`
 	FileId     string         `json:"fid"`
 	ParentId   string         `json:"pid"`
 
 	Name     string         `json:"n"`
 	Type     string         `json:"ico"`
-	Size     base.IntNumber `json:"s"`
+	Size     util.IntNumber `json:"s"`
 	Sha1     string         `json:"sha"`
 	PickCode string         `json:"pc"`
 
-	IsStar base.Boolean `json:"m"`
+	IsStar util.Boolean `json:"m"`
 	Labels []LabelInfo  `json:"fl"`
 
 	CreatedTime  string `json:"tp"`
@@ -62,10 +63,10 @@ type FileListResult struct {
 
 //lint:ignore U1000 This type is used in generic.
 type _FileListResp struct {
-	base.StandardResp
+	apibase.StandardResp
 
 	AreaId     string         `json:"aid"`
-	CategoryId base.IntNumber `json:"cid"`
+	CategoryId util.IntNumber `json:"cid"`
 
 	Count int `json:"count"`
 
@@ -103,7 +104,7 @@ func (r *_FileListResp) Extract(v any) (err error) {
 }
 
 type FileListSpec struct {
-	base.JsonApiSpec[FileListResult, _FileListResp]
+	apibase.JsonApiSpec[FileListResult, _FileListResp]
 }
 
 func (s *FileListSpec) Init(dirId string, offset int) *FileListSpec {
@@ -148,7 +149,7 @@ func (s *FileListSpec) SetFileType(fileType int) {
 
 //lint:ignore U1000 This type is used in generic.
 type _FileSearchResp struct {
-	base.StandardResp
+	apibase.StandardResp
 
 	Folder struct {
 		CategoryId string `json:"cid"`
@@ -183,7 +184,7 @@ func (r *_FileSearchResp) Extract(v any) (err error) {
 }
 
 type FileSearchSpec struct {
-	base.JsonApiSpec[FileListResult, _FileSearchResp]
+	apibase.JsonApiSpec[FileListResult, _FileSearchResp]
 }
 
 func (s *FileSearchSpec) Init(offset int) *FileSearchSpec {
@@ -215,7 +216,7 @@ func (s *FileSearchSpec) SetFileType(fileType int) {
 type FileGetResult []*FileInfo
 
 type FileGetSpec struct {
-	base.JsonApiSpec[FileGetResult, base.StandardResp]
+	apibase.JsonApiSpec[FileGetResult, apibase.StandardResp]
 }
 
 func (s *FileGetSpec) Init(fileId string) *FileGetSpec {
@@ -225,7 +226,7 @@ func (s *FileGetSpec) Init(fileId string) *FileGetSpec {
 }
 
 type FileRenameSpec struct {
-	base.JsonApiSpec[base.VoidResult, base.BasicResp]
+	apibase.JsonApiSpec[apibase.VoidResult, apibase.BasicResp]
 }
 
 func (s *FileRenameSpec) Init() *FileRenameSpec {
@@ -239,11 +240,11 @@ func (s *FileRenameSpec) Add(fileId, newName string) {
 }
 
 type FileMoveSpec struct {
-	base.JsonApiSpec[base.VoidResult, base.BasicResp]
+	apibase.VoidApiSpec
 }
 
 func (s *FileMoveSpec) Init(dirId string, fileIds []string) *FileMoveSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/files/move")
+	s.VoidApiSpec.Init("https://webapi.115.com/files/move")
 	s.FormSet("pid", dirId)
 	for i, fileId := range fileIds {
 		key := fmt.Sprintf("fid[%d]", i)
@@ -253,11 +254,11 @@ func (s *FileMoveSpec) Init(dirId string, fileIds []string) *FileMoveSpec {
 }
 
 type FileCopySpec struct {
-	base.JsonApiSpec[base.VoidResult, base.BasicResp]
+	apibase.VoidApiSpec
 }
 
 func (s *FileCopySpec) Init(dirId string, fileIds []string) *FileCopySpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/files/copy")
+	s.VoidApiSpec.Init("https://webapi.115.com/files/copy")
 	s.FormSet("pid", dirId)
 	for i, fileId := range fileIds {
 		key := fmt.Sprintf("fid[%d]", i)
@@ -267,11 +268,11 @@ func (s *FileCopySpec) Init(dirId string, fileIds []string) *FileCopySpec {
 }
 
 type FileDeleteSpec struct {
-	base.JsonApiSpec[base.VoidResult, base.BasicResp]
+	apibase.VoidApiSpec
 }
 
 func (s *FileDeleteSpec) Init(fileIds []string) *FileDeleteSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/rb/delete")
+	s.VoidApiSpec.Init("https://webapi.115.com/rb/delete")
 	s.FormSet("ignore_warn", "1")
 	for i, fileId := range fileIds {
 		key := fmt.Sprintf("fid[%d]", i)
@@ -281,11 +282,11 @@ func (s *FileDeleteSpec) Init(fileIds []string) *FileDeleteSpec {
 }
 
 type FileStarSpec struct {
-	base.JsonApiSpec[base.VoidResult, base.BasicResp]
+	apibase.VoidApiSpec
 }
 
 func (s *FileStarSpec) Init(fileId string, star bool) *FileStarSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/files/star")
+	s.VoidApiSpec.Init("https://webapi.115.com/files/star")
 	s.FormSet("file_id", fileId)
 	if star {
 		s.FormSet("star", "1")
@@ -296,11 +297,11 @@ func (s *FileStarSpec) Init(fileId string, star bool) *FileStarSpec {
 }
 
 type FileLabelSpec struct {
-	base.JsonApiSpec[base.VoidResult, base.BasicResp]
+	apibase.VoidApiSpec
 }
 
 func (s *FileLabelSpec) Init(fileId string, labelIds []string) *FileLabelSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/files/edit")
+	s.VoidApiSpec.Init("https://webapi.115.com/files/edit")
 	s.FormSet("fid", fileId)
 	if len(labelIds) == 0 {
 		s.FormSet("file_label", "")

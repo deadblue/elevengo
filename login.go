@@ -3,8 +3,8 @@ package elevengo
 import (
 	"strings"
 
-	"github.com/deadblue/elevengo/internal/api"
-	"github.com/deadblue/elevengo/internal/api/errors"
+	"github.com/deadblue/elevengo/lowlevel/api"
+	"github.com/deadblue/elevengo/lowlevel/errors"
 )
 
 // Credential contains required information which 115 server uses to

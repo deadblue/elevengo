@@ -1,13 +1,13 @@
 package api
 
-import "github.com/deadblue/elevengo/internal/api/base"
+import "github.com/deadblue/elevengo/internal/apibase"
 
-type _SizeInfo struct {
+type SizeInfo struct {
 	Size       float64 `json:"size"`
 	SizeFormat string  `json:"size_format"`
 }
 
-type _LoginInfo struct {
+type LoginInfo struct {
 	IsCurrent int    `json:"is_current"`
 	LoginTime int64  `json:"utime"`
 	AppFlag   string `json:"ssoent"`
@@ -18,17 +18,17 @@ type _LoginInfo struct {
 
 type IndexInfoResult struct {
 	SpaceInfo struct {
-		Total  _SizeInfo `json:"all_total"`
-		Remain _SizeInfo `json:"all_remain"`
-		Used   _SizeInfo `json:"all_use"`
+		Total  SizeInfo `json:"all_total"`
+		Remain SizeInfo `json:"all_remain"`
+		Used   SizeInfo `json:"all_use"`
 	} `json:"space_info"`
 	LoginInfos struct {
-		List []*_LoginInfo
+		List []*LoginInfo
 	} `json:"login_devices_info"`
 }
 
 type IndexInfoSpec struct {
-	base.JsonApiSpec[IndexInfoResult, base.StandardResp]
+	apibase.JsonApiSpec[IndexInfoResult, apibase.StandardResp]
 }
 
 func (s *IndexInfoSpec) Init() *IndexInfoSpec {

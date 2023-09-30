@@ -1,8 +1,8 @@
 package elevengo
 
 import (
-	"github.com/deadblue/elevengo/internal/api"
-	"github.com/deadblue/elevengo/internal/api/errors"
+	"github.com/deadblue/elevengo/lowlevel/api"
+	"github.com/deadblue/elevengo/lowlevel/errors"
 	"github.com/deadblue/elevengo/option"
 )
 

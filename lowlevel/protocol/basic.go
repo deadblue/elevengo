@@ -3,17 +3,18 @@ package protocol
 import (
 	"io"
 	"net/http"
-
-	"github.com/deadblue/elevengo/internal/util"
 )
 
 const (
 	headerContentType = "Content-Type"
 )
 
+// Payload describes the request body.
 type Payload interface {
 	io.Reader
+	// ContentType returns the MIME type of payload.
 	ContentType() string
+	// ContentLength returns the size in bytes of payload.
 	ContentLength() int64
 }
 
@@ -48,22 +49,4 @@ func (c *Client) Post(url string, payload Payload) (body io.ReadCloser, err erro
 		body = resp.Body
 	}
 	return
-}
-
-func (c *Client) GetContent(url string) (data []byte, err error) {
-	body, err := c.Get(url, nil)
-	if err != nil {
-		return
-	}
-	defer util.QuietlyClose(body)
-	return io.ReadAll(body)
-}
-
-func (c *Client) Touch(url string) error {
-	if body, err := c.Get(url, nil); err == nil {
-		util.ConsumeReader(body)
-		return nil
-	} else {
-		return err
-	}
 }

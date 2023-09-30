@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/deadblue/elevengo/internal/api/base"
-	"github.com/deadblue/elevengo/internal/api/errors"
+	"github.com/deadblue/elevengo/internal/apibase"
+	"github.com/deadblue/elevengo/lowlevel/errors"
 )
 
 //lint:ignore U1000 This type is used in generic.
@@ -69,7 +69,7 @@ var (
 )
 
 type QrcodeTokenSpec struct {
-	base.JsonApiSpec[QrcodeTokenResult, _QrcodeBaseResp]
+	apibase.JsonApiSpec[QrcodeTokenResult, _QrcodeBaseResp]
 }
 
 func (s *QrcodeTokenSpec) Init(appType string) *QrcodeTokenSpec {
@@ -79,7 +79,7 @@ func (s *QrcodeTokenSpec) Init(appType string) *QrcodeTokenSpec {
 }
 
 type QrcodeStatusSpec struct {
-	base.JsonApiSpec[QrcodeStatusResult, _QrcodeBaseResp]
+	apibase.JsonApiSpec[QrcodeStatusResult, _QrcodeBaseResp]
 }
 
 func (s *QrcodeStatusSpec) Init(uid string, time int64, sign string) *QrcodeStatusSpec {
@@ -92,7 +92,7 @@ func (s *QrcodeStatusSpec) Init(uid string, time int64, sign string) *QrcodeStat
 }
 
 type QrcodeLoginSpec struct {
-	base.JsonApiSpec[QrcodeLoginResult, _QrcodeBaseResp]
+	apibase.JsonApiSpec[QrcodeLoginResult, _QrcodeBaseResp]
 }
 
 func (s *QrcodeLoginSpec) Init(appType string, uid string) *QrcodeLoginSpec {

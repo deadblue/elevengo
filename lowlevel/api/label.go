@@ -1,7 +1,8 @@
 package api
 
 import (
-	"github.com/deadblue/elevengo/internal/api/base"
+	"github.com/deadblue/elevengo/internal/apibase"
+	"github.com/deadblue/elevengo/internal/util"
 )
 
 const (
@@ -21,7 +22,7 @@ type LabelInfo struct {
 	Id         string         `json:"id"`
 	Name       string         `json:"name"`
 	Color      string         `json:"color"`
-	Sort       base.IntNumber `json:"sort"`
+	Sort       util.IntNumber `json:"sort"`
 	CreateTime int64          `json:"create_time"`
 	UpdateTime int64          `json:"update_time"`
 }
@@ -34,7 +35,7 @@ type LabelListResult struct {
 }
 
 type LabelListSpec struct {
-	base.JsonApiSpec[LabelListResult, base.StandardResp]
+	apibase.JsonApiSpec[LabelListResult, apibase.StandardResp]
 }
 
 func (s *LabelListSpec) Init(offset int) *LabelListSpec {
@@ -47,7 +48,7 @@ func (s *LabelListSpec) Init(offset int) *LabelListSpec {
 }
 
 type LabelSearchSpec struct {
-	base.JsonApiSpec[LabelListResult, base.StandardResp]
+	apibase.JsonApiSpec[LabelListResult, apibase.StandardResp]
 }
 
 func (s *LabelSearchSpec) Init(keyword string, offset int) *LabelSearchSpec {
@@ -61,7 +62,7 @@ func (s *LabelSearchSpec) Init(keyword string, offset int) *LabelSearchSpec {
 type LabelCreateResult []*LabelInfo
 
 type LabelCreateSpec struct {
-	base.JsonApiSpec[LabelCreateResult, base.StandardResp]
+	apibase.JsonApiSpec[LabelCreateResult, apibase.StandardResp]
 }
 
 func (s *LabelCreateSpec) Init(name, color string) *LabelCreateSpec {
@@ -71,11 +72,11 @@ func (s *LabelCreateSpec) Init(name, color string) *LabelCreateSpec {
 }
 
 type LabelEditSpec struct {
-	base.JsonApiSpec[base.VoidResult, base.BasicResp]
+	apibase.VoidApiSpec
 }
 
 func (s *LabelEditSpec) Init(labelId, name, color string) *LabelEditSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/label/edit")
+	s.VoidApiSpec.Init("https://webapi.115.com/label/edit")
 	s.FormSetAll(map[string]string{
 		"id":    labelId,
 		"name":  name,
@@ -85,21 +86,21 @@ func (s *LabelEditSpec) Init(labelId, name, color string) *LabelEditSpec {
 }
 
 type LabelDeleteSpec struct {
-	base.JsonApiSpec[base.VoidResult, base.BasicResp]
+	apibase.VoidApiSpec
 }
 
 func (s *LabelDeleteSpec) Init(labelId string) *LabelDeleteSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/label/delete")
+	s.VoidApiSpec.Init("https://webapi.115.com/label/delete")
 	s.FormSet("id", labelId)
 	return s
 }
 
 type LabelSetOrderSpec struct {
-	base.JsonApiSpec[base.VoidResult, base.BasicResp]
+	apibase.VoidApiSpec
 }
 
 func (s *LabelSetOrderSpec) Init(labelId string, order string, asc bool) *LabelSetOrderSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/files/order")
+	s.VoidApiSpec.Init("https://webapi.115.com/files/order")
 	s.FormSetAll(map[string]string{
 		"module":     "label_search",
 		"file_id":    labelId,

@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/deadblue/elevengo/internal/api/base"
-	"github.com/deadblue/elevengo/internal/api/errors"
+	"github.com/deadblue/elevengo/internal/apibase"
+	"github.com/deadblue/elevengo/internal/util"
+	"github.com/deadblue/elevengo/lowlevel/errors"
 )
 
 type ShareDuration int
@@ -23,17 +24,17 @@ const (
 type ShareInfo struct {
 	ShareCode string `json:"share_code"`
 
-	ShareState    base.IntNumber `json:"share_state"`
+	ShareState    util.IntNumber `json:"share_state"`
 	ShareTitle    string         `json:"share_title"`
 	ShareUrl      string         `json:"share_url"`
-	ShareDuration base.IntNumber `json:"share_ex_time"`
+	ShareDuration util.IntNumber `json:"share_ex_time"`
 	ReceiveCode   string         `json:"receive_code"`
 
-	ReceiveCount base.IntNumber `json:"receive_count"`
+	ReceiveCount util.IntNumber `json:"receive_count"`
 
 	FileCount   int            `json:"file_count"`
 	FolderCount int            `json:"folder_count"`
-	TotalSize   base.IntNumber `json:"total_size"`
+	TotalSize   util.IntNumber `json:"total_size"`
 }
 
 type ShareListResult struct {
@@ -43,7 +44,7 @@ type ShareListResult struct {
 
 //lint:ignore U1000 This type is used in generic.
 type _ShareListResp struct {
-	base.BasicResp
+	apibase.BasicResp
 
 	Count int             `json:"count"`
 	List  json.RawMessage `json:"list"`
@@ -62,7 +63,7 @@ func (r *_ShareListResp) Extract(v any) (err error) {
 }
 
 type ShareListSpec struct {
-	base.JsonApiSpec[ShareListResult, _ShareListResp]
+	apibase.JsonApiSpec[ShareListResult, _ShareListResp]
 }
 
 func (s *ShareListSpec) Init(offset int, userId string) *ShareListSpec {
@@ -74,7 +75,7 @@ func (s *ShareListSpec) Init(offset int, userId string) *ShareListSpec {
 }
 
 type ShareSendSpec struct {
-	base.JsonApiSpec[ShareInfo, base.StandardResp]
+	apibase.JsonApiSpec[ShareInfo, apibase.StandardResp]
 }
 
 func (s *ShareSendSpec) Init(fileIds []string, userId string) *ShareSendSpec {
@@ -86,7 +87,7 @@ func (s *ShareSendSpec) Init(fileIds []string, userId string) *ShareSendSpec {
 }
 
 type ShareGetSpec struct {
-	base.JsonApiSpec[ShareInfo, base.StandardResp]
+	apibase.JsonApiSpec[ShareInfo, apibase.StandardResp]
 }
 
 func (s *ShareGetSpec) Init(shareCode string) *ShareGetSpec {
@@ -96,13 +97,13 @@ func (s *ShareGetSpec) Init(shareCode string) *ShareGetSpec {
 }
 
 type ShareUpdateSpec struct {
-	base.JsonApiSpec[base.VoidResult, base.BasicResp]
+	apibase.VoidApiSpec
 }
 
 func (s *ShareUpdateSpec) Init(
 	shareCode string, receiveCode string, duration ShareDuration,
 ) *ShareUpdateSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/share/updateshare")
+	s.VoidApiSpec.Init("https://webapi.115.com/share/updateshare")
 	s.FormSet("share_code", shareCode)
 	if receiveCode == "" {
 		s.FormSet("auto_fill_recvcode", "1")
@@ -116,11 +117,11 @@ func (s *ShareUpdateSpec) Init(
 }
 
 type ShareCancelSpec struct {
-	base.JsonApiSpec[base.VoidResult, base.BasicResp]
+	apibase.VoidApiSpec
 }
 
 func (s *ShareCancelSpec) Init(shareCode string) *ShareCancelSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/share/updateshare")
+	s.VoidApiSpec.Init("https://webapi.115.com/share/updateshare")
 	s.FormSet("share_code", shareCode)
 	s.FormSet("action", "cancel")
 	return s

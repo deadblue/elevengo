@@ -1,10 +1,10 @@
-package base
+package apibase
 
 import (
 	"bytes"
 	"io"
 
-	"github.com/deadblue/elevengo/internal/protocol"
+	"github.com/deadblue/elevengo/lowlevel/protocol"
 )
 
 const (

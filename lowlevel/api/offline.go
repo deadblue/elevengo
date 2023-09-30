@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/deadblue/elevengo/internal/api/base"
-	"github.com/deadblue/elevengo/internal/api/errors"
+	"github.com/deadblue/elevengo/internal/apibase"
+	"github.com/deadblue/elevengo/lowlevel/errors"
 )
 
 type OfflineTask struct {
@@ -34,7 +34,7 @@ type OfflineListResult struct {
 
 //lint:ignore U1000 This type is used in generic.
 type _OfflineListResp struct {
-	base.BasicResp
+	apibase.BasicResp
 
 	PageIndex int `json:"page"`
 	PageCount int `json:"page_count"`
@@ -61,7 +61,7 @@ func (r *_OfflineListResp) Extract(v any) (err error) {
 }
 
 type OfflineListSpec struct {
-	base.JsonApiSpec[OfflineListResult, _OfflineListResp]
+	apibase.JsonApiSpec[OfflineListResult, _OfflineListResp]
 }
 
 func (s *OfflineListSpec) Init(page int) *OfflineListSpec {
@@ -71,7 +71,7 @@ func (s *OfflineListSpec) Init(page int) *OfflineListSpec {
 }
 
 type OfflineDeleteSpec struct {
-	base.JsonApiSpec[base.VoidResult, base.BasicResp]
+	apibase.VoidApiSpec
 }
 
 func (s *OfflineDeleteSpec) Init(hashes []string, deleteFiles bool) *OfflineDeleteSpec {
@@ -89,11 +89,11 @@ func (s *OfflineDeleteSpec) Init(hashes []string, deleteFiles bool) *OfflineDele
 }
 
 type OfflineClearSpec struct {
-	base.JsonApiSpec[base.VoidResult, base.BasicResp]
+	apibase.VoidApiSpec
 }
 
 func (s *OfflineClearSpec) Init(flag int) *OfflineClearSpec {
-	s.JsonApiSpec.Init("https://lixian.115.com/lixian/?ct=lixian&ac=task_clear")
+	s.VoidApiSpec.Init("https://lixian.115.com/lixian/?ct=lixian&ac=task_clear")
 	s.FormSetInt("flag", flag)
 	return s
 }
@@ -120,7 +120,7 @@ type _OfflineAddUrlsData struct {
 type OfflineAddUrlsResult []*OfflineTask
 
 type OfflineAddUrlsSpec struct {
-	base.M115ApiSpec[OfflineAddUrlsResult]
+	apibase.M115ApiSpec[OfflineAddUrlsResult]
 }
 
 func offlineAddUrlsResultExtractor(data []byte, result *OfflineAddUrlsResult) (err error) {

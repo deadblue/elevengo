@@ -1,4 +1,4 @@
-package base
+package apibase
 
 import (
 	"net/url"

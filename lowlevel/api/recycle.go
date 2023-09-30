@@ -1,17 +1,18 @@
 package api
 
 import (
-	"github.com/deadblue/elevengo/internal/api/base"
-	"github.com/deadblue/elevengo/internal/api/errors"
+	"github.com/deadblue/elevengo/internal/apibase"
+	"github.com/deadblue/elevengo/internal/util"
+	"github.com/deadblue/elevengo/lowlevel/errors"
 )
 
 type RecycleBinItem struct {
 	FileId     string         `json:"id"`
 	FileName   string         `json:"file_name"`
-	FileSize   base.IntNumber `json:"file_size"`
+	FileSize   util.IntNumber `json:"file_size"`
 	ParentId   string         `json:"cid"`
 	ParentName string         `json:"parent_name"`
-	DeleteTime base.IntNumber `json:"dtime"`
+	DeleteTime util.IntNumber `json:"dtime"`
 }
 
 type RecycleBinListResult struct {
@@ -21,9 +22,9 @@ type RecycleBinListResult struct {
 
 //lint:ignore U1000 This type is used in generic.
 type _RecycleBinListResp struct {
-	base.StandardResp
+	apibase.StandardResp
 
-	Count base.IntNumber `json:"count"`
+	Count util.IntNumber `json:"count"`
 
 	Offset int `json:"offset"`
 	Limit  int `json:"page_size"`
@@ -42,7 +43,7 @@ func (r *_RecycleBinListResp) Extract(v any) (err error) {
 }
 
 type RecycleBinListSpec struct {
-	base.JsonApiSpec[RecycleBinListResult, _RecycleBinListResp]
+	apibase.JsonApiSpec[RecycleBinListResult, _RecycleBinListResp]
 }
 
 func (s *RecycleBinListSpec) Init(offset int) *RecycleBinListSpec {
@@ -56,11 +57,11 @@ func (s *RecycleBinListSpec) Init(offset int) *RecycleBinListSpec {
 }
 
 type RecycleBinCleanSpec struct {
-	base.JsonApiSpec[base.VoidResult, base.BasicResp]
+	apibase.VoidApiSpec
 }
 
 func (s *RecycleBinCleanSpec) Init(password string) *RecycleBinCleanSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/rb/clean")
+	s.VoidApiSpec.Init("https://webapi.115.com/rb/clean")
 	s.FormSet("password", password)
 	return s
 }

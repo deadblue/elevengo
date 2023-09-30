@@ -1,21 +1,32 @@
-package base
+package apibase
 
 import (
 	"encoding/json"
 
-	"github.com/deadblue/elevengo/internal/api/errors"
+	"github.com/deadblue/elevengo/internal/util"
+	"github.com/deadblue/elevengo/lowlevel/errors"
 )
+
+type _ApiResp interface {
+	// Err returns an error if API failed.
+	Err() error
+}
+
+type _DataResp interface {
+	// Extract extracts result from response to |v|.
+	Extract(v any) error
+}
 
 // BasicResp is the basic response for most JSON/JSONP API.
 type BasicResp struct {
 	// Response state
 	State bool `json:"state"`
 	// Possible error code fields
-	ErrorCode  IntNumber `json:"errno,omitempty"`
-	ErrorCode2 int       `json:"errNo,omitempty"`
-	ErrorCode3 int       `json:"errcode,omitempty"`
-	ErrorCode4 int       `json:"errCode,omitempty"`
-	ErrorCode5 int       `json:"code,omitempty"`
+	ErrorCode  util.IntNumber `json:"errno,omitempty"`
+	ErrorCode2 int            `json:"errNo,omitempty"`
+	ErrorCode3 int            `json:"errcode,omitempty"`
+	ErrorCode4 int            `json:"errCode,omitempty"`
+	ErrorCode5 int            `json:"code,omitempty"`
 	// Possible error message fields
 	ErrorMessage  string `json:"error,omitempty"`
 	ErrorMessage2 string `json:"message,omitempty"`
@@ -45,6 +56,7 @@ func findNonZero(code ...int) int {
 	return 0
 }
 
+// StandardResp is the response for all JSON/JSONP APIs with "data" field.
 type StandardResp struct {
 	BasicResp
 	Data json.RawMessage `json:"data"`
