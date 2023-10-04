@@ -15,11 +15,11 @@ type ShortcutListResult struct {
 }
 
 type ShortcutListSpec struct {
-	apibase.JsonApiSpec[ShortcutListResult, apibase.StandardResp]
+	apibase.StandardApiSpec[ShortcutListResult]
 }
 
 func (s *ShortcutListSpec) Init(fileId string) *ShortcutListSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/category/shortcut")
+	s.StandardApiSpec.Init("https://webapi.115.com/category/shortcut")
 	return s
 }
 

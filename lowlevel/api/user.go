@@ -10,10 +10,10 @@ type UserInfoResult struct {
 }
 
 type UserInfoSpec struct {
-	apibase.JsonApiSpec[UserInfoResult, apibase.StandardResp]
+	apibase.StandardApiSpec[UserInfoResult]
 }
 
 func (s *UserInfoSpec) Init() *UserInfoSpec {
-	s.JsonApiSpec.Init("https://my.115.com/?ct=ajax&ac=nav")
+	s.StandardApiSpec.Init("https://my.115.com/?ct=ajax&ac=nav")
 	return s
 }

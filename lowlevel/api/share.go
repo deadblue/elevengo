@@ -75,11 +75,11 @@ func (s *ShareListSpec) Init(offset int, userId string) *ShareListSpec {
 }
 
 type ShareSendSpec struct {
-	apibase.JsonApiSpec[ShareInfo, apibase.StandardResp]
+	apibase.StandardApiSpec[ShareInfo]
 }
 
 func (s *ShareSendSpec) Init(fileIds []string, userId string) *ShareSendSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/share/send")
+	s.StandardApiSpec.Init("https://webapi.115.com/share/send")
 	s.FormSet("user_id", userId)
 	s.FormSet("file_ids", strings.Join(fileIds, ","))
 	s.FormSet("ignore_warn", "1")
@@ -87,11 +87,11 @@ func (s *ShareSendSpec) Init(fileIds []string, userId string) *ShareSendSpec {
 }
 
 type ShareGetSpec struct {
-	apibase.JsonApiSpec[ShareInfo, apibase.StandardResp]
+	apibase.StandardApiSpec[ShareInfo]
 }
 
 func (s *ShareGetSpec) Init(shareCode string) *ShareGetSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/share/shareinfo")
+	s.StandardApiSpec.Init("https://webapi.115.com/share/shareinfo")
 	s.QuerySet("share_code", shareCode)
 	return s
 }

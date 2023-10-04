@@ -28,10 +28,10 @@ type IndexInfoResult struct {
 }
 
 type IndexInfoSpec struct {
-	apibase.JsonApiSpec[IndexInfoResult, apibase.StandardResp]
+	apibase.StandardApiSpec[IndexInfoResult]
 }
 
 func (s *IndexInfoSpec) Init() *IndexInfoSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/files/index_info")
+	s.StandardApiSpec.Init("https://webapi.115.com/files/index_info")
 	return s
 }

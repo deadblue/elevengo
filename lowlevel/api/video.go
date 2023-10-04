@@ -161,16 +161,16 @@ func (i *VideoSubtitleInfo) UnmarshalJSON(data []byte) (err error) {
 }
 
 type VideoSubtitleResult struct {
-	AutoLoad VideoSubtitleInfo   `json:"autoload"`
-	List     []VideoSubtitleInfo `json:"list"`
+	AutoLoad VideoSubtitleInfo    `json:"autoload"`
+	List     []*VideoSubtitleInfo `json:"list"`
 }
 
 type VideoSubtitleSpec struct {
-	apibase.JsonApiSpec[VideoSubtitleResult, apibase.StandardResp]
+	apibase.StandardApiSpec[VideoSubtitleResult]
 }
 
 func (s *VideoSubtitleSpec) Init(pickcode string) *VideoSubtitleSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/movies/subtitle")
+	s.StandardApiSpec.Init("https://webapi.115.com/movies/subtitle")
 	s.QuerySet("pickcode", pickcode)
 	return s
 }

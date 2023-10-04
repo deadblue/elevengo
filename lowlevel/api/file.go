@@ -105,9 +105,12 @@ func (r *_FileListResp) Extract(v any) (err error) {
 
 type FileListSpec struct {
 	apibase.JsonApiSpec[FileListResult, _FileListResp]
+
+	// Save file order
+	fo string
 }
 
-func (s *FileListSpec) Init(dirId string, offset int) *FileListSpec {
+func (s *FileListSpec) Init(dirId string, offset int, limit int) *FileListSpec {
 	s.JsonApiSpec.Init("")
 	s.QuerySet("format", "json")
 	s.QuerySet("aid", "1")
@@ -115,7 +118,7 @@ func (s *FileListSpec) Init(dirId string, offset int) *FileListSpec {
 	s.QuerySet("show_dir", "1")
 	s.QuerySet("fc_mix", "0")
 	s.QuerySetInt("offset", offset)
-	s.QuerySetInt("limit", FileListLimit)
+	s.QuerySetInt("limit", limit)
 	// s.QuerySet("snap", "0")
 	// s.QuerySet("natsort", "1")
 	return s
@@ -123,8 +126,7 @@ func (s *FileListSpec) Init(dirId string, offset int) *FileListSpec {
 
 func (s *FileListSpec) Url() string {
 	// Select base URL
-	order := s.QueryGet("o")
-	if order == FileOrderByName {
+	if s.fo == FileOrderByName {
 		s.SetBaseUrl("https://aps.115.com/natsort/files.php")
 	} else {
 		s.SetBaseUrl("https://webapi.115.com/files")
@@ -133,6 +135,7 @@ func (s *FileListSpec) Url() string {
 }
 
 func (s *FileListSpec) SetOrder(order string, asc int) {
+	s.fo = order
 	s.QuerySet("o", order)
 	s.QuerySetInt("asc", asc)
 }
@@ -226,11 +229,11 @@ func (s *FileGetSpec) Init(fileId string) *FileGetSpec {
 }
 
 type FileRenameSpec struct {
-	apibase.JsonApiSpec[apibase.VoidResult, apibase.BasicResp]
+	apibase.VoidApiSpec
 }
 
 func (s *FileRenameSpec) Init() *FileRenameSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/files/batch_rename")
+	s.VoidApiSpec.Init("https://webapi.115.com/files/batch_rename")
 	return s
 }
 

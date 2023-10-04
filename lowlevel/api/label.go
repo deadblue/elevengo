@@ -35,11 +35,11 @@ type LabelListResult struct {
 }
 
 type LabelListSpec struct {
-	apibase.JsonApiSpec[LabelListResult, apibase.StandardResp]
+	apibase.StandardApiSpec[LabelListResult]
 }
 
 func (s *LabelListSpec) Init(offset int) *LabelListSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/label/list")
+	s.StandardApiSpec.Init("https://webapi.115.com/label/list")
 	s.QuerySetInt("offset", offset)
 	s.QuerySetInt("limit", LabelListLimit)
 	s.QuerySet("sort", "create_time")
@@ -48,11 +48,11 @@ func (s *LabelListSpec) Init(offset int) *LabelListSpec {
 }
 
 type LabelSearchSpec struct {
-	apibase.JsonApiSpec[LabelListResult, apibase.StandardResp]
+	apibase.StandardApiSpec[LabelListResult]
 }
 
 func (s *LabelSearchSpec) Init(keyword string, offset int) *LabelSearchSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/label/list")
+	s.StandardApiSpec.Init("https://webapi.115.com/label/list")
 	s.QuerySet("keyword", keyword)
 	s.QuerySetInt("offset", offset)
 	s.QuerySetInt("limit", LabelListLimit)
@@ -62,11 +62,11 @@ func (s *LabelSearchSpec) Init(keyword string, offset int) *LabelSearchSpec {
 type LabelCreateResult []*LabelInfo
 
 type LabelCreateSpec struct {
-	apibase.JsonApiSpec[LabelCreateResult, apibase.StandardResp]
+	apibase.StandardApiSpec[LabelCreateResult]
 }
 
 func (s *LabelCreateSpec) Init(name, color string) *LabelCreateSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/label/add_multi")
+	s.StandardApiSpec.Init("https://webapi.115.com/label/add_multi")
 	s.FormSet("name[]", name+"\x07"+color)
 	return s
 }

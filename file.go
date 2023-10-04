@@ -3,6 +3,7 @@ package elevengo
 import (
 	"time"
 
+	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/api"
 	"github.com/deadblue/elevengo/lowlevel/errors"
 	"github.com/deadblue/elevengo/option"
@@ -67,9 +68,9 @@ func (f *File) from(info *api.FileInfo) *File {
 	}
 
 	if info.UpdatedTime != "" {
-		f.ModifiedTime = api.ParseFileTime(info.UpdatedTime)
+		f.ModifiedTime = util.ParseFileTime(info.UpdatedTime)
 	} else {
-		f.ModifiedTime = api.ParseFileTime(info.ModifiedTime)
+		f.ModifiedTime = util.ParseFileTime(info.ModifiedTime)
 	}
 
 	f.MediaDuration = info.MediaDuration
@@ -188,7 +189,7 @@ func (a *Agent) FileWithStar(opts ...option.FileListOption) (it Iterator[File], 
 }
 
 func (a *Agent) fileIterateInternal(fi *fileIterator) (err error) {
-	spec := (&api.FileListSpec{}).Init(fi.dirId, fi.offset)
+	spec := (&api.FileListSpec{}).Init(fi.dirId, fi.offset, api.FileListLimit)
 	spec.SetFileType(fi.fileType)
 	switch fi.mode {
 	case 1:

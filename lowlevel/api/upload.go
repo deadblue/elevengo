@@ -316,12 +316,12 @@ type UploadSampleResult struct {
 }
 
 type UploadSampleSpec struct {
-	apibase.JsonApiSpec[UploadSampleResult, apibase.StandardResp]
+	apibase.StandardApiSpec[UploadSampleResult]
 	payload protocol.Payload
 }
 
 func (s *UploadSampleSpec) Init(url string, payload protocol.Payload) *UploadSampleSpec {
-	s.JsonApiSpec.Init(url)
+	s.StandardApiSpec.Init(url)
 	s.payload = payload
 	return s
 }
