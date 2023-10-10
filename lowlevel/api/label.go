@@ -1,7 +1,6 @@
 package api
 
 import (
-	"github.com/deadblue/elevengo/internal/apibase"
 	"github.com/deadblue/elevengo/internal/util"
 )
 
@@ -35,48 +34,48 @@ type LabelListResult struct {
 }
 
 type LabelListSpec struct {
-	apibase.StandardApiSpec[LabelListResult]
+	_StandardApiSpec[LabelListResult]
 }
 
 func (s *LabelListSpec) Init(offset int) *LabelListSpec {
-	s.StandardApiSpec.Init("https://webapi.115.com/label/list")
-	s.QuerySetInt("offset", offset)
-	s.QuerySetInt("limit", LabelListLimit)
-	s.QuerySet("sort", "create_time")
-	s.QuerySet("order", "asc")
+	s._StandardApiSpec.Init("https://webapi.115.com/label/list")
+	s.query.SetInt("offset", offset)
+	s.query.SetInt("limit", LabelListLimit)
+	s.query.Set("sort", "create_time")
+	s.query.Set("order", "asc")
 	return s
 }
 
 type LabelSearchSpec struct {
-	apibase.StandardApiSpec[LabelListResult]
+	_StandardApiSpec[LabelListResult]
 }
 
 func (s *LabelSearchSpec) Init(keyword string, offset int) *LabelSearchSpec {
-	s.StandardApiSpec.Init("https://webapi.115.com/label/list")
-	s.QuerySet("keyword", keyword)
-	s.QuerySetInt("offset", offset)
-	s.QuerySetInt("limit", LabelListLimit)
+	s._StandardApiSpec.Init("https://webapi.115.com/label/list")
+	s.query.Set("keyword", keyword)
+	s.query.SetInt("offset", offset)
+	s.query.SetInt("limit", LabelListLimit)
 	return s
 }
 
 type LabelCreateResult []*LabelInfo
 
 type LabelCreateSpec struct {
-	apibase.StandardApiSpec[LabelCreateResult]
+	_StandardApiSpec[LabelCreateResult]
 }
 
 func (s *LabelCreateSpec) Init(name, color string) *LabelCreateSpec {
-	s.StandardApiSpec.Init("https://webapi.115.com/label/add_multi")
-	s.FormSet("name[]", name+"\x07"+color)
+	s._StandardApiSpec.Init("https://webapi.115.com/label/add_multi")
+	s.form.Set("name[]", name+"\x07"+color)
 	return s
 }
 
 type LabelEditSpec struct {
-	apibase.VoidApiSpec
+	_VoidApiSpec
 }
 
 func (s *LabelEditSpec) Init(labelId, name, color string) *LabelEditSpec {
-	s.VoidApiSpec.Init("https://webapi.115.com/label/edit")
+	s._VoidApiSpec.Init("https://webapi.115.com/label/edit")
 	s.FormSetAll(map[string]string{
 		"id":    labelId,
 		"name":  name,
@@ -86,31 +85,29 @@ func (s *LabelEditSpec) Init(labelId, name, color string) *LabelEditSpec {
 }
 
 type LabelDeleteSpec struct {
-	apibase.VoidApiSpec
+	_VoidApiSpec
 }
 
 func (s *LabelDeleteSpec) Init(labelId string) *LabelDeleteSpec {
-	s.VoidApiSpec.Init("https://webapi.115.com/label/delete")
-	s.FormSet("id", labelId)
+	s._VoidApiSpec.Init("https://webapi.115.com/label/delete")
+	s.form.Set("id", labelId)
 	return s
 }
 
 type LabelSetOrderSpec struct {
-	apibase.VoidApiSpec
+	_VoidApiSpec
 }
 
 func (s *LabelSetOrderSpec) Init(labelId string, order string, asc bool) *LabelSetOrderSpec {
-	s.VoidApiSpec.Init("https://webapi.115.com/files/order")
-	s.FormSetAll(map[string]string{
-		"module":     "label_search",
-		"file_id":    labelId,
-		"fc_mix":     "0",
-		"user_order": order,
-	})
+	s._VoidApiSpec.Init("https://webapi.115.com/files/order")
+	s.form.Set("module", "label_search").
+		Set("file_id", labelId).
+		Set("fc_mix", "0").
+		Set("user_order", order)
 	if asc {
-		s.FormSet("user_asc", "1")
+		s.form.Set("user_asc", "1")
 	} else {
-		s.FormSet("user_asc", "0")
+		s.form.Set("user_asc", "0")
 	}
 	return s
 }

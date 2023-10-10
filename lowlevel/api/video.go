@@ -3,7 +3,7 @@ package api
 import (
 	"encoding/json"
 
-	"github.com/deadblue/elevengo/internal/apibase"
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/errors"
 )
@@ -21,7 +21,7 @@ type VideoPlayResult struct {
 
 //lint:ignore U1000 This type is used in generic.
 type _VideoPlayWebResp struct {
-	apibase.BasicResp
+	protocol.BasicResp
 
 	FileId        string           `json:"file_id"`
 	ParentId      string           `json:"parent_id"`
@@ -53,12 +53,12 @@ func (r *_VideoPlayWebResp) Extract(v any) error {
 }
 
 type VideoPlayWebSpec struct {
-	apibase.JsonApiSpec[VideoPlayResult, _VideoPlayWebResp]
+	_JsonApiSpec[VideoPlayResult, _VideoPlayWebResp]
 }
 
 func (s *VideoPlayWebSpec) Init(pickcode string) *VideoPlayWebSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/files/video")
-	s.QuerySet("pickcode", pickcode)
+	s._JsonApiSpec.Init("https://webapi.115.com/files/video")
+	s.query.Set("pickcode", pickcode)
 	return s
 }
 
@@ -83,7 +83,7 @@ type _VideoPlayPcData struct {
 }
 
 type VideoPlayPcSpec struct {
-	apibase.M115ApiSpec[VideoPlayResult]
+	_M115ApiSpec[VideoPlayResult]
 }
 
 func videoPlayResultExtractor(data []byte, result *VideoPlayResult) (err error) {
@@ -108,16 +108,14 @@ func videoPlayResultExtractor(data []byte, result *VideoPlayResult) (err error) 
 }
 
 func (s *VideoPlayPcSpec) Init(userId, appVer, pickcode string) *VideoPlayPcSpec {
-	s.M115ApiSpec.Init(
+	s._M115ApiSpec.Init(
 		"https://proapi.115.com/pc/video/play", videoPlayResultExtractor,
 	)
-	s.ParamSetAll(map[string]string{
-		"format":            "app",
-		"definition_filter": "1",
-		"pickcode":          pickcode,
-		"user_id":           userId,
-		"appversion":        appVer,
-	})
+	s.params.Set("format", "app").
+		Set("user_id", userId).
+		Set("appversion", appVer).
+		Set("definition_filter", "1").
+		Set("pickcode", pickcode)
 	return s
 }
 
@@ -166,11 +164,11 @@ type VideoSubtitleResult struct {
 }
 
 type VideoSubtitleSpec struct {
-	apibase.StandardApiSpec[VideoSubtitleResult]
+	_StandardApiSpec[VideoSubtitleResult]
 }
 
 func (s *VideoSubtitleSpec) Init(pickcode string) *VideoSubtitleSpec {
-	s.StandardApiSpec.Init("https://webapi.115.com/movies/subtitle")
-	s.QuerySet("pickcode", pickcode)
+	s._StandardApiSpec.Init("https://webapi.115.com/movies/subtitle")
+	s.query.Set("pickcode", pickcode)
 	return s
 }

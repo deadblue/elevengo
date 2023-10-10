@@ -1,4 +1,4 @@
-package apibase
+package api
 
 import (
 	"encoding/json"
@@ -6,46 +6,49 @@ import (
 	"net/url"
 
 	"github.com/deadblue/elevengo/internal/crypto/m115"
-	"github.com/deadblue/elevengo/lowlevel/protocol"
+	"github.com/deadblue/elevengo/internal/protocol"
+	"github.com/deadblue/elevengo/internal/util"
+	"github.com/deadblue/elevengo/lowlevel/client"
 )
 
-type M115Extractor[D any] func([]byte, *D) error
+type _M115Extractor[D any] func([]byte, *D) error
 
-// M115ApiSpec is the base struct for all m115 ApiSpec.
-type M115ApiSpec[D any] struct {
-	_BaseApiSpec
+// _M115ApiSpec is the base API spec for all m115 encoded ApiSpec.
+type _M115ApiSpec[D any] struct {
+	_BasicApiSpec
 
 	// Cipher key for encrypt/decrypt.
 	key m115.Key
 	// API parameters.
-	params map[string]string
+	params util.Params
 	// Custom the extraction process.
-	extractor M115Extractor[D]
+	extractor _M115Extractor[D]
+
 	// Final result.
 	Result D
 }
 
-func (s *M115ApiSpec[D]) Init(baseUrl string, ex M115Extractor[D]) {
-	s._BaseApiSpec.Init(baseUrl)
+func (s *_M115ApiSpec[D]) Init(baseUrl string, ex _M115Extractor[D]) {
+	s._BasicApiSpec.Init(baseUrl)
 	s.extractor = ex
 	s.key = m115.GenerateKey()
-	s.params = make(map[string]string)
+	s.params = util.Params{}
 }
 
 // Payload implements |ApiSpec.Payload|.
-func (s *M115ApiSpec[D]) Payload() protocol.Payload {
+func (s *_M115ApiSpec[D]) Payload() client.Payload {
 	data, err := json.Marshal(s.params)
 	if err != nil {
 		return nil
 	}
 	form := url.Values{}
 	form.Set("data", m115.Encode(data, s.key))
-	return wwwFormPayload(form.Encode())
+	return client.WwwFormPayload(form.Encode())
 }
 
 // Parse implements |ApiSpec.Parse|.
-func (s *M115ApiSpec[D]) Parse(r io.Reader) (err error) {
-	jd, resp := json.NewDecoder(r), &StandardResp{}
+func (s *_M115ApiSpec[D]) Parse(r io.Reader) (err error) {
+	jd, resp := json.NewDecoder(r), &protocol.StandardResp{}
 	if err = jd.Decode(resp); err != nil {
 		return
 	}
@@ -66,15 +69,5 @@ func (s *M115ApiSpec[D]) Parse(r io.Reader) (err error) {
 
 	} else {
 		return err
-	}
-}
-
-func (s *M115ApiSpec[D]) ParamSet(key, value string) {
-	s.params[key] = value
-}
-
-func (s *M115ApiSpec[D]) ParamSetAll(params map[string]string) {
-	for key, value := range params {
-		s.params[key] = value
 	}
 }

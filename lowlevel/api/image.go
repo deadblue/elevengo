@@ -1,7 +1,5 @@
 package api
 
-import "github.com/deadblue/elevengo/internal/apibase"
-
 type ImageGetResult struct {
 	FileName string `json:"file_name"`
 	FileSha1 string `json:"file_sha1"`
@@ -14,12 +12,12 @@ type ImageGetResult struct {
 }
 
 type ImageGetSpec struct {
-	apibase.StandardApiSpec[ImageGetResult]
+	_StandardApiSpec[ImageGetResult]
 }
 
 func (s *ImageGetSpec) Init(pickcode string) *ImageGetSpec {
-	s.StandardApiSpec.Init("https://webapi.115.com/files/image")
-	s.QuerySet("pickcode", pickcode)
-	s.QuerySetNow("_")
+	s._StandardApiSpec.Init("https://webapi.115.com/files/image")
+	s.query.Set("pickcode", pickcode)
+	s.query.SetNow("_")
 	return s
 }

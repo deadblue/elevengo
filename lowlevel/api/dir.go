@@ -1,13 +1,13 @@
 package api
 
 import (
-	"github.com/deadblue/elevengo/internal/apibase"
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/lowlevel/errors"
 )
 
 //lint:ignore U1000 This type is used in generic.
 type _DirCreateResp struct {
-	apibase.BasicResp
+	protocol.BasicResp
 
 	FileId   string `json:"file_id"`
 	FileName string `json:"file_name"`
@@ -23,38 +23,37 @@ func (r *_DirCreateResp) Extract(v any) (err error) {
 }
 
 type DirCreateSpec struct {
-	apibase.JsonApiSpec[string, _DirCreateResp]
+	_JsonApiSpec[string, _DirCreateResp]
 }
 
 func (s *DirCreateSpec) Init(parentId, name string) *DirCreateSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/files/add")
-	s.FormSet("pid", parentId)
-	s.FormSet("cname", name)
+	s._JsonApiSpec.Init("https://webapi.115.com/files/add")
+	s.form.Set("pid", parentId).Set("cname", name)
 	return s
 }
 
 type DirSetOrderSpec struct {
-	apibase.VoidApiSpec
+	_VoidApiSpec
 }
 
 func (s *DirSetOrderSpec) Init(dirId string, order string, asc bool) *DirSetOrderSpec {
-	s.VoidApiSpec.Init("https://webapi.115.com/files/order")
+	s._VoidApiSpec.Init("https://webapi.115.com/files/order")
 	s.FormSetAll(map[string]string{
 		"file_id":    dirId,
 		"fc_mix":     "0",
 		"user_order": order,
 	})
 	if asc {
-		s.FormSet("user_asc", "1")
+		s.form.Set("user_asc", "1")
 	} else {
-		s.FormSet("user_asc", "0")
+		s.form.Set("user_asc", "0")
 	}
 	return s
 }
 
 //lint:ignore U1000 This type is used in generic.
 type _DirLocateResp struct {
-	apibase.BasicResp
+	protocol.BasicResp
 
 	DirId     string `json:"id"`
 	IsPrivate string `json:"is_private"`
@@ -70,11 +69,11 @@ func (r *_DirLocateResp) Extract(v any) (err error) {
 }
 
 type DirLocateSpec struct {
-	apibase.JsonApiSpec[string, _DirLocateResp]
+	_JsonApiSpec[string, _DirLocateResp]
 }
 
 func (s *DirLocateSpec) Init(path string) *DirLocateSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/files/getid")
-	s.QuerySet("path", path)
+	s._JsonApiSpec.Init("https://webapi.115.com/files/getid")
+	s.query.Set("path", path)
 	return s
 }

@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/deadblue/elevengo/internal/apibase"
 	"github.com/deadblue/elevengo/internal/crypto/hash"
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/util"
+	"github.com/deadblue/elevengo/lowlevel/client"
 	"github.com/deadblue/elevengo/lowlevel/errors"
-	"github.com/deadblue/elevengo/lowlevel/protocol"
 )
 
 const (
@@ -27,7 +27,8 @@ type UploadInfoResult struct {
 
 //lint:ignore U1000 This type is used in generic.
 type _UploadInfoResp struct {
-	apibase.BasicResp
+	protocol.BasicResp
+
 	UserId  int    `json:"user_id"`
 	UserKey string `json:"userkey"`
 }
@@ -43,11 +44,11 @@ func (r *_UploadInfoResp) Extract(v any) error {
 }
 
 type UploadInfoSpec struct {
-	apibase.JsonApiSpec[UploadInfoResult, _UploadInfoResp]
+	_JsonApiSpec[UploadInfoResult, _UploadInfoResp]
 }
 
 func (s *UploadInfoSpec) Init() *UploadInfoSpec {
-	s.JsonApiSpec.Init("https://proapi.115.com/app/uploadinfo")
+	s._JsonApiSpec.Init("https://proapi.115.com/app/uploadinfo")
 	return s
 }
 
@@ -182,28 +183,28 @@ func (r *_UploadInitResp) Extract(v any) (err error) {
 }
 
 type UploadInitSpec struct {
-	apibase.JsonApiSpec[UploadInitResult, _UploadInitResp]
+	_JsonApiSpec[UploadInitResult, _UploadInitResp]
 }
 
 func (s *UploadInitSpec) Init(params *UploadInitParams, helper *UploadHelper) *UploadInitSpec {
-	s.JsonApiSpec.Init("https://uplb.115.com/4.0/initupload.php")
-	s.EnableCrypto()
+	s._JsonApiSpec.Init("https://uplb.115.com/4.0/initupload.php")
+	s.crypto = true
 	// Prepare parameters
 	now := time.Now().Unix()
-	s.FormSet("appid", "0")
-	s.FormSet("appversion", helper.AppVer)
-	s.FormSet("userid", helper.UserId)
-	s.FormSet("filename", params.FileName)
-	s.FormSetInt64("filesize", params.FileSize)
-	s.FormSet("fileid", params.FileId)
-	s.FormSet("target", params.Target)
-	s.FormSet("sig", params.Signature)
-	s.FormSetInt64("t", now)
+	s.form.Set("appid", "0").
+		Set("appversion", helper.AppVer).
+		Set("userid", helper.UserId).
+		Set("filename", params.FileName).
+		SetInt64("filesize", params.FileSize).
+		Set("fileid", params.FileId).
+		Set("target", params.Target).
+		Set("sig", params.Signature).
+		SetInt64("t", now)
 	if params.SignKey != "" && params.SignValue != "" {
-		s.FormSet("sign_key", params.SignKey)
-		s.FormSet("sign_val", params.SignValue)
+		s.form.Set("sign_key", params.SignKey).
+			Set("sign_val", params.SignValue)
 	}
-	s.FormSet("token", helper.CalcToken(
+	s.form.Set("token", helper.CalcToken(
 		params.FileId, params.FileSize, params.SignKey, params.SignValue, now,
 	))
 	return s
@@ -245,11 +246,11 @@ func (r *_UploadTokenResp) Extract(v any) error {
 }
 
 type UploadTokenSpec struct {
-	apibase.JsonApiSpec[UploadTokenResult, _UploadTokenResp]
+	_JsonApiSpec[UploadTokenResult, _UploadTokenResp]
 }
 
 func (s *UploadTokenSpec) Init() *UploadTokenSpec {
-	s.JsonApiSpec.Init("https://uplb.115.com/3.0/gettoken.php")
+	s._JsonApiSpec.Init("https://uplb.115.com/3.0/gettoken.php")
 	return s
 }
 
@@ -292,15 +293,15 @@ func (r *_UploadSampleInitResp) Extract(v any) error {
 }
 
 type UploadSampleInitSpec struct {
-	apibase.JsonApiSpec[UploadSampleInitResult, _UploadSampleInitResp]
+	_JsonApiSpec[UploadSampleInitResult, _UploadSampleInitResp]
 }
 
 func (s *UploadSampleInitSpec) Init(userId string, fileName string, fileSize int64, target string) *UploadSampleInitSpec {
-	s.JsonApiSpec.Init("https://uplb.115.com/3.0/sampleinitupload.php")
-	s.FormSet("userid", userId)
-	s.FormSet("filename", fileName)
-	s.FormSetInt64("filesize", fileSize)
-	s.FormSet("target", target)
+	s._JsonApiSpec.Init("https://uplb.115.com/3.0/sampleinitupload.php")
+	s.form.Set("userid", userId).
+		Set("filename", fileName).
+		SetInt64("filesize", fileSize).
+		Set("target", target)
 	return s
 }
 
@@ -316,16 +317,16 @@ type UploadSampleResult struct {
 }
 
 type UploadSampleSpec struct {
-	apibase.StandardApiSpec[UploadSampleResult]
-	payload protocol.Payload
+	_StandardApiSpec[UploadSampleResult]
+	payload client.Payload
 }
 
-func (s *UploadSampleSpec) Init(url string, payload protocol.Payload) *UploadSampleSpec {
-	s.StandardApiSpec.Init(url)
+func (s *UploadSampleSpec) Init(url string, payload client.Payload) *UploadSampleSpec {
+	s._StandardApiSpec.Init(url)
 	s.payload = payload
 	return s
 }
 
-func (s *UploadSampleSpec) Payload() protocol.Payload {
+func (s *UploadSampleSpec) Payload() client.Payload {
 	return s.payload
 }

@@ -1,4 +1,4 @@
-package apibase
+package protocol
 
 import (
 	"encoding/json"
@@ -6,16 +6,6 @@ import (
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/errors"
 )
-
-type _ApiResp interface {
-	// Err returns an error if API failed.
-	Err() error
-}
-
-type _DataResp interface {
-	// Extract extracts result from response to |v|.
-	Extract(v any) error
-}
 
 // BasicResp is the basic response for most JSON/JSONP API.
 type BasicResp struct {

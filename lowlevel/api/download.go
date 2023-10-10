@@ -2,8 +2,6 @@ package api
 
 import (
 	"encoding/json"
-
-	"github.com/deadblue/elevengo/internal/apibase"
 )
 
 type _DownloadUrlProto struct {
@@ -36,12 +34,12 @@ type DownloadInfo struct {
 type DownloadResult map[string]*DownloadInfo
 
 type DownloadSpec struct {
-	apibase.M115ApiSpec[DownloadResult]
+	_M115ApiSpec[DownloadResult]
 }
 
 func (s *DownloadSpec) Init(pickcode string) *DownloadSpec {
-	s.M115ApiSpec.Init("https://proapi.115.com/app/chrome/downurl", nil)
-	s.QuerySetNow("t")
-	s.ParamSet("pickcode", pickcode)
+	s._M115ApiSpec.Init("https://proapi.115.com/app/chrome/downurl", nil)
+	s.query.SetNow("t")
+	s.params.Set("pickcode", pickcode)
 	return s
 }

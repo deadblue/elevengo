@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/deadblue/elevengo/internal/apibase"
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/lowlevel/errors"
 )
 
@@ -34,7 +34,7 @@ type OfflineListResult struct {
 
 //lint:ignore U1000 This type is used in generic.
 type _OfflineListResp struct {
-	apibase.BasicResp
+	protocol.BasicResp
 
 	PageIndex int `json:"page"`
 	PageCount int `json:"page_count"`
@@ -61,40 +61,40 @@ func (r *_OfflineListResp) Extract(v any) (err error) {
 }
 
 type OfflineListSpec struct {
-	apibase.JsonApiSpec[OfflineListResult, _OfflineListResp]
+	_JsonApiSpec[OfflineListResult, _OfflineListResp]
 }
 
 func (s *OfflineListSpec) Init(page int) *OfflineListSpec {
-	s.JsonApiSpec.Init("https://lixian.115.com/lixian/?ct=lixian&ac=task_lists")
-	s.QuerySetInt("page", page)
+	s._JsonApiSpec.Init("https://lixian.115.com/lixian/?ct=lixian&ac=task_lists")
+	s.query.SetInt("page", page)
 	return s
 }
 
 type OfflineDeleteSpec struct {
-	apibase.VoidApiSpec
+	_VoidApiSpec
 }
 
 func (s *OfflineDeleteSpec) Init(hashes []string, deleteFiles bool) *OfflineDeleteSpec {
-	s.JsonApiSpec.Init("https://lixian.115.com/lixian/?ct=lixian&ac=task_del")
+	s._VoidApiSpec.Init("https://lixian.115.com/lixian/?ct=lixian&ac=task_del")
 	for index, hash := range hashes {
 		key := fmt.Sprintf("hash[%d]", index)
-		s.FormSet(key, hash)
+		s.form.Set(key, hash)
 	}
 	if deleteFiles {
-		s.FormSet("flag", "1")
+		s.form.Set("flag", "1")
 	} else {
-		s.FormSet("flag", "0")
+		s.form.Set("flag", "0")
 	}
 	return s
 }
 
 type OfflineClearSpec struct {
-	apibase.VoidApiSpec
+	_VoidApiSpec
 }
 
 func (s *OfflineClearSpec) Init(flag int) *OfflineClearSpec {
-	s.VoidApiSpec.Init("https://lixian.115.com/lixian/?ct=lixian&ac=task_clear")
-	s.FormSetInt("flag", flag)
+	s._VoidApiSpec.Init("https://lixian.115.com/lixian/?ct=lixian&ac=task_clear")
+	s.form.SetInt("flag", flag)
 	return s
 }
 
@@ -120,7 +120,7 @@ type _OfflineAddUrlsData struct {
 type OfflineAddUrlsResult []*OfflineTask
 
 type OfflineAddUrlsSpec struct {
-	apibase.M115ApiSpec[OfflineAddUrlsResult]
+	_M115ApiSpec[OfflineAddUrlsResult]
 }
 
 func offlineAddUrlsResultExtractor(data []byte, result *OfflineAddUrlsResult) (err error) {
@@ -144,22 +144,20 @@ func offlineAddUrlsResultExtractor(data []byte, result *OfflineAddUrlsResult) (e
 }
 
 func (s *OfflineAddUrlsSpec) Init(userId, appVer string, urls []string, saveDirId string) *OfflineAddUrlsSpec {
-	s.M115ApiSpec.Init(
+	s._M115ApiSpec.Init(
 		"https://lixian.115.com/lixianssp/?ac=add_task_urls",
 		offlineAddUrlsResultExtractor,
 	)
-	s.M115ApiSpec.EnableCrypto()
-	s.ParamSetAll(map[string]string{
-		"ac":      "add_task_urls",
-		"app_ver": appVer,
-		"uid":     userId,
-	})
+	s.crypto = true
+	s.params.Set("uid", userId).
+		Set("app_ver", appVer).
+		Set("ac", "add_task_urls")
 	for i, url := range urls {
 		key := fmt.Sprintf("url[%d]", i)
-		s.ParamSet(key, url)
+		s.params.Set(key, url)
 	}
 	if saveDirId != "" {
-		s.ParamSet("wp_path_id", saveDirId)
+		s.params.Set("wp_path_id", saveDirId)
 	}
 	return s
 }

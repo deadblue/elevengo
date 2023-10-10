@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/deadblue/elevengo/internal/apibase"
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/errors"
 )
@@ -22,7 +22,7 @@ type RecycleBinListResult struct {
 
 //lint:ignore U1000 This type is used in generic.
 type _RecycleBinListResp struct {
-	apibase.StandardResp
+	protocol.StandardResp
 
 	Count util.IntNumber `json:"count"`
 
@@ -43,25 +43,25 @@ func (r *_RecycleBinListResp) Extract(v any) (err error) {
 }
 
 type RecycleBinListSpec struct {
-	apibase.JsonApiSpec[RecycleBinListResult, _RecycleBinListResp]
+	_JsonApiSpec[RecycleBinListResult, _RecycleBinListResp]
 }
 
 func (s *RecycleBinListSpec) Init(offset int) *RecycleBinListSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/rb")
-	s.QuerySet("aid", "7")
-	s.QuerySet("cid", "0")
-	s.QuerySet("format", "json")
-	s.QuerySetInt("offset", offset)
-	s.QuerySetInt("limit", FileListLimit)
+	s._JsonApiSpec.Init("https://webapi.115.com/rb")
+	s.query.Set("aid", "7").
+		Set("cid", "0").
+		Set("format", "json").
+		SetInt("offset", offset).
+		SetInt("limit", FileListLimit)
 	return s
 }
 
 type RecycleBinCleanSpec struct {
-	apibase.VoidApiSpec
+	_VoidApiSpec
 }
 
 func (s *RecycleBinCleanSpec) Init(password string) *RecycleBinCleanSpec {
-	s.VoidApiSpec.Init("https://webapi.115.com/rb/clean")
-	s.FormSet("password", password)
+	s._VoidApiSpec.Init("https://webapi.115.com/rb/clean")
+	s.form.Set("password", password)
 	return s
 }

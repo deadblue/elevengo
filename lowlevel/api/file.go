@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/deadblue/elevengo/internal/apibase"
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/errors"
 )
@@ -63,7 +63,7 @@ type FileListResult struct {
 
 //lint:ignore U1000 This type is used in generic.
 type _FileListResp struct {
-	apibase.StandardResp
+	protocol.StandardResp
 
 	AreaId     string         `json:"aid"`
 	CategoryId util.IntNumber `json:"cid"`
@@ -104,21 +104,21 @@ func (r *_FileListResp) Extract(v any) (err error) {
 }
 
 type FileListSpec struct {
-	apibase.JsonApiSpec[FileListResult, _FileListResp]
+	_JsonApiSpec[FileListResult, _FileListResp]
 
 	// Save file order
 	fo string
 }
 
 func (s *FileListSpec) Init(dirId string, offset int, limit int) *FileListSpec {
-	s.JsonApiSpec.Init("")
-	s.QuerySet("format", "json")
-	s.QuerySet("aid", "1")
-	s.QuerySet("cid", dirId)
-	s.QuerySet("show_dir", "1")
-	s.QuerySet("fc_mix", "0")
-	s.QuerySetInt("offset", offset)
-	s.QuerySetInt("limit", limit)
+	s._JsonApiSpec.Init("")
+	s.query.Set("format", "json").
+		Set("aid", "1").
+		Set("cid", dirId).
+		Set("show_dir", "1").
+		Set("fc_mix", "0").
+		SetInt("offset", offset).
+		SetInt("limit", limit)
 	// s.QuerySet("snap", "0")
 	// s.QuerySet("natsort", "1")
 	return s
@@ -127,32 +127,31 @@ func (s *FileListSpec) Init(dirId string, offset int, limit int) *FileListSpec {
 func (s *FileListSpec) Url() string {
 	// Select base URL
 	if s.fo == FileOrderByName {
-		s.SetBaseUrl("https://aps.115.com/natsort/files.php")
+		s.baseUrl = "https://aps.115.com/natsort/files.php"
 	} else {
-		s.SetBaseUrl("https://webapi.115.com/files")
+		s.baseUrl = "https://webapi.115.com/files"
 	}
-	return s.JsonApiSpec.Url()
+	return s._JsonApiSpec.Url()
 }
 
 func (s *FileListSpec) SetOrder(order string, asc int) {
 	s.fo = order
-	s.QuerySet("o", order)
-	s.QuerySetInt("asc", asc)
+	s.query.Set("o", order).SetInt("asc", asc)
 }
 
 func (s *FileListSpec) SetStared() {
-	s.QuerySet("star", "1")
+	s.query.Set("star", "1")
 }
 
 func (s *FileListSpec) SetFileType(fileType int) {
 	if fileType != 0 {
-		s.QuerySetInt("type", fileType)
+		s.query.SetInt("type", fileType)
 	}
 }
 
 //lint:ignore U1000 This type is used in generic.
 type _FileSearchResp struct {
-	apibase.StandardResp
+	protocol.StandardResp
 
 	Folder struct {
 		CategoryId string `json:"cid"`
@@ -187,129 +186,127 @@ func (r *_FileSearchResp) Extract(v any) (err error) {
 }
 
 type FileSearchSpec struct {
-	apibase.JsonApiSpec[FileListResult, _FileSearchResp]
+	_JsonApiSpec[FileListResult, _FileSearchResp]
 }
 
 func (s *FileSearchSpec) Init(offset int) *FileSearchSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/files/search")
-	s.QuerySet("aid", "1")
-	s.QuerySet("show_dir", "1")
-	s.QuerySetInt("offset", offset)
-	s.QuerySetInt("limit", FileListLimit)
-	s.QuerySet("format", "json")
+	s._JsonApiSpec.Init("https://webapi.115.com/files/search")
+	s.query.Set("aid", "1").
+		Set("show_dir", "1").
+		SetInt("offset", offset).
+		SetInt("limit", FileListLimit).
+		Set("format", "json")
 	return s
 }
 
 func (s *FileSearchSpec) ByKeyword(dirId, keyword string) {
-	s.QuerySet("cid", dirId)
-	s.QuerySet("search_value", keyword)
+	s.query.Set("cid", dirId).Set("search_value", keyword)
 }
 
 func (s *FileSearchSpec) ByLabelId(labelId string) {
-	s.QuerySet("cid", "0")
-	s.QuerySet("file_label", labelId)
+	s.query.Set("cid", "0").Set("file_label", labelId)
 }
 
 func (s *FileSearchSpec) SetFileType(fileType int) {
 	if fileType != 0 {
-		s.QuerySetInt("type", fileType)
+		s.query.SetInt("type", fileType)
 	}
 }
 
 type FileGetResult []*FileInfo
 
 type FileGetSpec struct {
-	apibase.JsonApiSpec[FileGetResult, apibase.StandardResp]
+	_JsonApiSpec[FileGetResult, protocol.StandardResp]
 }
 
 func (s *FileGetSpec) Init(fileId string) *FileGetSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/files/get_info")
-	s.QuerySet("file_id", fileId)
+	s._JsonApiSpec.Init("https://webapi.115.com/files/get_info")
+	s.query.Set("file_id", fileId)
 	return s
 }
 
 type FileRenameSpec struct {
-	apibase.VoidApiSpec
+	_VoidApiSpec
 }
 
 func (s *FileRenameSpec) Init() *FileRenameSpec {
-	s.VoidApiSpec.Init("https://webapi.115.com/files/batch_rename")
+	s._VoidApiSpec.Init("https://webapi.115.com/files/batch_rename")
 	return s
 }
 
 func (s *FileRenameSpec) Add(fileId, newName string) {
 	key := fmt.Sprintf("files_new_name[%s]", fileId)
-	s.FormSet(key, newName)
+	s.form.Set(key, newName)
 }
 
 type FileMoveSpec struct {
-	apibase.VoidApiSpec
+	_VoidApiSpec
 }
 
 func (s *FileMoveSpec) Init(dirId string, fileIds []string) *FileMoveSpec {
-	s.VoidApiSpec.Init("https://webapi.115.com/files/move")
-	s.FormSet("pid", dirId)
+	s._VoidApiSpec.Init("https://webapi.115.com/files/move")
+	s.form.Set("pid", dirId)
 	for i, fileId := range fileIds {
 		key := fmt.Sprintf("fid[%d]", i)
-		s.FormSet(key, fileId)
+		s.form.Set(key, fileId)
 	}
 	return s
 }
 
 type FileCopySpec struct {
-	apibase.VoidApiSpec
+	_VoidApiSpec
 }
 
 func (s *FileCopySpec) Init(dirId string, fileIds []string) *FileCopySpec {
-	s.VoidApiSpec.Init("https://webapi.115.com/files/copy")
-	s.FormSet("pid", dirId)
+	s._VoidApiSpec.Init("https://webapi.115.com/files/copy")
+	s.form.Set("pid", dirId)
 	for i, fileId := range fileIds {
 		key := fmt.Sprintf("fid[%d]", i)
-		s.FormSet(key, fileId)
+		s.form.Set(key, fileId)
 	}
 	return s
 }
 
 type FileDeleteSpec struct {
-	apibase.VoidApiSpec
+	_VoidApiSpec
 }
 
 func (s *FileDeleteSpec) Init(fileIds []string) *FileDeleteSpec {
-	s.VoidApiSpec.Init("https://webapi.115.com/rb/delete")
-	s.FormSet("ignore_warn", "1")
+	s._VoidApiSpec.Init("https://webapi.115.com/rb/delete")
+	s.form.Set("ignore_warn", "1")
 	for i, fileId := range fileIds {
 		key := fmt.Sprintf("fid[%d]", i)
-		s.FormSet(key, fileId)
+		s.form.Set(key, fileId)
 	}
 	return s
 }
 
 type FileStarSpec struct {
-	apibase.VoidApiSpec
+	_VoidApiSpec
 }
 
 func (s *FileStarSpec) Init(fileId string, star bool) *FileStarSpec {
-	s.VoidApiSpec.Init("https://webapi.115.com/files/star")
-	s.FormSet("file_id", fileId)
+	s._VoidApiSpec.Init("https://webapi.115.com/files/star")
+	s.form.Set("file_id", fileId)
 	if star {
-		s.FormSet("star", "1")
+		s.form.Set("star", "1")
 	} else {
-		s.FormSet("star", "0")
+		s.form.Set("star", "0")
 	}
 	return s
 }
 
 type FileLabelSpec struct {
-	apibase.VoidApiSpec
+	_VoidApiSpec
 }
 
 func (s *FileLabelSpec) Init(fileId string, labelIds []string) *FileLabelSpec {
-	s.VoidApiSpec.Init("https://webapi.115.com/files/edit")
-	s.FormSet("fid", fileId)
+	s._VoidApiSpec.Init("https://webapi.115.com/files/edit")
+	s.form.Set("fid", fileId)
 	if len(labelIds) == 0 {
-		s.FormSet("file_label", "")
+		s.form.Set("file_label", "")
 	} else {
-		s.FormSet("file_label", strings.Join(labelIds, ","))
+		s.form.Set("file_label", strings.Join(labelIds, ","))
 	}
 	return s
 }

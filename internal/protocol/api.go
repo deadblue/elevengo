@@ -6,24 +6,10 @@ import (
 	"time"
 
 	"github.com/deadblue/elevengo/internal/util"
+	"github.com/deadblue/elevengo/lowlevel/client"
 )
 
-// ApiSpec describes the specification of an 115 API.
-type ApiSpec interface {
-	// IsCrypto indicates whether the API request uses EC-crypto.
-	IsCrypto() bool
-	// SetCryptoKey adds crypto key in parameters.
-	SetCryptoKey(key string)
-	// Url returns the request URL of API.
-	Url() string
-	// Payload returns the request body of API.
-	Payload() Payload
-	// Parse parses the response body.
-	Parse(r io.Reader) (err error)
-}
-
-// ExecuteApi calls an API, and returns errors
-func (c *Client) ExecuteApi(spec ApiSpec) (err error) {
+func (c *ClientImpl) CallApi(spec client.ApiSpec) (err error) {
 	payload := spec.Payload()
 	if spec.IsCrypto() {
 		spec.SetCryptoKey(c.ecc.EncodeToken(time.Now().UnixMilli()))
@@ -47,7 +33,7 @@ func (c *Client) ExecuteApi(spec ApiSpec) (err error) {
 	}
 }
 
-func (c *Client) internalCall(url string, payload Payload) (body io.ReadCloser, err error) {
+func (c *ClientImpl) internalCall(url string, payload client.Payload) (body io.ReadCloser, err error) {
 	c.v.Wait()
 	defer c.v.ClockIn()
 	// Prepare request

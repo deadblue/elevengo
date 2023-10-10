@@ -3,6 +3,8 @@ package protocol
 import (
 	"bytes"
 	"io"
+
+	"github.com/deadblue/elevengo/lowlevel/client"
 )
 
 type rawPayload struct {
@@ -22,7 +24,7 @@ func (r *rawPayload) ContentLength() int64 {
 	return r.r.Size()
 }
 
-func (c *Client) encryptPayload(p Payload) (ep Payload, err error) {
+func (c *ClientImpl) encryptPayload(p client.Payload) (ep client.Payload, err error) {
 	if p == nil {
 		return nil, nil
 	}
@@ -40,7 +42,7 @@ func (c *Client) encryptPayload(p Payload) (ep Payload, err error) {
 	return
 }
 
-func (c *Client) decryptBody(r io.Reader) (data []byte, err error) {
+func (c *ClientImpl) decryptBody(r io.Reader) (data []byte, err error) {
 	data, err = io.ReadAll(r)
 	if err != nil {
 		return

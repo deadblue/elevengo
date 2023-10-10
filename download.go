@@ -27,7 +27,7 @@ type DownloadTicket struct {
 func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (err error) {
 	// Prepare API spec.
 	spec := (&api.DownloadSpec{}).Init(pickcode)
-	if err = a.pc.ExecuteApi(spec); err != nil {
+	if err = a.llc.CallApi(spec); err != nil {
 		return
 	}
 	// Convert result.
@@ -43,9 +43,9 @@ func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (e
 		ticket.Url = info.Url.Url
 		ticket.Headers = map[string]string{
 			// User-Agent header
-			"User-Agent": a.pc.GetUserAgent(),
+			"User-Agent": a.llc.GetUserAgent(),
 			// Cookie header
-			"Cookie": util.MarshalCookies(a.pc.ExportCookies(ticket.Url)),
+			"Cookie": util.MarshalCookies(a.llc.ExportCookies(ticket.Url)),
 		}
 		break
 	}
@@ -54,7 +54,7 @@ func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (e
 
 // Fetch gets content from url using agent underlying HTTP client.
 func (a *Agent) Fetch(url string) (body io.ReadCloser, err error) {
-	return a.pc.Get(url, nil)
+	return a.llc.Get(url, nil)
 }
 
 // Range is used in Agent.GetRange().
@@ -116,5 +116,5 @@ func (a *Agent) FetchRange(url string, rng Range) (body io.ReadCloser, err error
 	if value := rng.headerValue(); value != "" {
 		headers["Range"] = value
 	}
-	return a.pc.Get(url, headers)
+	return a.llc.Get(url, headers)
 }

@@ -34,13 +34,13 @@ func (a *Agent) CredentialImport(cr *Credential) (err error) {
 		api.CookieNameCID:  cr.CID,
 		api.CookieNameSEID: cr.SEID,
 	}
-	a.pc.ImportCookies(cookies, api.CookieDomains...)
+	a.llc.ImportCookies(cookies, api.CookieDomains...)
 	return a.afterSignIn(cr.UID)
 }
 
 // CredentialExport exports current credentials for future-use.
 func (a *Agent) CredentialExport(cr *Credential) {
-	cookies := a.pc.ExportCookies(api.CookieUrl)
+	cookies := a.llc.ExportCookies(api.CookieUrl)
 	cr.UID = cookies[api.CookieNameUID]
 	cr.CID = cookies[api.CookieNameCID]
 	cr.SEID = cookies[api.CookieNameSEID]
@@ -49,7 +49,7 @@ func (a *Agent) CredentialExport(cr *Credential) {
 func (a *Agent) afterSignIn(uid string) (err error) {
 	// Call UploadInfo API to get userId and userKey
 	spec := (&api.UploadInfoSpec{}).Init()
-	if err = a.pc.ExecuteApi(spec); err != nil {
+	if err = a.llc.CallApi(spec); err != nil {
 		return
 	} else {
 		a.uh.SetUserParams(spec.Result.UserId, spec.Result.UserKey)
@@ -66,7 +66,7 @@ func (a *Agent) afterSignIn(uid string) (err error) {
 // UserGet get information of current signed-in user.
 func (a *Agent) UserGet(info *UserInfo) (err error) {
 	spec := (&api.UserInfoSpec{}).Init()
-	if err = a.pc.ExecuteApi(spec); err == nil {
+	if err = a.llc.CallApi(spec); err == nil {
 		info.Id = spec.Result.UserId
 		info.Name = spec.Result.UserName
 		info.IsVip = spec.Result.IsVip != 0

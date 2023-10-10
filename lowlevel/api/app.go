@@ -1,6 +1,6 @@
 package api
 
-import "github.com/deadblue/elevengo/internal/apibase"
+import "github.com/deadblue/elevengo/internal/protocol"
 
 type AppVersionInfo struct {
 	CreatedTime int64  `json:"created_time"`
@@ -18,11 +18,11 @@ type AppVersionResult struct {
 }
 
 type AppVersionSpec struct {
-	apibase.JsonpApiSpec[AppVersionResult, apibase.StandardResp]
+	_JsonpApiSpec[AppVersionResult, protocol.StandardResp]
 }
 
 func (s *AppVersionSpec) Init() *AppVersionSpec {
-	s.JsonpApiSpec.Init(
+	s._JsonpApiSpec.Init(
 		"https://appversion.115.com/1/web/1.0/api/chrome", "get_version",
 	)
 	return s

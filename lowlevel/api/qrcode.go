@@ -4,8 +4,23 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/deadblue/elevengo/internal/apibase"
 	"github.com/deadblue/elevengo/lowlevel/errors"
+)
+
+const (
+	qrcodeTokenBaseUrl = "https://qrcodeapi.115.com/api/1.0/%s/1.0/token"
+	qrcodeLoginBaseUrl = "https://passportapi.115.com/app/1.0/%s/1.0/login/qrcode"
+	qrcodeImageUrl     = "https://qrcodeapi.115.com/api/1.0/%s/1.0/qrcode?qrfrom=1&client=%d&uid=%s"
+)
+
+var (
+	qrcodeAppIds = map[string]int{
+		"web": 0,
+		// Client ID for app is always 7
+		"mac":     7,
+		"linux":   7,
+		"windows": 7,
+	}
 )
 
 //lint:ignore U1000 This type is used in generic.
@@ -36,10 +51,33 @@ type QrcodeTokenResult struct {
 	Sign string `json:"sign"`
 }
 
+type QrcodeTokenSpec struct {
+	_JsonApiSpec[QrcodeTokenResult, _QrcodeBaseResp]
+}
+
+func (s *QrcodeTokenSpec) Init(appType string) *QrcodeTokenSpec {
+	baseUrl := fmt.Sprintf(qrcodeTokenBaseUrl, appType)
+	s._JsonApiSpec.Init(baseUrl)
+	return s
+}
+
 type QrcodeStatusResult struct {
 	Status  int    `json:"status,omitempty"`
 	Message string `json:"msg,omitempty"`
 	Version string `json:"version,omitempty"`
+}
+
+type QrcodeStatusSpec struct {
+	_JsonApiSpec[QrcodeStatusResult, _QrcodeBaseResp]
+}
+
+func (s *QrcodeStatusSpec) Init(uid string, time int64, sign string) *QrcodeStatusSpec {
+	s._JsonApiSpec.Init("https://qrcodeapi.115.com/get/status/")
+	s.query.Set("uid", uid).
+		SetInt64("time", time).
+		Set("sign", sign).
+		SetNow("_")
+	return s
 }
 
 type QrcodeLoginResult struct {
@@ -52,54 +90,15 @@ type QrcodeLoginResult struct {
 	UserName string `json:"user_name"`
 }
 
-const (
-	qrcodeTokenBaseUrl = "https://qrcodeapi.115.com/api/1.0/%s/1.0/token"
-	qrcodeLoginBaseUrl = "https://passportapi.115.com/app/1.0/%s/1.0/login/qrcode"
-	qrcodeImageUrl     = "https://qrcodeapi.115.com/api/1.0/%s/1.0/qrcode?qrfrom=1&client=%d&uid=%s"
-)
-
-var (
-	qrcodeAppIds = map[string]int{
-		"web": 0,
-		// Client ID for app is always 7
-		"mac":     7,
-		"linux":   7,
-		"windows": 7,
-	}
-)
-
-type QrcodeTokenSpec struct {
-	apibase.JsonApiSpec[QrcodeTokenResult, _QrcodeBaseResp]
-}
-
-func (s *QrcodeTokenSpec) Init(appType string) *QrcodeTokenSpec {
-	baseUrl := fmt.Sprintf(qrcodeTokenBaseUrl, appType)
-	s.JsonApiSpec.Init(baseUrl)
-	return s
-}
-
-type QrcodeStatusSpec struct {
-	apibase.JsonApiSpec[QrcodeStatusResult, _QrcodeBaseResp]
-}
-
-func (s *QrcodeStatusSpec) Init(uid string, time int64, sign string) *QrcodeStatusSpec {
-	s.JsonApiSpec.Init("https://qrcodeapi.115.com/get/status/")
-	s.QuerySet("uid", uid)
-	s.QuerySetInt64("time", time)
-	s.QuerySet("sign", sign)
-	s.QuerySetNow("_")
-	return s
-}
-
 type QrcodeLoginSpec struct {
-	apibase.JsonApiSpec[QrcodeLoginResult, _QrcodeBaseResp]
+	_JsonApiSpec[QrcodeLoginResult, _QrcodeBaseResp]
 }
 
 func (s *QrcodeLoginSpec) Init(appType string, uid string) *QrcodeLoginSpec {
 	baseUrl := fmt.Sprintf(qrcodeLoginBaseUrl, appType)
-	s.JsonApiSpec.Init(baseUrl)
-	s.FormSet("account", uid)
-	s.FormSet("app", appType)
+	s._JsonApiSpec.Init(baseUrl)
+	s.form.Set("account", uid).
+		Set("app", appType)
 	return s
 }
 

@@ -25,7 +25,7 @@ type StorageInfo struct {
 // StorageStat gets storage size information.
 func (a *Agent) StorageStat(info *StorageInfo) (err error) {
 	spec := (&api.IndexInfoSpec{}).Init()
-	if err = a.pc.ExecuteApi(spec); err != nil {
+	if err = a.llc.CallApi(spec); err != nil {
 		return
 	}
 	space := spec.Result.SpaceInfo

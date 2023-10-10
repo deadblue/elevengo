@@ -6,6 +6,10 @@ import (
 	"time"
 )
 
+const (
+	defaultUserAgent = "Mozilla/5.0"
+)
+
 func defaultHttpClient(jar http.CookieJar) *http.Client {
 	// Make a copy of the default transport
 	transport := http.DefaultTransport.(*http.Transport).Clone()

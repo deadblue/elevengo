@@ -1,7 +1,5 @@
 package api
 
-import "github.com/deadblue/elevengo/internal/apibase"
-
 type SizeInfo struct {
 	Size       float64 `json:"size"`
 	SizeFormat string  `json:"size_format"`
@@ -28,10 +26,10 @@ type IndexInfoResult struct {
 }
 
 type IndexInfoSpec struct {
-	apibase.StandardApiSpec[IndexInfoResult]
+	_StandardApiSpec[IndexInfoResult]
 }
 
 func (s *IndexInfoSpec) Init() *IndexInfoSpec {
-	s.StandardApiSpec.Init("https://webapi.115.com/files/index_info")
+	s._StandardApiSpec.Init("https://webapi.115.com/files/index_info")
 	return s
 }

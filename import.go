@@ -52,7 +52,7 @@ func (a *Agent) Import(dirId string, ticket *ImportTicket) (err error) {
 		SignValue: ticket.SignValue,
 	}
 	spec := (&api.UploadInitSpec{}).Init(params, &a.uh)
-	if err = a.pc.ExecuteApi(spec); err != nil {
+	if err = a.llc.CallApi(spec); err != nil {
 		return
 	}
 	if spec.Result.SignCheck != "" {

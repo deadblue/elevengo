@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/deadblue/elevengo/internal/apibase"
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/errors"
 )
@@ -44,7 +44,7 @@ type ShareListResult struct {
 
 //lint:ignore U1000 This type is used in generic.
 type _ShareListResp struct {
-	apibase.BasicResp
+	protocol.BasicResp
 
 	Count int             `json:"count"`
 	List  json.RawMessage `json:"list"`
@@ -63,66 +63,66 @@ func (r *_ShareListResp) Extract(v any) (err error) {
 }
 
 type ShareListSpec struct {
-	apibase.JsonApiSpec[ShareListResult, _ShareListResp]
+	_JsonApiSpec[ShareListResult, _ShareListResp]
 }
 
 func (s *ShareListSpec) Init(offset int, userId string) *ShareListSpec {
-	s.JsonApiSpec.Init("https://webapi.115.com/share/slist")
-	s.QuerySet("user_id", userId)
-	s.QuerySetInt("offset", offset)
-	s.QuerySetInt("limit", FileListLimit)
+	s._JsonApiSpec.Init("https://webapi.115.com/share/slist")
+	s.query.Set("user_id", userId).
+		SetInt("offset", offset).
+		SetInt("limit", FileListLimit)
 	return s
 }
 
 type ShareSendSpec struct {
-	apibase.StandardApiSpec[ShareInfo]
+	_StandardApiSpec[ShareInfo]
 }
 
 func (s *ShareSendSpec) Init(fileIds []string, userId string) *ShareSendSpec {
-	s.StandardApiSpec.Init("https://webapi.115.com/share/send")
-	s.FormSet("user_id", userId)
-	s.FormSet("file_ids", strings.Join(fileIds, ","))
-	s.FormSet("ignore_warn", "1")
+	s._StandardApiSpec.Init("https://webapi.115.com/share/send")
+	s.form.Set("user_id", userId).
+		Set("ignore_warn", "1").
+		Set("file_ids", strings.Join(fileIds, ","))
 	return s
 }
 
 type ShareGetSpec struct {
-	apibase.StandardApiSpec[ShareInfo]
+	_StandardApiSpec[ShareInfo]
 }
 
 func (s *ShareGetSpec) Init(shareCode string) *ShareGetSpec {
-	s.StandardApiSpec.Init("https://webapi.115.com/share/shareinfo")
-	s.QuerySet("share_code", shareCode)
+	s._StandardApiSpec.Init("https://webapi.115.com/share/shareinfo")
+	s.query.Set("share_code", shareCode)
 	return s
 }
 
 type ShareUpdateSpec struct {
-	apibase.VoidApiSpec
+	_VoidApiSpec
 }
 
 func (s *ShareUpdateSpec) Init(
 	shareCode string, receiveCode string, duration ShareDuration,
 ) *ShareUpdateSpec {
-	s.VoidApiSpec.Init("https://webapi.115.com/share/updateshare")
-	s.FormSet("share_code", shareCode)
+	s._VoidApiSpec.Init("https://webapi.115.com/share/updateshare")
+	s.form.Set("share_code", shareCode)
 	if receiveCode == "" {
-		s.FormSet("auto_fill_recvcode", "1")
+		s.form.Set("auto_fill_recvcode", "1")
 	} else {
-		s.FormSet("receive_code", receiveCode)
+		s.form.Set("receive_code", receiveCode)
 	}
 	if duration > 0 {
-		s.FormSetInt("share_duration", int(duration))
+		s.form.SetInt("share_duration", int(duration))
 	}
 	return s
 }
 
 type ShareCancelSpec struct {
-	apibase.VoidApiSpec
+	_VoidApiSpec
 }
 
 func (s *ShareCancelSpec) Init(shareCode string) *ShareCancelSpec {
-	s.VoidApiSpec.Init("https://webapi.115.com/share/updateshare")
-	s.FormSet("share_code", shareCode)
-	s.FormSet("action", "cancel")
+	s._VoidApiSpec.Init("https://webapi.115.com/share/updateshare")
+	s.form.Set("share_code", shareCode)
+	s.form.Set("action", "cancel")
 	return s
 }

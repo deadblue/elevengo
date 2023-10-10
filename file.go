@@ -198,7 +198,7 @@ func (a *Agent) fileIterateInternal(fi *fileIterator) (err error) {
 		spec.SetStared()
 	}
 	for retry := true; retry; {
-		if err = a.pc.ExecuteApi(spec); err != nil {
+		if err = a.llc.CallApi(spec); err != nil {
 			if ferr, ok := err.(*errors.ErrFileOrderNotSupported); ok {
 				spec.SetOrder(ferr.Order, ferr.Asc)
 			} else {
@@ -275,7 +275,7 @@ func (a *Agent) fileSearchInternal(fi *fileIterator) (err error) {
 	case 4:
 		spec.ByLabelId(fi.labelId)
 	}
-	if err = a.pc.ExecuteApi(spec); err != nil {
+	if err = a.llc.CallApi(spec); err != nil {
 		return
 	}
 	fi.order, fi.asc = spec.Result.Order, spec.Result.Asc
@@ -290,7 +290,7 @@ func (a *Agent) fileSearchInternal(fi *fileIterator) (err error) {
 // FileGet gets information of a file/directory by its ID.
 func (a *Agent) FileGet(fileId string, file *File) (err error) {
 	spec := (&api.FileGetSpec{}).Init(fileId)
-	if err = a.pc.ExecuteApi(spec); err == nil {
+	if err = a.llc.CallApi(spec); err == nil {
 		file.from(spec.Result[0])
 	}
 	return
@@ -302,7 +302,7 @@ func (a *Agent) FileMove(dirId string, fileIds []string) (err error) {
 		return
 	}
 	spec := (&api.FileMoveSpec{}).Init(dirId, fileIds)
-	return a.pc.ExecuteApi(spec)
+	return a.llc.CallApi(spec)
 }
 
 // FileCopy copies files into target directory whose id is dirId.
@@ -311,7 +311,7 @@ func (a *Agent) FileCopy(dirId string, fileIds []string) (err error) {
 		return
 	}
 	spec := (&api.FileCopySpec{}).Init(dirId, fileIds)
-	return a.pc.ExecuteApi(spec)
+	return a.llc.CallApi(spec)
 }
 
 // FileRename renames file to new name.
@@ -321,7 +321,7 @@ func (a *Agent) FileRename(fileId, newName string) (err error) {
 	}
 	spec := (&api.FileRenameSpec{}).Init()
 	spec.Add(fileId, newName)
-	return a.pc.ExecuteApi(spec)
+	return a.llc.CallApi(spec)
 }
 
 // FileBatchRename renames multiple files.
@@ -333,7 +333,7 @@ func (a *Agent) FileBatchRename(nameMap map[string]string) (err error) {
 		}
 		spec.Add(fileId, newName)
 	}
-	return a.pc.ExecuteApi(spec)
+	return a.llc.CallApi(spec)
 }
 
 // FileDelete deletes files.
@@ -342,5 +342,5 @@ func (a *Agent) FileDelete(fileIds []string) (err error) {
 		return
 	}
 	spec := (&api.FileDeleteSpec{}).Init(fileIds)
-	return a.pc.ExecuteApi(spec)
+	return a.llc.CallApi(spec)
 }
