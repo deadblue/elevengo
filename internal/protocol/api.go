@@ -38,9 +38,32 @@ func (c *ClientImpl) internalCall(url string, payload client.Payload) (body io.R
 	defer c.v.ClockIn()
 	// Prepare request
 	if payload != nil {
-		body, err = c.Post(url, payload)
+		body, err = c.post(url, payload)
 	} else {
 		body, err = c.Get(url, nil)
 	}
 	return
+}
+
+func (c *ClientImpl) encryptPayload(p client.Payload) (ep client.Payload, err error) {
+	if p == nil {
+		return nil, nil
+	}
+	// Read payload
+	body, err := io.ReadAll(p)
+	if err != nil {
+		return
+	}
+	// Encrypt it
+	body = c.ecc.Encode(body)
+	ep = CustomPayload(body, p.ContentType())
+	return
+}
+
+func (c *ClientImpl) decryptBody(r io.Reader) (data []byte, err error) {
+	data, err = io.ReadAll(r)
+	if err != nil {
+		return
+	}
+	return c.ecc.Decode(data)
 }
