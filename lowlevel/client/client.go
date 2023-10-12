@@ -20,9 +20,6 @@ type Client interface {
 	// Get performs an HTTP GET request.
 	Get(url string, headers map[string]string) (body io.ReadCloser, err error)
 
-	// Get performs an HTTP POST request.
-	Post(url string, payload Payload) (body io.ReadCloser, err error)
-
 	// CallApi calls an API.
 	CallApi(spec ApiSpec) error
 }
