@@ -76,11 +76,9 @@ type LabelEditSpec struct {
 
 func (s *LabelEditSpec) Init(labelId, name, color string) *LabelEditSpec {
 	s._VoidApiSpec.Init("https://webapi.115.com/label/edit")
-	s.FormSetAll(map[string]string{
-		"id":    labelId,
-		"name":  name,
-		"color": color,
-	})
+	s.form.Set("id", labelId).
+		Set("name", name).
+		Set("color", color)
 	return s
 }
 

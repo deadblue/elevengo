@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/errors"
 )
@@ -44,7 +43,7 @@ type ShareListResult struct {
 
 //lint:ignore U1000 This type is used in generic.
 type _ShareListResp struct {
-	protocol.BasicResp
+	_BasicResp
 
 	Count int             `json:"count"`
 	List  json.RawMessage `json:"list"`

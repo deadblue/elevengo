@@ -1,7 +1,5 @@
 package api
 
-import "github.com/deadblue/elevengo/internal/protocol"
-
 type AppVersionInfo struct {
 	CreatedTime int64  `json:"created_time"`
 	VersionCode string `json:"version_code"`
@@ -18,7 +16,7 @@ type AppVersionResult struct {
 }
 
 type AppVersionSpec struct {
-	_JsonpApiSpec[AppVersionResult, protocol.StandardResp]
+	_JsonpApiSpec[AppVersionResult, StandardResp]
 }
 
 func (s *AppVersionSpec) Init() *AppVersionSpec {

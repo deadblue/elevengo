@@ -1,13 +1,12 @@
 package api
 
 import (
-	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/lowlevel/errors"
 )
 
 //lint:ignore U1000 This type is used in generic.
 type _DirCreateResp struct {
-	protocol.BasicResp
+	_BasicResp
 
 	FileId   string `json:"file_id"`
 	FileName string `json:"file_name"`
@@ -38,11 +37,9 @@ type DirSetOrderSpec struct {
 
 func (s *DirSetOrderSpec) Init(dirId string, order string, asc bool) *DirSetOrderSpec {
 	s._VoidApiSpec.Init("https://webapi.115.com/files/order")
-	s.FormSetAll(map[string]string{
-		"file_id":    dirId,
-		"fc_mix":     "0",
-		"user_order": order,
-	})
+	s.form.Set("file_id", dirId).
+		Set("fc_mix", "0").
+		Set("user_order", order)
 	if asc {
 		s.form.Set("user_asc", "1")
 	} else {
@@ -53,7 +50,7 @@ func (s *DirSetOrderSpec) Init(dirId string, order string, asc bool) *DirSetOrde
 
 //lint:ignore U1000 This type is used in generic.
 type _DirLocateResp struct {
-	protocol.BasicResp
+	_BasicResp
 
 	DirId     string `json:"id"`
 	IsPrivate string `json:"is_private"`

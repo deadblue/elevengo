@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/deadblue/elevengo/internal/crypto/hash"
-	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/client"
 	"github.com/deadblue/elevengo/lowlevel/errors"
@@ -27,7 +26,7 @@ type UploadInfoResult struct {
 
 //lint:ignore U1000 This type is used in generic.
 type _UploadInfoResp struct {
-	protocol.BasicResp
+	_BasicResp
 
 	UserId  int    `json:"user_id"`
 	UserKey string `json:"userkey"`

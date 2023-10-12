@@ -1,4 +1,4 @@
-package protocol
+package api
 
 import (
 	"encoding/json"
@@ -7,8 +7,8 @@ import (
 	"github.com/deadblue/elevengo/lowlevel/errors"
 )
 
-// BasicResp is the basic response for most JSON/JSONP API.
-type BasicResp struct {
+// _BasicResp is the basic response for most JSON/JSONP API.
+type _BasicResp struct {
 	// Response state
 	State bool `json:"state"`
 	// Possible error code fields
@@ -23,7 +23,7 @@ type BasicResp struct {
 	ErrorMessage3 string `json:"error_msg,omitempty"`
 }
 
-func (r *BasicResp) Err() error {
+func (r *_BasicResp) Err() error {
 	if r.State {
 		return nil
 	}
@@ -48,7 +48,8 @@ func findNonZero(code ...int) int {
 
 // StandardResp is the response for all JSON/JSONP APIs with "data" field.
 type StandardResp struct {
-	BasicResp
+	_BasicResp
+
 	Data json.RawMessage `json:"data"`
 }
 

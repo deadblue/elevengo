@@ -6,9 +6,17 @@ import (
 	"github.com/deadblue/elevengo/internal/util"
 )
 
+/*
+|ApiSpec| inheritance tree:
+                    _____________|_BasicApiSpec|___________
+                   /                    |                  \
+            |_JsonApiSpec|       |_JsonpApiSpec|      |_M115ApiSpec|
+		      /        \
+|_StandardApiSpec|   |_VoidApiSpec|
+*/
+
 // _BasicApiSpec is the base struct for all |client.ApiSpec| implementations.
 type _BasicApiSpec struct {
-
 	// Is crypto
 	crypto bool
 

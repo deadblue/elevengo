@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/errors"
 )
@@ -63,7 +62,7 @@ type FileListResult struct {
 
 //lint:ignore U1000 This type is used in generic.
 type _FileListResp struct {
-	protocol.StandardResp
+	StandardResp
 
 	AreaId     string         `json:"aid"`
 	CategoryId util.IntNumber `json:"cid"`
@@ -151,7 +150,7 @@ func (s *FileListSpec) SetFileType(fileType int) {
 
 //lint:ignore U1000 This type is used in generic.
 type _FileSearchResp struct {
-	protocol.StandardResp
+	StandardResp
 
 	Folder struct {
 		CategoryId string `json:"cid"`
@@ -216,7 +215,7 @@ func (s *FileSearchSpec) SetFileType(fileType int) {
 type FileGetResult []*FileInfo
 
 type FileGetSpec struct {
-	_JsonApiSpec[FileGetResult, protocol.StandardResp]
+	_JsonApiSpec[FileGetResult, StandardResp]
 }
 
 func (s *FileGetSpec) Init(fileId string) *FileGetSpec {

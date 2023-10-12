@@ -43,12 +43,12 @@ func (s *_M115ApiSpec[D]) Payload() client.Payload {
 	}
 	form := url.Values{}
 	form.Set("data", m115.Encode(data, s.key))
-	return client.WwwFormPayload(form.Encode())
+	return protocol.WwwFormPayload(form.Encode())
 }
 
 // Parse implements |ApiSpec.Parse|.
 func (s *_M115ApiSpec[D]) Parse(r io.Reader) (err error) {
-	jd, resp := json.NewDecoder(r), &protocol.StandardResp{}
+	jd, resp := json.NewDecoder(r), &StandardResp{}
 	if err = jd.Decode(resp); err != nil {
 		return
 	}

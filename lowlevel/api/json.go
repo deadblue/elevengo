@@ -44,7 +44,7 @@ func (s *_JsonApiSpec[D, R]) Payload() client.Payload {
 	if len(s.form) == 0 {
 		return nil
 	} else {
-		return client.WwwFormPayload(s.form.Encode())
+		return protocol.WwwFormPayload(s.form.Encode())
 	}
 }
 
@@ -63,12 +63,6 @@ func (s *_JsonApiSpec[D, R]) Parse(r io.Reader) (err error) {
 		err = dr.Extract(&s.Result)
 	}
 	return
-}
-
-func (s *_JsonApiSpec[D, R]) FormSetAll(params map[string]string) {
-	for key, value := range params {
-		s.form.Set(key, value)
-	}
 }
 
 // _JsonpApiSpec is the base spec for all JSON-P ApiSpec.
@@ -125,7 +119,7 @@ func (s *_JsonpApiSpec[D, R]) Parse(r io.Reader) (err error) {
 // Type parameters:
 //   - D: Result type.
 type _StandardApiSpec[D any] struct {
-	_JsonApiSpec[D, protocol.StandardResp]
+	_JsonApiSpec[D, StandardResp]
 }
 
 // VoidResult describes a void result.
@@ -133,5 +127,5 @@ type VoidResult struct{}
 
 // _VoidApiSpec is the base spec for all JSON API specs which has no result.
 type _VoidApiSpec struct {
-	_JsonApiSpec[VoidResult, protocol.BasicResp]
+	_JsonApiSpec[VoidResult, _BasicResp]
 }

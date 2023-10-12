@@ -1,7 +1,6 @@
 package api
 
 import (
-	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/errors"
 )
@@ -22,7 +21,7 @@ type RecycleBinListResult struct {
 
 //lint:ignore U1000 This type is used in generic.
 type _RecycleBinListResp struct {
-	protocol.StandardResp
+	StandardResp
 
 	Count util.IntNumber `json:"count"`
 

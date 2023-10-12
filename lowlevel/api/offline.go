@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/lowlevel/errors"
 )
 
@@ -34,7 +33,7 @@ type OfflineListResult struct {
 
 //lint:ignore U1000 This type is used in generic.
 type _OfflineListResp struct {
-	protocol.BasicResp
+	_BasicResp
 
 	PageIndex int `json:"page"`
 	PageCount int `json:"page_count"`

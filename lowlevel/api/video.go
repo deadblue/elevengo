@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 
-	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/errors"
 )
@@ -21,7 +20,7 @@ type VideoPlayResult struct {
 
 //lint:ignore U1000 This type is used in generic.
 type _VideoPlayWebResp struct {
-	protocol.BasicResp
+	_BasicResp
 
 	FileId        string           `json:"file_id"`
 	ParentId      string           `json:"parent_id"`
