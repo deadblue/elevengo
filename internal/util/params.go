@@ -30,13 +30,6 @@ func (p Params) SetNow(key string) Params {
 	return p
 }
 
-func (p Params) SetAll(params map[string]string) Params {
-	for key, value := range params {
-		p.Set(key, value)
-	}
-	return p
-}
-
 func (p Params) Encode() string {
 	sb := &strings.Builder{}
 	isFirst := true
