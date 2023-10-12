@@ -1,7 +1,7 @@
 package elevengo
 
 import (
-	"github.com/deadblue/elevengo/internal/protocol"
+	"github.com/deadblue/elevengo/internal/impl"
 	"github.com/deadblue/elevengo/lowlevel/api"
 	"github.com/deadblue/elevengo/lowlevel/client"
 	"github.com/deadblue/elevengo/option"
@@ -39,7 +39,7 @@ func New(options ...option.AgentOption) *Agent {
 		}
 	}
 	agent := &Agent{
-		llc: protocol.NewClient(hc, cdMin, cdMax),
+		llc: impl.NewClient(hc, cdMin, cdMax),
 	}
 	agent.uh.AppVer, _ = agent.getAppVersion()
 	agent.llc.SetUserAgent(api.MakeUserAgent(name, agent.uh.AppVer))

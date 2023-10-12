@@ -6,7 +6,7 @@ import (
 	"net/url"
 
 	"github.com/deadblue/elevengo/internal/crypto/m115"
-	"github.com/deadblue/elevengo/internal/protocol"
+	"github.com/deadblue/elevengo/internal/impl"
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/client"
 )
@@ -43,7 +43,7 @@ func (s *_M115ApiSpec[D]) Payload() client.Payload {
 	}
 	form := url.Values{}
 	form.Set("data", m115.Encode(data, s.key))
-	return protocol.WwwFormPayload(form.Encode())
+	return impl.WwwFormPayload(form.Encode())
 }
 
 // Parse implements |ApiSpec.Parse|.

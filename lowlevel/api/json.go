@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/deadblue/elevengo/internal/protocol"
+	"github.com/deadblue/elevengo/internal/impl"
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/client"
 )
@@ -44,7 +44,7 @@ func (s *_JsonApiSpec[D, R]) Payload() client.Payload {
 	if len(s.form) == 0 {
 		return nil
 	} else {
-		return protocol.WwwFormPayload(s.form.Encode())
+		return impl.WwwFormPayload(s.form.Encode())
 	}
 }
 
