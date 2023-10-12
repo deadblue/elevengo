@@ -62,7 +62,7 @@ func (a *Agent) getAppVersion() (ver string, err error) {
 	return
 }
 
-// LowLevelClient returns low-level client which is used by Agent.
-func (a *Agent) LowLevelClient() client.Client {
+// LowlevelClient returns low-level client that can directly call ApiSpec.
+func (a *Agent) LowlevelClient() client.Client {
 	return a.llc
 }
