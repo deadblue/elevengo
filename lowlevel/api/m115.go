@@ -7,6 +7,7 @@ import (
 
 	"github.com/deadblue/elevengo/internal/crypto/m115"
 	"github.com/deadblue/elevengo/internal/impl"
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/client"
 )
@@ -48,7 +49,7 @@ func (s *_M115ApiSpec[D]) Payload() client.Payload {
 
 // Parse implements |ApiSpec.Parse|.
 func (s *_M115ApiSpec[D]) Parse(r io.Reader) (err error) {
-	jd, resp := json.NewDecoder(r), &StandardResp{}
+	jd, resp := json.NewDecoder(r), &protocol.StandardResp{}
 	if err = jd.Decode(resp); err != nil {
 		return
 	}

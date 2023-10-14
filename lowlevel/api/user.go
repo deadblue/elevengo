@@ -1,14 +1,9 @@
 package api
 
-type UserInfoResult struct {
-	UserId    int    `json:"user_id"`
-	UserName  string `json:"user_name"`
-	AvatarUrl string `json:"face"`
-	IsVip     int    `json:"vip"`
-}
+import "github.com/deadblue/elevengo/lowlevel/types"
 
 type UserInfoSpec struct {
-	_StandardApiSpec[UserInfoResult]
+	_StandardApiSpec[types.UserInfoResult]
 }
 
 func (s *UserInfoSpec) Init() *UserInfoSpec {

@@ -1,28 +1,11 @@
 package api
 
 import (
-	"github.com/deadblue/elevengo/lowlevel/errors"
+	"github.com/deadblue/elevengo/internal/protocol"
 )
 
-//lint:ignore U1000 This type is used in generic.
-type _DirCreateResp struct {
-	_BasicResp
-
-	FileId   string `json:"file_id"`
-	FileName string `json:"file_name"`
-}
-
-func (r *_DirCreateResp) Extract(v any) (err error) {
-	if ptr, ok := v.(*string); !ok {
-		err = errors.ErrUnsupportedResult
-	} else {
-		*ptr = r.FileId
-	}
-	return
-}
-
 type DirCreateSpec struct {
-	_JsonApiSpec[string, _DirCreateResp]
+	_JsonApiSpec[string, protocol.DirCreateResp]
 }
 
 func (s *DirCreateSpec) Init(parentId, name string) *DirCreateSpec {
@@ -48,25 +31,8 @@ func (s *DirSetOrderSpec) Init(dirId string, order string, asc bool) *DirSetOrde
 	return s
 }
 
-//lint:ignore U1000 This type is used in generic.
-type _DirLocateResp struct {
-	_BasicResp
-
-	DirId     string `json:"id"`
-	IsPrivate string `json:"is_private"`
-}
-
-func (r *_DirLocateResp) Extract(v any) (err error) {
-	if ptr, ok := v.(*string); !ok {
-		err = errors.ErrUnsupportedResult
-	} else {
-		*ptr = r.DirId
-	}
-	return
-}
-
 type DirLocateSpec struct {
-	_JsonApiSpec[string, _DirLocateResp]
+	_JsonApiSpec[string, protocol.DirLocateResp]
 }
 
 func (s *DirLocateSpec) Init(path string) *DirLocateSpec {

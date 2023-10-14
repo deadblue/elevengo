@@ -6,8 +6,10 @@ import (
 	"io"
 
 	"github.com/deadblue/elevengo/internal/impl"
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/client"
+	"github.com/deadblue/elevengo/lowlevel/types"
 )
 
 type _ApiResp interface {
@@ -119,13 +121,10 @@ func (s *_JsonpApiSpec[D, R]) Parse(r io.Reader) (err error) {
 // Type parameters:
 //   - D: Result type.
 type _StandardApiSpec[D any] struct {
-	_JsonApiSpec[D, StandardResp]
+	_JsonApiSpec[D, protocol.StandardResp]
 }
-
-// VoidResult describes a void result.
-type VoidResult struct{}
 
 // _VoidApiSpec is the base spec for all JSON API specs which has no result.
 type _VoidApiSpec struct {
-	_JsonApiSpec[VoidResult, _BasicResp]
+	_JsonApiSpec[types.VoidResult, protocol.BasicResp]
 }

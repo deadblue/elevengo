@@ -1,8 +1,6 @@
 package api
 
-import (
-	"github.com/deadblue/elevengo/internal/util"
-)
+import "github.com/deadblue/elevengo/lowlevel/types"
 
 const (
 	LabelListLimit = 30
@@ -17,24 +15,8 @@ const (
 	LabelColorGray   = "#CCCCCC"
 )
 
-type LabelInfo struct {
-	Id         string         `json:"id"`
-	Name       string         `json:"name"`
-	Color      string         `json:"color"`
-	Sort       util.IntNumber `json:"sort"`
-	CreateTime int64          `json:"create_time"`
-	UpdateTime int64          `json:"update_time"`
-}
-
-type LabelListResult struct {
-	Total int          `json:"total"`
-	List  []*LabelInfo `json:"list"`
-	Sort  string       `json:"sort"`
-	Order string       `json:"order"`
-}
-
 type LabelListSpec struct {
-	_StandardApiSpec[LabelListResult]
+	_StandardApiSpec[types.LabelListResult]
 }
 
 func (s *LabelListSpec) Init(offset int) *LabelListSpec {
@@ -47,7 +29,7 @@ func (s *LabelListSpec) Init(offset int) *LabelListSpec {
 }
 
 type LabelSearchSpec struct {
-	_StandardApiSpec[LabelListResult]
+	_StandardApiSpec[types.LabelListResult]
 }
 
 func (s *LabelSearchSpec) Init(keyword string, offset int) *LabelSearchSpec {
@@ -58,10 +40,8 @@ func (s *LabelSearchSpec) Init(keyword string, offset int) *LabelSearchSpec {
 	return s
 }
 
-type LabelCreateResult []*LabelInfo
-
 type LabelCreateSpec struct {
-	_StandardApiSpec[LabelCreateResult]
+	_StandardApiSpec[types.LabelCreateResult]
 }
 
 func (s *LabelCreateSpec) Init(name, color string) *LabelCreateSpec {

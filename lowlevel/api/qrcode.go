@@ -1,10 +1,10 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 
-	"github.com/deadblue/elevengo/lowlevel/errors"
+	"github.com/deadblue/elevengo/internal/protocol"
+	"github.com/deadblue/elevengo/lowlevel/types"
 )
 
 const (
@@ -23,36 +23,8 @@ var (
 	}
 )
 
-//lint:ignore U1000 This type is used in generic.
-type _QrcodeBaseResp struct {
-	State         int    `json:"state"`
-	ErrorCode1    int    `json:"code"`
-	ErrorCode2    int    `json:"errno"`
-	ErrorMessage1 string `json:"message"`
-	ErrorMessage2 string `json:"error"`
-
-	Data json.RawMessage `json:"data"`
-}
-
-func (r *_QrcodeBaseResp) Err() error {
-	if r.State != 0 {
-		return nil
-	}
-	return errors.Get(r.ErrorCode1)
-}
-
-func (r *_QrcodeBaseResp) Extract(v any) error {
-	return json.Unmarshal(r.Data, v)
-}
-
-type QrcodeTokenResult struct {
-	Uid  string `json:"uid"`
-	Time int64  `json:"time"`
-	Sign string `json:"sign"`
-}
-
 type QrcodeTokenSpec struct {
-	_JsonApiSpec[QrcodeTokenResult, _QrcodeBaseResp]
+	_JsonApiSpec[types.QrcodeTokenResult, protocol.QrcodeBaseResp]
 }
 
 func (s *QrcodeTokenSpec) Init(appType string) *QrcodeTokenSpec {
@@ -61,14 +33,8 @@ func (s *QrcodeTokenSpec) Init(appType string) *QrcodeTokenSpec {
 	return s
 }
 
-type QrcodeStatusResult struct {
-	Status  int    `json:"status,omitempty"`
-	Message string `json:"msg,omitempty"`
-	Version string `json:"version,omitempty"`
-}
-
 type QrcodeStatusSpec struct {
-	_JsonApiSpec[QrcodeStatusResult, _QrcodeBaseResp]
+	_JsonApiSpec[types.QrcodeStatusResult, protocol.QrcodeBaseResp]
 }
 
 func (s *QrcodeStatusSpec) Init(uid string, time int64, sign string) *QrcodeStatusSpec {
@@ -80,18 +46,8 @@ func (s *QrcodeStatusSpec) Init(uid string, time int64, sign string) *QrcodeStat
 	return s
 }
 
-type QrcodeLoginResult struct {
-	Cookie struct {
-		CID  string `json:"CID"`
-		SEID string `json:"SEID"`
-		UID  string `json:"UID"`
-	} `json:"cookie"`
-	UserId   int    `json:"user_id"`
-	UserName string `json:"user_name"`
-}
-
 type QrcodeLoginSpec struct {
-	_JsonApiSpec[QrcodeLoginResult, _QrcodeBaseResp]
+	_JsonApiSpec[types.QrcodeLoginResult, protocol.QrcodeBaseResp]
 }
 
 func (s *QrcodeLoginSpec) Init(appType string, uid string) *QrcodeLoginSpec {

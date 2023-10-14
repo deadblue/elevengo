@@ -3,6 +3,7 @@ package elevengo
 import (
 	"github.com/deadblue/elevengo/lowlevel/api"
 	"github.com/deadblue/elevengo/lowlevel/errors"
+	"github.com/deadblue/elevengo/lowlevel/types"
 	"github.com/deadblue/elevengo/option"
 )
 
@@ -54,7 +55,7 @@ type offlineIterator struct {
 	ps int
 
 	// Cached tasks
-	tasks []*api.OfflineTask
+	tasks []*types.OfflineTask
 	// Task index
 	index int
 	// Task size
@@ -125,7 +126,7 @@ func (a *Agent) offlineIterateInternal(oi *offlineIterator) (err error) {
 	if oi.size == 0 {
 		err = errors.ErrReachEnd
 	} else {
-		oi.tasks = make([]*api.OfflineTask, 0, oi.size)
+		oi.tasks = make([]*types.OfflineTask, 0, oi.size)
 		oi.tasks = append(oi.tasks, result.Tasks...)
 	}
 	oi.count = result.TaskCount

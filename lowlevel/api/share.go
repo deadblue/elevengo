@@ -1,11 +1,10 @@
 package api
 
 import (
-	"encoding/json"
 	"strings"
 
-	"github.com/deadblue/elevengo/internal/util"
-	"github.com/deadblue/elevengo/lowlevel/errors"
+	"github.com/deadblue/elevengo/internal/protocol"
+	"github.com/deadblue/elevengo/lowlevel/types"
 )
 
 type ShareDuration int
@@ -20,49 +19,8 @@ const (
 	ShareStateRejected = 6
 )
 
-type ShareInfo struct {
-	ShareCode string `json:"share_code"`
-
-	ShareState    util.IntNumber `json:"share_state"`
-	ShareTitle    string         `json:"share_title"`
-	ShareUrl      string         `json:"share_url"`
-	ShareDuration util.IntNumber `json:"share_ex_time"`
-	ReceiveCode   string         `json:"receive_code"`
-
-	ReceiveCount util.IntNumber `json:"receive_count"`
-
-	FileCount   int            `json:"file_count"`
-	FolderCount int            `json:"folder_count"`
-	TotalSize   util.IntNumber `json:"total_size"`
-}
-
-type ShareListResult struct {
-	Count int
-	Items []*ShareInfo
-}
-
-//lint:ignore U1000 This type is used in generic.
-type _ShareListResp struct {
-	_BasicResp
-
-	Count int             `json:"count"`
-	List  json.RawMessage `json:"list"`
-}
-
-func (r *_ShareListResp) Extract(v any) (err error) {
-	ptr, ok := v.(*ShareListResult)
-	if !ok {
-		return errors.ErrUnsupportedResult
-	}
-	if err = json.Unmarshal(r.List, &ptr.Items); err != nil {
-		return
-	}
-	ptr.Count = r.Count
-	return
-}
-
 type ShareListSpec struct {
-	_JsonApiSpec[ShareListResult, _ShareListResp]
+	_JsonApiSpec[types.ShareListResult, protocol.ShareListResp]
 }
 
 func (s *ShareListSpec) Init(offset int, userId string) *ShareListSpec {
@@ -74,7 +32,7 @@ func (s *ShareListSpec) Init(offset int, userId string) *ShareListSpec {
 }
 
 type ShareSendSpec struct {
-	_StandardApiSpec[ShareInfo]
+	_StandardApiSpec[types.ShareInfo]
 }
 
 func (s *ShareSendSpec) Init(fileIds []string, userId string) *ShareSendSpec {
@@ -86,7 +44,7 @@ func (s *ShareSendSpec) Init(fileIds []string, userId string) *ShareSendSpec {
 }
 
 type ShareGetSpec struct {
-	_StandardApiSpec[ShareInfo]
+	_StandardApiSpec[types.ShareInfo]
 }
 
 func (s *ShareGetSpec) Init(shareCode string) *ShareGetSpec {

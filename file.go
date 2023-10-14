@@ -6,6 +6,7 @@ import (
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/api"
 	"github.com/deadblue/elevengo/lowlevel/errors"
+	"github.com/deadblue/elevengo/lowlevel/types"
 	"github.com/deadblue/elevengo/option"
 )
 
@@ -44,7 +45,7 @@ type File struct {
 	VideoDefinition VideoDefinition
 }
 
-func (f *File) from(info *api.FileInfo) *File {
+func (f *File) from(info *types.FileInfo) *File {
 	if info.FileId != "" {
 		f.FileId = info.FileId
 		f.ParentId = info.CategoryId
@@ -108,7 +109,7 @@ type fileIterator struct {
 	// Total count
 	count int
 	// Cached files
-	files []*api.FileInfo
+	files []*types.FileInfo
 	// Cache index
 	index int
 	// Cache size
@@ -211,7 +212,7 @@ func (a *Agent) fileIterateInternal(fi *fileIterator) (err error) {
 	fi.order, fi.asc = spec.Result.Order, spec.Result.Asc
 	if fi.count = spec.Result.Count; fi.count > 0 {
 		fi.index, fi.size = 0, len(spec.Result.Files)
-		fi.files = make([]*api.FileInfo, fi.size)
+		fi.files = make([]*types.FileInfo, fi.size)
 		copy(fi.files, spec.Result.Files)
 	}
 	return
@@ -281,7 +282,7 @@ func (a *Agent) fileSearchInternal(fi *fileIterator) (err error) {
 	fi.order, fi.asc = spec.Result.Order, spec.Result.Asc
 	if fi.count = spec.Result.Count; fi.count > 0 {
 		fi.index, fi.size = 0, len(spec.Result.Files)
-		fi.files = make([]*api.FileInfo, fi.size)
+		fi.files = make([]*types.FileInfo, fi.size)
 		copy(fi.files, spec.Result.Files)
 	}
 	return

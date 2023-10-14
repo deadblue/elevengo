@@ -1,12 +1,11 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
-	"github.com/deadblue/elevengo/internal/util"
-	"github.com/deadblue/elevengo/lowlevel/errors"
+	"github.com/deadblue/elevengo/internal/protocol"
+	"github.com/deadblue/elevengo/lowlevel/types"
 )
 
 const (
@@ -21,89 +20,8 @@ const (
 	FileListLimit = 32
 )
 
-type FileInfo struct {
-	AreaId     util.IntNumber `json:"aid"`
-	CategoryId string         `json:"cid"`
-	FileId     string         `json:"fid"`
-	ParentId   string         `json:"pid"`
-
-	Name     string         `json:"n"`
-	Type     string         `json:"ico"`
-	Size     util.IntNumber `json:"s"`
-	Sha1     string         `json:"sha"`
-	PickCode string         `json:"pc"`
-
-	IsStar util.Boolean `json:"m"`
-	Labels []LabelInfo  `json:"fl"`
-
-	CreatedTime  string `json:"tp"`
-	UpdatedTime  string `json:"te"`
-	ModifiedTime string `json:"t"`
-
-	// MediaDuration describes duration in seconds for audio/video.
-	MediaDuration float64 `json:"play_long"`
-
-	// Special fields for video
-	VideoFlag       int `json:"iv"`
-	VideoDefinition int `json:"vdi"`
-}
-
-type FileListResult struct {
-	DirId  string
-	Offset int
-
-	Count int
-	Files []*FileInfo
-
-	// Order settings
-	Order string
-	Asc   int
-}
-
-//lint:ignore U1000 This type is used in generic.
-type _FileListResp struct {
-	StandardResp
-
-	AreaId     string         `json:"aid"`
-	CategoryId util.IntNumber `json:"cid"`
-
-	Count int `json:"count"`
-
-	Order string `json:"order"`
-	IsAsc int    `json:"is_asc"`
-
-	Offset int `json:"offset"`
-	Limit  int `json:"limit"`
-}
-
-func (r *_FileListResp) Err() (err error) {
-	// Handle special error
-	if r.ErrorCode2 == errors.CodeFileOrderNotSupported {
-		return &errors.ErrFileOrderNotSupported{
-			Order: r.Order,
-			Asc:   r.IsAsc,
-		}
-	}
-	return r.StandardResp.Err()
-}
-
-func (r *_FileListResp) Extract(v any) (err error) {
-	ptr, ok := v.(*FileListResult)
-	if !ok {
-		return errors.ErrUnsupportedResult
-	}
-	ptr.Files = make([]*FileInfo, 0, FileListLimit)
-	if err = json.Unmarshal(r.Data, &ptr.Files); err != nil {
-		return
-	}
-	ptr.DirId = r.CategoryId.String()
-	ptr.Count = r.Count
-	ptr.Order, ptr.Asc = r.Order, r.IsAsc
-	return
-}
-
 type FileListSpec struct {
-	_JsonApiSpec[FileListResult, _FileListResp]
+	_JsonApiSpec[types.FileListResult, protocol.FileListResp]
 
 	// Save file order
 	fo string
@@ -148,44 +66,8 @@ func (s *FileListSpec) SetFileType(fileType int) {
 	}
 }
 
-//lint:ignore U1000 This type is used in generic.
-type _FileSearchResp struct {
-	StandardResp
-
-	Folder struct {
-		CategoryId string `json:"cid"`
-		ParentId   string `json:"pid"`
-		Name       string `json:"name"`
-	} `json:"folder"`
-
-	Count       int `json:"count"`
-	FileCount   int `json:"file_count"`
-	FolderCount int `json:"folder_count"`
-
-	Order string `json:"order"`
-	IsAsc int    `json:"is_asc"`
-
-	Offset int `json:"offset"`
-	Limit  int `json:"page_size"`
-}
-
-func (r *_FileSearchResp) Extract(v any) (err error) {
-	ptr, ok := v.(*FileListResult)
-	if !ok {
-		return errors.ErrUnsupportedResult
-	}
-	ptr.Files = make([]*FileInfo, 0, FileListLimit)
-	if err = json.Unmarshal(r.Data, &ptr.Files); err != nil {
-		return
-	}
-	ptr.DirId = r.Folder.CategoryId
-	ptr.Count = r.Count
-	ptr.Order, ptr.Asc = r.Order, r.IsAsc
-	return
-}
-
 type FileSearchSpec struct {
-	_JsonApiSpec[FileListResult, _FileSearchResp]
+	_JsonApiSpec[types.FileListResult, protocol.FileSearchResp]
 }
 
 func (s *FileSearchSpec) Init(offset int) *FileSearchSpec {
@@ -212,10 +94,8 @@ func (s *FileSearchSpec) SetFileType(fileType int) {
 	}
 }
 
-type FileGetResult []*FileInfo
-
 type FileGetSpec struct {
-	_JsonApiSpec[FileGetResult, StandardResp]
+	_JsonApiSpec[types.FileGetResult, protocol.StandardResp]
 }
 
 func (s *FileGetSpec) Init(fileId string) *FileGetSpec {

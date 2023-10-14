@@ -4,63 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/lowlevel/errors"
+	"github.com/deadblue/elevengo/lowlevel/types"
 )
 
-type OfflineTask struct {
-	InfoHash string `json:"info_hash"`
-	Name     string `json:"name"`
-	Size     int64  `json:"size"`
-	Url      string `json:"url"`
-	AddTime  int64  `json:"add_time"`
-
-	Status     int     `json:"status"`
-	Percent    float64 `json:"percentDone"`
-	UpdateTime int64   `json:"last_update"`
-
-	FileId string `json:"file_id"`
-	DirId  string `json:"wp_path_id"`
-}
-
-type OfflineListResult struct {
-	PageIndex int
-	PageCount int
-	PageSize  int
-
-	TaskCount int
-	Tasks     []*OfflineTask
-}
-
-//lint:ignore U1000 This type is used in generic.
-type _OfflineListResp struct {
-	_BasicResp
-
-	PageIndex int `json:"page"`
-	PageCount int `json:"page_count"`
-	PageSize  int `json:"page_row"`
-
-	QuotaTotal  int `json:"total"`
-	QuotaRemain int `json:"quota"`
-
-	TaskCount int            `json:"count"`
-	Tasks     []*OfflineTask `json:"tasks"`
-}
-
-func (r *_OfflineListResp) Extract(v any) (err error) {
-	if ptr, ok := v.(*OfflineListResult); !ok {
-		return errors.ErrUnsupportedResult
-	} else {
-		ptr.PageIndex = r.PageIndex
-		ptr.PageCount = r.PageCount
-		ptr.PageSize = r.PageSize
-		ptr.TaskCount = r.TaskCount
-		ptr.Tasks = append(ptr.Tasks, r.Tasks...)
-	}
-	return nil
-}
-
 type OfflineListSpec struct {
-	_JsonApiSpec[OfflineListResult, _OfflineListResp]
+	_JsonApiSpec[types.OfflineListResult, protocol.OfflineListResp]
 }
 
 func (s *OfflineListSpec) Init(page int) *OfflineListSpec {
@@ -97,40 +47,19 @@ func (s *OfflineClearSpec) Init(flag int) *OfflineClearSpec {
 	return s
 }
 
-type _OfflineAddResult struct {
-	State   bool   `json:"state"`
-	ErrNum  int    `json:"errno"`
-	ErrCode int    `json:"errcode"`
-	ErrType string `json:"errtype"`
-
-	InfoHash string `json:"info_hash"`
-	Name     string `json:"name"`
-	Url      string `json:"url"`
-}
-
-type _OfflineAddUrlsData struct {
-	State   bool `json:"state"`
-	ErrNum  int  `json:"errno"`
-	ErrCode int  `json:"errcode"`
-
-	Result []*_OfflineAddResult `json:"result"`
-}
-
-type OfflineAddUrlsResult []*OfflineTask
-
 type OfflineAddUrlsSpec struct {
-	_M115ApiSpec[OfflineAddUrlsResult]
+	_M115ApiSpec[types.OfflineAddUrlsResult]
 }
 
-func offlineAddUrlsResultExtractor(data []byte, result *OfflineAddUrlsResult) (err error) {
-	obj := &_OfflineAddUrlsData{}
+func offlineAddUrlsResultExtractor(data []byte, result *types.OfflineAddUrlsResult) (err error) {
+	obj := &types.OfflineAddUrlsData{}
 	if err = json.Unmarshal(data, obj); err != nil {
 		return
 	}
-	tasks := make([]*OfflineTask, len(obj.Result))
+	tasks := make([]*types.OfflineTask, len(obj.Result))
 	for i, r := range obj.Result {
 		if r.State || r.ErrCode == errors.CodeOfflineTaskExists {
-			tasks[i] = &OfflineTask{}
+			tasks[i] = &types.OfflineTask{}
 			tasks[i].InfoHash = r.InfoHash
 			tasks[i].Name = r.Name
 			tasks[i].Url = r.Url

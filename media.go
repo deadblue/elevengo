@@ -5,6 +5,7 @@ import (
 	"github.com/deadblue/elevengo/lowlevel/api"
 	"github.com/deadblue/elevengo/lowlevel/client"
 	"github.com/deadblue/elevengo/lowlevel/errors"
+	"github.com/deadblue/elevengo/lowlevel/types"
 )
 
 // VideoDefinition values from 115.
@@ -47,7 +48,7 @@ type VideoTicket struct {
 func (a *Agent) VideoCreateTicket(pickcode string, ticket *VideoTicket) (err error) {
 	// VideoPlay API for web and PC are different !
 	var spec client.ApiSpec
-	var result *api.VideoPlayResult
+	var result *types.VideoPlayResult
 	if a.isWeb {
 		webSpec := (&api.VideoPlayWebSpec{}).Init(pickcode)
 		spec, result = webSpec, &webSpec.Result

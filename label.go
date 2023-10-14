@@ -3,6 +3,7 @@ package elevengo
 import (
 	"github.com/deadblue/elevengo/lowlevel/api"
 	"github.com/deadblue/elevengo/lowlevel/errors"
+	"github.com/deadblue/elevengo/lowlevel/types"
 )
 
 type LabelColor int
@@ -56,7 +57,7 @@ type labelIterator struct {
 	count int
 
 	// Cached labels
-	labels []*api.LabelInfo
+	labels []*types.LabelInfo
 	// Cache index
 	index int
 	// Cache size
@@ -114,7 +115,7 @@ func (a *Agent) labelIterateInternal(i *labelIterator) (err error) {
 	}
 	i.count = spec.Result.Total
 	i.index, i.size = 0, len(spec.Result.List)
-	i.labels = make([]*api.LabelInfo, i.size)
+	i.labels = make([]*types.LabelInfo, i.size)
 	copy(i.labels, spec.Result.List)
 	return
 }

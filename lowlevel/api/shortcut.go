@@ -1,17 +1,9 @@
 package api
 
-type ShortcutInfo struct {
-	FileId   string `json:"file_id"`
-	FileName string `json:"file_name"`
-	Sort     string `json:"sort"`
-}
-
-type ShortcutListResult struct {
-	List []*ShortcutInfo `json:"list"`
-}
+import "github.com/deadblue/elevengo/lowlevel/types"
 
 type ShortcutListSpec struct {
-	_StandardApiSpec[ShortcutListResult]
+	_StandardApiSpec[types.ShortcutListResult]
 }
 
 func (s *ShortcutListSpec) Init(fileId string) *ShortcutListSpec {

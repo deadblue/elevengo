@@ -11,9 +11,11 @@ import (
 	"github.com/deadblue/elevengo/internal/crypto/hash"
 	"github.com/deadblue/elevengo/internal/multipart"
 	"github.com/deadblue/elevengo/internal/oss"
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/api"
 	"github.com/deadblue/elevengo/lowlevel/errors"
+	"github.com/deadblue/elevengo/lowlevel/types"
 )
 
 // UploadTicket contains all required information to upload a file.
@@ -280,14 +282,14 @@ func (a *Agent) UploadCreateOssTicket(
 
 // UploadParseResult parses the raw upload response, and fills it to file.
 func (a *Agent) UploadParseResult(r io.Reader, file *File) (err error) {
-	jd, resp := json.NewDecoder(r), &api.StandardResp{}
+	jd, resp := json.NewDecoder(r), &protocol.StandardResp{}
 	if err = jd.Decode(resp); err == nil {
 		err = resp.Err()
 	}
 	if err != nil || file == nil {
 		return
 	}
-	result := &api.UploadSampleResult{}
+	result := &types.UploadSampleResult{}
 	if err = resp.Extract(result); err != nil {
 		return
 	}
