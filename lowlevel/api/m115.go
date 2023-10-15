@@ -12,7 +12,9 @@ import (
 	"github.com/deadblue/elevengo/lowlevel/client"
 )
 
-type _M115Extractor[D any] func([]byte, *D) error
+type _M115Result interface {
+	UnmarshalResult([]byte) error
+}
 
 // _M115ApiSpec is the base API spec for all m115 encoded ApiSpec.
 type _M115ApiSpec[D any] struct {
@@ -22,16 +24,13 @@ type _M115ApiSpec[D any] struct {
 	key m115.Key
 	// API parameters.
 	params util.Params
-	// Custom the extraction process.
-	extractor _M115Extractor[D]
 
 	// Final result.
 	Result D
 }
 
-func (s *_M115ApiSpec[D]) Init(baseUrl string, ex _M115Extractor[D]) {
+func (s *_M115ApiSpec[D]) Init(baseUrl string) {
 	s._BasicApiSpec.Init(baseUrl)
-	s.extractor = ex
 	s.key = m115.GenerateKey()
 	s.params = util.Params{}
 }
@@ -62,12 +61,12 @@ func (s *_M115ApiSpec[D]) Parse(r io.Reader) (err error) {
 		return
 	}
 	if result, err := m115.Decode(data, s.key); err == nil {
-		if s.extractor != nil {
-			return s.extractor(result, &s.Result)
+		ptr := any(&s.Result)
+		if mr, ok := ptr.(_M115Result); ok {
+			return mr.UnmarshalResult(result)
 		} else {
-			return json.Unmarshal(result, &s.Result)
+			return json.Unmarshal(result, ptr)
 		}
-
 	} else {
 		return err
 	}

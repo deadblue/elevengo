@@ -1,11 +1,9 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/deadblue/elevengo/internal/protocol"
-	"github.com/deadblue/elevengo/lowlevel/errors"
 	"github.com/deadblue/elevengo/lowlevel/types"
 )
 
@@ -51,31 +49,8 @@ type OfflineAddUrlsSpec struct {
 	_M115ApiSpec[types.OfflineAddUrlsResult]
 }
 
-func offlineAddUrlsResultExtractor(data []byte, result *types.OfflineAddUrlsResult) (err error) {
-	obj := &types.OfflineAddUrlsData{}
-	if err = json.Unmarshal(data, obj); err != nil {
-		return
-	}
-	tasks := make([]*types.OfflineTask, len(obj.Result))
-	for i, r := range obj.Result {
-		if r.State || r.ErrCode == errors.CodeOfflineTaskExists {
-			tasks[i] = &types.OfflineTask{}
-			tasks[i].InfoHash = r.InfoHash
-			tasks[i].Name = r.Name
-			tasks[i].Url = r.Url
-		} else {
-			tasks[i] = nil
-		}
-	}
-	*result = tasks
-	return
-}
-
 func (s *OfflineAddUrlsSpec) Init(userId, appVer string, urls []string, saveDirId string) *OfflineAddUrlsSpec {
-	s._M115ApiSpec.Init(
-		"https://lixian.115.com/lixianssp/?ac=add_task_urls",
-		offlineAddUrlsResultExtractor,
-	)
+	s._M115ApiSpec.Init("https://lixian.115.com/lixianssp/?ac=add_task_urls")
 	s.crypto = true
 	s.params.Set("uid", userId).
 		Set("app_ver", appVer).

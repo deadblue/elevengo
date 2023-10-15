@@ -1,5 +1,11 @@
 package types
 
+import (
+	"encoding/json"
+
+	"github.com/deadblue/elevengo/lowlevel/errors"
+)
+
 type OfflineTask struct {
 	InfoHash string `json:"info_hash"`
 	Name     string `json:"name"`
@@ -24,7 +30,7 @@ type OfflineListResult struct {
 	Tasks     []*OfflineTask
 }
 
-type OfflineAddResult struct {
+type _OfflineAddResult struct {
 	State   bool   `json:"state"`
 	ErrNum  int    `json:"errno"`
 	ErrCode int    `json:"errcode"`
@@ -35,12 +41,32 @@ type OfflineAddResult struct {
 	Url      string `json:"url"`
 }
 
-type OfflineAddUrlsData struct {
+type _OfflineAddUrlsProto struct {
 	State   bool `json:"state"`
 	ErrNum  int  `json:"errno"`
 	ErrCode int  `json:"errcode"`
 
-	Result []*OfflineAddResult `json:"result"`
+	Result []*_OfflineAddResult `json:"result"`
 }
 
 type OfflineAddUrlsResult []*OfflineTask
+
+func (r *OfflineAddUrlsResult) UnmarshalResult(data []byte) (err error) {
+	proto := &_OfflineAddUrlsProto{}
+	if err = json.Unmarshal(data, proto); err != nil {
+		return
+	}
+	tasks := make([]*OfflineTask, len(proto.Result))
+	for i, r := range proto.Result {
+		if r.State || r.ErrCode == errors.CodeOfflineTaskExists {
+			tasks[i] = &OfflineTask{}
+			tasks[i].InfoHash = r.InfoHash
+			tasks[i].Name = r.Name
+			tasks[i].Url = r.Url
+		} else {
+			tasks[i] = nil
+		}
+	}
+	*r = tasks
+	return
+}

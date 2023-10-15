@@ -17,7 +17,7 @@ type VideoPlayResult struct {
 	VideoUrl      string
 }
 
-type VideoUrl struct {
+type _VideoUrl struct {
 	Title      string         `json:"title"`
 	Definition int            `json:"definition"`
 	Width      util.IntNumber `json:"width"`
@@ -25,7 +25,7 @@ type VideoUrl struct {
 	Url        string         `json:"url"`
 }
 
-type VideoPlayPcData struct {
+type _VideoPlayPcProto struct {
 	FileId        string           `json:"file_id"`
 	ParentId      string           `json:"parent_id"`
 	FileName      string           `json:"file_name"`
@@ -34,7 +34,28 @@ type VideoPlayPcData struct {
 	PickCode      string           `json:"pick_code"`
 	FileStatus    int              `json:"file_status"`
 	VideoDuration util.FloatNumner `json:"play_long"`
-	VideoUrls     []*VideoUrl      `json:"video_url"`
+	VideoUrls     []*_VideoUrl     `json:"video_url"`
+}
+
+func (r *VideoPlayResult) UnmarshalResult(data []byte) (err error) {
+	proto := &_VideoPlayPcProto{}
+	if err = json.Unmarshal(data, proto); err != nil {
+		return
+	}
+	r.IsReady = proto.FileStatus == 1
+	r.FileId = proto.FileId
+	r.FileName = proto.FileName
+	r.FileSize = proto.FileSize.Int64()
+	r.VideoDuration = proto.VideoDuration.Float64()
+	for _, vu := range proto.VideoUrls {
+		w, h := vu.Width.Int(), vu.Height.Int()
+		if r.VideoWidth < w {
+			r.VideoWidth = w
+			r.VideoHeight = h
+			r.VideoUrl = vu.Url
+		}
+	}
+	return nil
 }
 
 type _VideoSubtitleProto struct {
