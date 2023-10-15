@@ -34,12 +34,12 @@ func (s *_BasicApiSpec) Init(baseUrl string) {
 	s.query = util.Params{}
 }
 
-// Url implements `ApiSpec.IsCrypto`
+// IsCrypto implements `ApiSpec.IsCrypto`
 func (s *_BasicApiSpec) IsCrypto() bool {
 	return s.crypto
 }
 
-// Url implements `ApiSpec.SetCryptoKey`
+// SetCryptoKey implements `ApiSpec.SetCryptoKey`
 func (s *_BasicApiSpec) SetCryptoKey(key string) {
 	s.query.Set("k_ec", key)
 }
