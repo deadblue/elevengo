@@ -37,7 +37,7 @@ type VideoPlayPcData struct {
 	VideoUrls     []*VideoUrl      `json:"video_url"`
 }
 
-type VideoSubtitleProto struct {
+type _VideoSubtitleProto struct {
 	SubtitleId string `json:"sid"`
 	Language   string `json:"language"`
 
@@ -65,7 +65,7 @@ type VideoSubtitleInfo struct {
 
 func (i *VideoSubtitleInfo) UnmarshalJSON(data []byte) (err error) {
 	if len(data) > 0 && data[0] == '{' {
-		proto := &VideoSubtitleProto{}
+		proto := &_VideoSubtitleProto{}
 		if err = json.Unmarshal(data, proto); err == nil {
 			i.Language = proto.Language
 			i.Title = proto.Title
