@@ -1,4 +1,4 @@
-package api
+package protocol
 
 const (
 	CookieUrl = "https://115.com"

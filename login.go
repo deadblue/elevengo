@@ -3,6 +3,7 @@ package elevengo
 import (
 	"strings"
 
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/lowlevel/api"
 	"github.com/deadblue/elevengo/lowlevel/errors"
 )
@@ -30,20 +31,20 @@ type UserInfo struct {
 // CredentialImport imports credentials into agent.
 func (a *Agent) CredentialImport(cr *Credential) (err error) {
 	cookies := map[string]string{
-		api.CookieNameUID:  cr.UID,
-		api.CookieNameCID:  cr.CID,
-		api.CookieNameSEID: cr.SEID,
+		protocol.CookieNameUID:  cr.UID,
+		protocol.CookieNameCID:  cr.CID,
+		protocol.CookieNameSEID: cr.SEID,
 	}
-	a.llc.ImportCookies(cookies, api.CookieDomains...)
+	a.llc.ImportCookies(cookies, protocol.CookieDomains...)
 	return a.afterSignIn(cr.UID)
 }
 
 // CredentialExport exports current credentials for future-use.
 func (a *Agent) CredentialExport(cr *Credential) {
-	cookies := a.llc.ExportCookies(api.CookieUrl)
-	cr.UID = cookies[api.CookieNameUID]
-	cr.CID = cookies[api.CookieNameCID]
-	cr.SEID = cookies[api.CookieNameSEID]
+	cookies := a.llc.ExportCookies(protocol.CookieUrl)
+	cr.UID = cookies[protocol.CookieNameUID]
+	cr.CID = cookies[protocol.CookieNameCID]
+	cr.SEID = cookies[protocol.CookieNameSEID]
 }
 
 func (a *Agent) afterSignIn(uid string) (err error) {
