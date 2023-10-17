@@ -19,10 +19,10 @@ type LabelListSpec struct {
 	_StandardApiSpec[types.LabelListResult]
 }
 
-func (s *LabelListSpec) Init(offset int) *LabelListSpec {
+func (s *LabelListSpec) Init(offset int, limit int) *LabelListSpec {
 	s._StandardApiSpec.Init("https://webapi.115.com/label/list")
 	s.query.SetInt("offset", offset)
-	s.query.SetInt("limit", LabelListLimit)
+	s.query.SetInt("limit", limit)
 	s.query.Set("sort", "create_time")
 	s.query.Set("order", "asc")
 	return s

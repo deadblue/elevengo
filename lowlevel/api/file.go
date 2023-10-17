@@ -35,7 +35,9 @@ func (s *FileListSpec) Init(dirId string, offset int, limit int) *FileListSpec {
 		Set("show_dir", "1").
 		Set("fc_mix", "0").
 		SetInt("offset", offset).
-		SetInt("limit", limit)
+		SetInt("limit", limit).
+		Set("o", FileOrderDefault).
+		Set("asc", "0")
 	// s.QuerySet("snap", "0")
 	// s.QuerySet("natsort", "1")
 	return s

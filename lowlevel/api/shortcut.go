@@ -6,7 +6,7 @@ type ShortcutListSpec struct {
 	_StandardApiSpec[types.ShortcutListResult]
 }
 
-func (s *ShortcutListSpec) Init(fileId string) *ShortcutListSpec {
+func (s *ShortcutListSpec) Init() *ShortcutListSpec {
 	s._StandardApiSpec.Init("https://webapi.115.com/category/shortcut")
 	return s
 }

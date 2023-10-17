@@ -109,7 +109,7 @@ func (a *Agent) LabelIterate() (it Iterator[Label], err error) {
 }
 
 func (a *Agent) labelIterateInternal(i *labelIterator) (err error) {
-	spec := (&api.LabelListSpec{}).Init(i.offset)
+	spec := (&api.LabelListSpec{}).Init(i.offset, api.LabelListLimit)
 	if err = a.llc.CallApi(spec); err != nil {
 		return
 	}
