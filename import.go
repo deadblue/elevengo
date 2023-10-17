@@ -9,6 +9,8 @@ import (
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/api"
 	"github.com/deadblue/elevengo/lowlevel/errors"
+	"github.com/deadblue/elevengo/lowlevel/types"
+	"github.com/deadblue/elevengo/lowlevel/upload"
 )
 
 type ErrImportNeedCheck struct {
@@ -41,17 +43,16 @@ type ImportTicket struct {
 // Import imports(aka. fast-upload) a file to your 115 cloud storage.
 // Please check example code for the detailed usage.
 func (a *Agent) Import(dirId string, ticket *ImportTicket) (err error) {
-	target := fmt.Sprintf("U_1_%s", dirId)
-	params := &api.UploadInitParams{
+	target := upload.GetTarget(dirId)
+	params := a.uh.Sign(&types.UploadInitParams{
 		FileId:    ticket.FileSha1,
 		FileName:  ticket.FileName,
 		FileSize:  ticket.FileSize,
 		Target:    target,
-		Signature: a.uh.CalcSign(ticket.FileSha1, target),
 		SignKey:   ticket.SignKey,
 		SignValue: ticket.SignValue,
-	}
-	spec := (&api.UploadInitSpec{}).Init(params, &a.uh)
+	})
+	spec := (&api.UploadInitSpec{}).Init(params, a.uh.UserId, a.uh.AppVer)
 	if err = a.llc.CallApi(spec); err != nil {
 		return
 	}

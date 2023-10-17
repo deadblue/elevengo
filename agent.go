@@ -5,6 +5,7 @@ import (
 	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/lowlevel/api"
 	"github.com/deadblue/elevengo/lowlevel/client"
+	"github.com/deadblue/elevengo/lowlevel/upload"
 	"github.com/deadblue/elevengo/option"
 	"github.com/deadblue/elevengo/plugin"
 )
@@ -20,7 +21,7 @@ type Agent struct {
 	llc client.Client
 
 	// Upload helper
-	uh api.UploadHelper
+	uh upload.Helper
 }
 
 // New creates Agent with customized options.

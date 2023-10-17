@@ -2,20 +2,19 @@ package elevengo
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/deadblue/elevengo/internal/crypto/hash"
-	"github.com/deadblue/elevengo/internal/multipart"
 	"github.com/deadblue/elevengo/internal/oss"
 	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/api"
 	"github.com/deadblue/elevengo/lowlevel/errors"
 	"github.com/deadblue/elevengo/lowlevel/types"
+	"github.com/deadblue/elevengo/lowlevel/upload"
 )
 
 // UploadTicket contains all required information to upload a file.
@@ -66,17 +65,15 @@ func (a *Agent) uploadInit(
 		return
 	}
 	// Prepare init parameters
-	target := fmt.Sprintf("U_1_%s", dirId)
-	params := &api.UploadInitParams{
-		FileId:    dr.SHA1,
-		FileName:  name,
-		FileSize:  dr.Size,
-		Target:    target,
-		Signature: a.uh.CalcSign(dr.SHA1, target),
-	}
+	params := a.uh.Sign(&types.UploadInitParams{
+		FileId:   dr.SHA1,
+		FileName: name,
+		FileSize: dr.Size,
+		Target:   upload.GetTarget(dirId),
+	})
 	// Call API
 	for {
-		spec := (&api.UploadInitSpec{}).Init(params, &a.uh)
+		spec := (&api.UploadInitSpec{}).Init(params, a.uh.UserId, a.uh.AppVer)
 		if err = a.llc.CallApi(spec); err != nil {
 			break
 		}
@@ -84,6 +81,7 @@ func (a *Agent) uploadInit(
 			// Upload params
 			params.SignKey = spec.Result.SignKey
 			params.SignValue, _ = hash.DigestRange(rs, spec.Result.SignCheck)
+			a.uh.Sign(params)
 		} else {
 			if spec.Result.Exists {
 				exists = true
@@ -315,8 +313,8 @@ func (a *Agent) UploadSample(dirId, name string, size int64, r io.Reader) (fileI
 	} else if size > api.UploadMaxSizeSample {
 		return "", errors.ErrUploadTooLarge
 	}
+	target := upload.GetTarget(dirId)
 	// Call API.
-	target := fmt.Sprintf("U_1_%s", dirId)
 	initSpec := (&api.UploadSampleInitSpec{}).Init(
 		a.uh.UserId, name, size, target,
 	)
@@ -324,18 +322,7 @@ func (a *Agent) UploadSample(dirId, name string, size int64, r io.Reader) (fileI
 		return
 	}
 	// Upload file
-	mf := multipart.Builder().
-		AddValue("success_action_status", "200").
-		AddValue("name", name).
-		AddValue("target", target).
-		AddValue("key", initSpec.Result.Object).
-		AddValue("policy", initSpec.Result.Policy).
-		AddValue("OSSAccessKeyId", initSpec.Result.AccessKeyId).
-		AddValue("callback", initSpec.Result.Callback).
-		AddValue("signature", initSpec.Result.Signature).
-		AddFile("file", name, r).
-		Build()
-	upSpec := (&api.UploadSampleSpec{}).Init(initSpec.Result.Host, mf)
+	upSpec := (&api.UploadSampleSpec{}).Init(name, target, r, &initSpec.Result)
 	if err = a.llc.CallApi(upSpec); err == nil {
 		fileId = upSpec.Result.FileId
 	}

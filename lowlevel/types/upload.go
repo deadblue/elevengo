@@ -11,6 +11,24 @@ type UploadInfoResult struct {
 	UserKey string
 }
 
+type UploadInitParams struct {
+	// Timestamp in seconds
+	Timestamp int64
+	// File metadata
+	FileId   string
+	FileName string
+	FileSize int64
+	// Target directory
+	Target string
+	// Upload signature
+	Signature string
+	// Sign parameters for 2nd-pass
+	SignKey   string
+	SignValue string
+	// Update token
+	Token string
+}
+
 type UploadInitResult struct {
 	Exists bool
 	// Upload parameters
