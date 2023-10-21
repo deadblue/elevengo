@@ -1,6 +1,6 @@
 package elevengo
 
-import "github.com/deadblue/elevengo/internal/api/errors"
+import "github.com/deadblue/elevengo/lowlevel/errors"
 
 // Iterator iterate items.
 type Iterator[T any] interface {

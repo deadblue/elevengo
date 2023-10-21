@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/deadblue/elevengo/internal/api"
 	"github.com/deadblue/elevengo/internal/util"
+	"github.com/deadblue/elevengo/lowlevel/api"
 	"github.com/deadblue/elevengo/option"
 )
 
@@ -66,7 +66,7 @@ func (a *Agent) QrcodeStart(session *QrcodeSession, options ...option.QrcodeOpti
 		session.appType = string(option.QrcodeLoginWeb)
 	}
 	spec := (&api.QrcodeTokenSpec{}).Init(session.appType)
-	if err = a.pc.ExecuteApi(spec); err != nil {
+	if err = a.llc.CallApi(spec); err != nil {
 		return
 	}
 	session.uid = spec.Result.Uid
@@ -84,7 +84,7 @@ func (a *Agent) QrcodeStart(session *QrcodeSession, options ...option.QrcodeOpti
 
 func (a *Agent) qrcodeSignIn(session *QrcodeSession) (err error) {
 	spec := (&api.QrcodeLoginSpec{}).Init(session.appType, session.uid)
-	if err = a.pc.ExecuteApi(spec); err != nil {
+	if err = a.llc.CallApi(spec); err != nil {
 		return
 	}
 	return a.afterSignIn(spec.Result.Cookie.UID)
@@ -95,7 +95,7 @@ func (a *Agent) QrcodePoll(session *QrcodeSession) (done bool, err error) {
 	spec := (&api.QrcodeStatusSpec{}).Init(
 		session.uid, session.time, session.sign,
 	)
-	if err = a.pc.ExecuteApi(spec); err != nil {
+	if err = a.llc.CallApi(spec); err != nil {
 		return
 	}
 	switch spec.Result.Status {

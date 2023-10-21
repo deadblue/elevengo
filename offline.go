@@ -1,8 +1,9 @@
 package elevengo
 
 import (
-	"github.com/deadblue/elevengo/internal/api"
-	"github.com/deadblue/elevengo/internal/api/errors"
+	"github.com/deadblue/elevengo/lowlevel/api"
+	"github.com/deadblue/elevengo/lowlevel/errors"
+	"github.com/deadblue/elevengo/lowlevel/types"
 	"github.com/deadblue/elevengo/option"
 )
 
@@ -54,7 +55,7 @@ type offlineIterator struct {
 	ps int
 
 	// Cached tasks
-	tasks []*api.OfflineTask
+	tasks []*types.OfflineTask
 	// Task index
 	index int
 	// Task size
@@ -114,7 +115,7 @@ func (a *Agent) OfflineIterate() (it Iterator[OfflineTask], err error) {
 
 func (a *Agent) offlineIterateInternal(oi *offlineIterator) (err error) {
 	spec := (&api.OfflineListSpec{}).Init(oi.pi)
-	if err = a.pc.ExecuteApi(spec); err != nil {
+	if err = a.llc.CallApi(spec); err != nil {
 		return
 	}
 	result := spec.Result
@@ -125,7 +126,7 @@ func (a *Agent) offlineIterateInternal(oi *offlineIterator) (err error) {
 	if oi.size == 0 {
 		err = errors.ErrReachEnd
 	} else {
-		oi.tasks = make([]*api.OfflineTask, 0, oi.size)
+		oi.tasks = make([]*types.OfflineTask, 0, oi.size)
 		oi.tasks = append(oi.tasks, result.Tasks...)
 	}
 	oi.count = result.TaskCount
@@ -147,7 +148,7 @@ func (a *Agent) OfflineDelete(hashes []string, opts ...option.OfflineDeleteOptio
 	}
 	// Call API
 	spec := (&api.OfflineDeleteSpec{}).Init(hashes, deleteFiles)
-	return a.pc.ExecuteApi(spec)
+	return a.llc.CallApi(spec)
 }
 
 // OfflineClear clears tasks which is in specific status.
@@ -156,7 +157,7 @@ func (a *Agent) OfflineClear(flag OfflineClearFlag) (err error) {
 		flag = OfflineClearDone
 	}
 	spec := (&api.OfflineClearSpec{}).Init(int(flag))
-	return a.pc.ExecuteApi(spec)
+	return a.llc.CallApi(spec)
 }
 
 // OfflineAddUrl adds offline tasks by download URLs.
@@ -191,7 +192,7 @@ func (a *Agent) OfflineAddUrl(urls []string, opts ...option.OfflineAddOption) (h
 	spec := (&api.OfflineAddUrlsSpec{}).Init(
 		a.uh.UserId, a.uh.AppVer, urls, saveDirId,
 	)
-	if err = a.pc.ExecuteApi(spec); err == nil {
+	if err = a.llc.CallApi(spec); err == nil {
 		for i, task := range spec.Result {
 			if task != nil {
 				hashes[i] = task.InfoHash

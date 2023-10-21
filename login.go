@@ -3,8 +3,9 @@ package elevengo
 import (
 	"strings"
 
-	"github.com/deadblue/elevengo/internal/api"
-	"github.com/deadblue/elevengo/internal/api/errors"
+	"github.com/deadblue/elevengo/internal/protocol"
+	"github.com/deadblue/elevengo/lowlevel/api"
+	"github.com/deadblue/elevengo/lowlevel/errors"
 )
 
 // Credential contains required information which 115 server uses to
@@ -30,26 +31,26 @@ type UserInfo struct {
 // CredentialImport imports credentials into agent.
 func (a *Agent) CredentialImport(cr *Credential) (err error) {
 	cookies := map[string]string{
-		api.CookieNameUID:  cr.UID,
-		api.CookieNameCID:  cr.CID,
-		api.CookieNameSEID: cr.SEID,
+		protocol.CookieNameUID:  cr.UID,
+		protocol.CookieNameCID:  cr.CID,
+		protocol.CookieNameSEID: cr.SEID,
 	}
-	a.pc.ImportCookies(cookies, api.CookieDomains...)
+	a.llc.ImportCookies(cookies, protocol.CookieDomains...)
 	return a.afterSignIn(cr.UID)
 }
 
 // CredentialExport exports current credentials for future-use.
 func (a *Agent) CredentialExport(cr *Credential) {
-	cookies := a.pc.ExportCookies(api.CookieUrl)
-	cr.UID = cookies[api.CookieNameUID]
-	cr.CID = cookies[api.CookieNameCID]
-	cr.SEID = cookies[api.CookieNameSEID]
+	cookies := a.llc.ExportCookies(protocol.CookieUrl)
+	cr.UID = cookies[protocol.CookieNameUID]
+	cr.CID = cookies[protocol.CookieNameCID]
+	cr.SEID = cookies[protocol.CookieNameSEID]
 }
 
 func (a *Agent) afterSignIn(uid string) (err error) {
 	// Call UploadInfo API to get userId and userKey
 	spec := (&api.UploadInfoSpec{}).Init()
-	if err = a.pc.ExecuteApi(spec); err != nil {
+	if err = a.llc.CallApi(spec); err != nil {
 		return
 	} else {
 		a.uh.SetUserParams(spec.Result.UserId, spec.Result.UserKey)
@@ -66,7 +67,7 @@ func (a *Agent) afterSignIn(uid string) (err error) {
 // UserGet get information of current signed-in user.
 func (a *Agent) UserGet(info *UserInfo) (err error) {
 	spec := (&api.UserInfoSpec{}).Init()
-	if err = a.pc.ExecuteApi(spec); err == nil {
+	if err = a.llc.CallApi(spec); err == nil {
 		info.Id = spec.Result.UserId
 		info.Name = spec.Result.UserName
 		info.IsVip = spec.Result.IsVip != 0

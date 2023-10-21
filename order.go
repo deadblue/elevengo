@@ -1,6 +1,6 @@
 package elevengo
 
-import "github.com/deadblue/elevengo/internal/api"
+import "github.com/deadblue/elevengo/lowlevel/api"
 
 type FileOrder int
 

@@ -1,10 +1,11 @@
 package elevengo
 
 import (
-	"github.com/deadblue/elevengo/internal/api"
-	"github.com/deadblue/elevengo/internal/api/errors"
-	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/util"
+	"github.com/deadblue/elevengo/lowlevel/api"
+	"github.com/deadblue/elevengo/lowlevel/client"
+	"github.com/deadblue/elevengo/lowlevel/errors"
+	"github.com/deadblue/elevengo/lowlevel/types"
 )
 
 // VideoDefinition values from 115.
@@ -46,8 +47,8 @@ type VideoTicket struct {
 // VideoCreateTicket creates a PlayTicket to play the cloud video.
 func (a *Agent) VideoCreateTicket(pickcode string, ticket *VideoTicket) (err error) {
 	// VideoPlay API for web and PC are different !
-	var spec protocol.ApiSpec
-	var result *api.VideoPlayResult
+	var spec client.ApiSpec
+	var result *types.VideoPlayResult
 	if a.isWeb {
 		webSpec := (&api.VideoPlayWebSpec{}).Init(pickcode)
 		spec, result = webSpec, &webSpec.Result
@@ -57,7 +58,7 @@ func (a *Agent) VideoCreateTicket(pickcode string, ticket *VideoTicket) (err err
 		)
 		spec, result = pcSpec, &pcSpec.Result
 	}
-	if err = a.pc.ExecuteApi(spec); err != nil {
+	if err = a.llc.CallApi(spec); err != nil {
 		return
 	}
 	if !result.IsReady {
@@ -73,8 +74,8 @@ func (a *Agent) VideoCreateTicket(pickcode string, ticket *VideoTicket) (err err
 	// headers, it is highly recommended to use PC credential.
 	if a.isWeb {
 		ticket.Headers = map[string]string{
-			"User-Agent": a.pc.GetUserAgent(),
-			"Cookie":     util.MarshalCookies(a.pc.ExportCookies(ticket.Url)),
+			"User-Agent": a.llc.GetUserAgent(),
+			"Cookie":     util.MarshalCookies(a.llc.ExportCookies(ticket.Url)),
 		}
 	}
 	return
@@ -83,7 +84,7 @@ func (a *Agent) VideoCreateTicket(pickcode string, ticket *VideoTicket) (err err
 // ImageGetUrl gets an accessible URL of an image file by its pickcode.
 func (a *Agent) ImageGetUrl(pickcode string) (imageUrl string, err error) {
 	spec := (&api.ImageGetSpec{}).Init(pickcode)
-	if err = a.pc.ExecuteApi(spec); err != nil {
+	if err = a.llc.CallApi(spec); err != nil {
 		return
 	}
 	// The origin URL can be access without cookie.

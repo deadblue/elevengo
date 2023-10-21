@@ -3,8 +3,11 @@ package elevengo
 import (
 	"time"
 
-	"github.com/deadblue/elevengo/internal/api"
-	"github.com/deadblue/elevengo/internal/api/errors"
+	"github.com/deadblue/elevengo/internal/protocol"
+	"github.com/deadblue/elevengo/internal/util"
+	"github.com/deadblue/elevengo/lowlevel/api"
+	"github.com/deadblue/elevengo/lowlevel/errors"
+	"github.com/deadblue/elevengo/lowlevel/types"
 	"github.com/deadblue/elevengo/option"
 )
 
@@ -43,7 +46,7 @@ type File struct {
 	VideoDefinition VideoDefinition
 }
 
-func (f *File) from(info *api.FileInfo) *File {
+func (f *File) from(info *types.FileInfo) *File {
 	if info.FileId != "" {
 		f.FileId = info.FileId
 		f.ParentId = info.CategoryId
@@ -67,9 +70,9 @@ func (f *File) from(info *api.FileInfo) *File {
 	}
 
 	if info.UpdatedTime != "" {
-		f.ModifiedTime = api.ParseFileTime(info.UpdatedTime)
+		f.ModifiedTime = util.ParseFileTime(info.UpdatedTime)
 	} else {
-		f.ModifiedTime = api.ParseFileTime(info.ModifiedTime)
+		f.ModifiedTime = util.ParseFileTime(info.ModifiedTime)
 	}
 
 	f.MediaDuration = info.MediaDuration
@@ -107,7 +110,7 @@ type fileIterator struct {
 	// Total count
 	count int
 	// Cached files
-	files []*api.FileInfo
+	files []*types.FileInfo
 	// Cache index
 	index int
 	// Cache size
@@ -188,7 +191,7 @@ func (a *Agent) FileWithStar(opts ...option.FileListOption) (it Iterator[File], 
 }
 
 func (a *Agent) fileIterateInternal(fi *fileIterator) (err error) {
-	spec := (&api.FileListSpec{}).Init(fi.dirId, fi.offset)
+	spec := (&api.FileListSpec{}).Init(fi.dirId, fi.offset, protocol.FileListLimit)
 	spec.SetFileType(fi.fileType)
 	switch fi.mode {
 	case 1:
@@ -197,7 +200,7 @@ func (a *Agent) fileIterateInternal(fi *fileIterator) (err error) {
 		spec.SetStared()
 	}
 	for retry := true; retry; {
-		if err = a.pc.ExecuteApi(spec); err != nil {
+		if err = a.llc.CallApi(spec); err != nil {
 			if ferr, ok := err.(*errors.ErrFileOrderNotSupported); ok {
 				spec.SetOrder(ferr.Order, ferr.Asc)
 			} else {
@@ -210,7 +213,7 @@ func (a *Agent) fileIterateInternal(fi *fileIterator) (err error) {
 	fi.order, fi.asc = spec.Result.Order, spec.Result.Asc
 	if fi.count = spec.Result.Count; fi.count > 0 {
 		fi.index, fi.size = 0, len(spec.Result.Files)
-		fi.files = make([]*api.FileInfo, fi.size)
+		fi.files = make([]*types.FileInfo, fi.size)
 		copy(fi.files, spec.Result.Files)
 	}
 	return
@@ -266,7 +269,7 @@ func (a *Agent) FileWithLabel(labelId string, opts ...option.FileListOption) (it
 }
 
 func (a *Agent) fileSearchInternal(fi *fileIterator) (err error) {
-	spec := (&api.FileSearchSpec{}).Init(fi.offset)
+	spec := (&api.FileSearchSpec{}).Init(fi.offset, protocol.FileListLimit)
 	spec.SetFileType(fi.fileType)
 	switch fi.mode {
 	case 3:
@@ -274,13 +277,13 @@ func (a *Agent) fileSearchInternal(fi *fileIterator) (err error) {
 	case 4:
 		spec.ByLabelId(fi.labelId)
 	}
-	if err = a.pc.ExecuteApi(spec); err != nil {
+	if err = a.llc.CallApi(spec); err != nil {
 		return
 	}
 	fi.order, fi.asc = spec.Result.Order, spec.Result.Asc
 	if fi.count = spec.Result.Count; fi.count > 0 {
 		fi.index, fi.size = 0, len(spec.Result.Files)
-		fi.files = make([]*api.FileInfo, fi.size)
+		fi.files = make([]*types.FileInfo, fi.size)
 		copy(fi.files, spec.Result.Files)
 	}
 	return
@@ -289,7 +292,7 @@ func (a *Agent) fileSearchInternal(fi *fileIterator) (err error) {
 // FileGet gets information of a file/directory by its ID.
 func (a *Agent) FileGet(fileId string, file *File) (err error) {
 	spec := (&api.FileGetSpec{}).Init(fileId)
-	if err = a.pc.ExecuteApi(spec); err == nil {
+	if err = a.llc.CallApi(spec); err == nil {
 		file.from(spec.Result[0])
 	}
 	return
@@ -301,7 +304,7 @@ func (a *Agent) FileMove(dirId string, fileIds []string) (err error) {
 		return
 	}
 	spec := (&api.FileMoveSpec{}).Init(dirId, fileIds)
-	return a.pc.ExecuteApi(spec)
+	return a.llc.CallApi(spec)
 }
 
 // FileCopy copies files into target directory whose id is dirId.
@@ -310,7 +313,7 @@ func (a *Agent) FileCopy(dirId string, fileIds []string) (err error) {
 		return
 	}
 	spec := (&api.FileCopySpec{}).Init(dirId, fileIds)
-	return a.pc.ExecuteApi(spec)
+	return a.llc.CallApi(spec)
 }
 
 // FileRename renames file to new name.
@@ -320,7 +323,7 @@ func (a *Agent) FileRename(fileId, newName string) (err error) {
 	}
 	spec := (&api.FileRenameSpec{}).Init()
 	spec.Add(fileId, newName)
-	return a.pc.ExecuteApi(spec)
+	return a.llc.CallApi(spec)
 }
 
 // FileBatchRename renames multiple files.
@@ -332,7 +335,7 @@ func (a *Agent) FileBatchRename(nameMap map[string]string) (err error) {
 		}
 		spec.Add(fileId, newName)
 	}
-	return a.pc.ExecuteApi(spec)
+	return a.llc.CallApi(spec)
 }
 
 // FileDelete deletes files.
@@ -341,5 +344,5 @@ func (a *Agent) FileDelete(fileIds []string) (err error) {
 		return
 	}
 	spec := (&api.FileDeleteSpec{}).Init(fileIds)
-	return a.pc.ExecuteApi(spec)
+	return a.llc.CallApi(spec)
 }

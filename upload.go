@@ -2,19 +2,19 @@ package elevengo
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/deadblue/elevengo/internal/api"
-	"github.com/deadblue/elevengo/internal/api/base"
-	"github.com/deadblue/elevengo/internal/api/errors"
 	"github.com/deadblue/elevengo/internal/crypto/hash"
-	"github.com/deadblue/elevengo/internal/multipart"
 	"github.com/deadblue/elevengo/internal/oss"
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/util"
+	"github.com/deadblue/elevengo/lowlevel/api"
+	"github.com/deadblue/elevengo/lowlevel/errors"
+	"github.com/deadblue/elevengo/lowlevel/types"
+	"github.com/deadblue/elevengo/lowlevel/upload"
 )
 
 // UploadTicket contains all required information to upload a file.
@@ -65,24 +65,23 @@ func (a *Agent) uploadInit(
 		return
 	}
 	// Prepare init parameters
-	target := fmt.Sprintf("U_1_%s", dirId)
-	params := &api.UploadInitParams{
-		FileId:    dr.SHA1,
-		FileName:  name,
-		FileSize:  dr.Size,
-		Target:    target,
-		Signature: a.uh.CalcSign(dr.SHA1, target),
-	}
+	params := a.uh.Sign(&types.UploadInitParams{
+		FileId:   dr.SHA1,
+		FileName: name,
+		FileSize: dr.Size,
+		Target:   upload.GetTarget(dirId),
+	})
 	// Call API
 	for {
-		spec := (&api.UploadInitSpec{}).Init(params, &a.uh)
-		if err = a.pc.ExecuteApi(spec); err != nil {
+		spec := (&api.UploadInitSpec{}).Init(params, a.uh.UserId, a.uh.AppVer)
+		if err = a.llc.CallApi(spec); err != nil {
 			break
 		}
 		if spec.Result.SignKey != "" {
 			// Upload params
 			params.SignKey = spec.Result.SignKey
 			params.SignValue, _ = hash.DigestRange(rs, spec.Result.SignCheck)
+			a.uh.Sign(params)
 		} else {
 			if spec.Result.Exists {
 				exists = true
@@ -118,7 +117,7 @@ func (a *Agent) UploadCreateTicket(
 	}
 	// Get OSS token
 	spec := (&api.UploadTokenSpec{}).Init()
-	if err = a.pc.ExecuteApi(spec); err != nil {
+	if err = a.llc.CallApi(spec); err != nil {
 		return
 	}
 	// Fill UploadTicket
@@ -263,7 +262,7 @@ func (a *Agent) UploadCreateOssTicket(
 	}
 	// Get OSS token
 	spec := (&api.UploadTokenSpec{}).Init()
-	if err = a.pc.ExecuteApi(spec); err != nil {
+	if err = a.llc.CallApi(spec); err != nil {
 		return
 	}
 	// Fill ticket
@@ -281,14 +280,14 @@ func (a *Agent) UploadCreateOssTicket(
 
 // UploadParseResult parses the raw upload response, and fills it to file.
 func (a *Agent) UploadParseResult(r io.Reader, file *File) (err error) {
-	jd, resp := json.NewDecoder(r), &base.StandardResp{}
+	jd, resp := json.NewDecoder(r), &protocol.StandardResp{}
 	if err = jd.Decode(resp); err == nil {
 		err = resp.Err()
 	}
 	if err != nil || file == nil {
 		return
 	}
-	result := &api.UploadSampleResult{}
+	result := &types.UploadSampleResult{}
 	if err = resp.Extract(result); err != nil {
 		return
 	}
@@ -314,28 +313,17 @@ func (a *Agent) UploadSample(dirId, name string, size int64, r io.Reader) (fileI
 	} else if size > api.UploadMaxSizeSample {
 		return "", errors.ErrUploadTooLarge
 	}
+	target := upload.GetTarget(dirId)
 	// Call API.
-	target := fmt.Sprintf("U_1_%s", dirId)
 	initSpec := (&api.UploadSampleInitSpec{}).Init(
 		a.uh.UserId, name, size, target,
 	)
-	if err = a.pc.ExecuteApi(initSpec); err != nil {
+	if err = a.llc.CallApi(initSpec); err != nil {
 		return
 	}
 	// Upload file
-	mf := multipart.Builder().
-		AddValue("success_action_status", "200").
-		AddValue("name", name).
-		AddValue("target", target).
-		AddValue("key", initSpec.Result.Object).
-		AddValue("policy", initSpec.Result.Policy).
-		AddValue("OSSAccessKeyId", initSpec.Result.AccessKeyId).
-		AddValue("callback", initSpec.Result.Callback).
-		AddValue("signature", initSpec.Result.Signature).
-		AddFile("file", name, r).
-		Build()
-	upSpec := (&api.UploadSampleSpec{}).Init(initSpec.Result.Host, mf)
-	if err = a.pc.ExecuteApi(upSpec); err == nil {
+	upSpec := (&api.UploadSampleSpec{}).Init(name, target, r, &initSpec.Result)
+	if err = a.llc.CallApi(upSpec); err == nil {
 		fileId = upSpec.Result.FileId
 	}
 	return

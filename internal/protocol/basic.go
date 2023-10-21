@@ -1,69 +1,58 @@
 package protocol
 
 import (
-	"io"
-	"net/http"
+	"encoding/json"
 
 	"github.com/deadblue/elevengo/internal/util"
+	"github.com/deadblue/elevengo/lowlevel/errors"
 )
 
-const (
-	headerContentType = "Content-Type"
-)
-
-type Payload interface {
-	io.Reader
-	ContentType() string
-	ContentLength() int64
+// _BasicResp is the basic response for most JSON/JSONP API.
+type BasicResp struct {
+	// Response state
+	State bool `json:"state"`
+	// Possible error code fields
+	ErrorCode  util.IntNumber `json:"errno,omitempty"`
+	ErrorCode2 int            `json:"errNo,omitempty"`
+	ErrorCode3 int            `json:"errcode,omitempty"`
+	ErrorCode4 int            `json:"errCode,omitempty"`
+	ErrorCode5 int            `json:"code,omitempty"`
+	// Possible error message fields
+	ErrorMessage  string `json:"error,omitempty"`
+	ErrorMessage2 string `json:"message,omitempty"`
+	ErrorMessage3 string `json:"error_msg,omitempty"`
 }
 
-func (c *Client) Get(url string, headers map[string]string) (body io.ReadCloser, err error) {
-	var req *http.Request = nil
-	if req, err = http.NewRequest(http.MethodGet, url, nil); err != nil {
-		return
+func (r *BasicResp) Err() error {
+	if r.State {
+		return nil
 	}
-	if len(headers) > 0 {
-		for name, value := range headers {
-			req.Header.Add(name, value)
+	errCode := findNonZero(
+		r.ErrorCode.Int(),
+		r.ErrorCode2,
+		r.ErrorCode3,
+		r.ErrorCode4,
+		r.ErrorCode5,
+	)
+	return errors.Get(errCode)
+}
+
+func findNonZero(code ...int) int {
+	for _, c := range code {
+		if c != 0 {
+			return c
 		}
 	}
-	var resp *http.Response = nil
-	if resp, err = c.do(req); err == nil {
-		body = resp.Body
-	}
-	return
+	return 0
 }
 
-func (c *Client) Post(url string, payload Payload) (body io.ReadCloser, err error) {
-	req, err := http.NewRequest(http.MethodPost, url, payload)
-	if err != nil {
-		return
-	}
-	req.Header.Set(headerContentType, payload.ContentType())
-	if size := payload.ContentLength(); size > 0 {
-		req.ContentLength = size
-	}
-	var resp *http.Response
-	if resp, err = c.do(req); err == nil {
-		body = resp.Body
-	}
-	return
+// StandardResp is the response for all JSON/JSONP APIs with "data" field.
+type StandardResp struct {
+	BasicResp
+
+	Data json.RawMessage `json:"data"`
 }
 
-func (c *Client) GetContent(url string) (data []byte, err error) {
-	body, err := c.Get(url, nil)
-	if err != nil {
-		return
-	}
-	defer util.QuietlyClose(body)
-	return io.ReadAll(body)
-}
-
-func (c *Client) Touch(url string) error {
-	if body, err := c.Get(url, nil); err == nil {
-		util.ConsumeReader(body)
-		return nil
-	} else {
-		return err
-	}
+func (r *StandardResp) Extract(v any) error {
+	return json.Unmarshal(r.Data, v)
 }

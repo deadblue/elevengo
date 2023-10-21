@@ -1,8 +1,10 @@
 package elevengo
 
 import (
-	"github.com/deadblue/elevengo/internal/api"
-	"github.com/deadblue/elevengo/internal/api/errors"
+	"github.com/deadblue/elevengo/internal/protocol"
+	"github.com/deadblue/elevengo/lowlevel/api"
+	"github.com/deadblue/elevengo/lowlevel/errors"
+	"github.com/deadblue/elevengo/lowlevel/types"
 )
 
 type LabelColor int
@@ -56,7 +58,7 @@ type labelIterator struct {
 	count int
 
 	// Cached labels
-	labels []*api.LabelInfo
+	labels []*types.LabelInfo
 	// Cache index
 	index int
 	// Cache size
@@ -108,21 +110,21 @@ func (a *Agent) LabelIterate() (it Iterator[Label], err error) {
 }
 
 func (a *Agent) labelIterateInternal(i *labelIterator) (err error) {
-	spec := (&api.LabelListSpec{}).Init(i.offset)
-	if err = a.pc.ExecuteApi(spec); err != nil {
+	spec := (&api.LabelListSpec{}).Init(i.offset, protocol.LabelListLimit)
+	if err = a.llc.CallApi(spec); err != nil {
 		return
 	}
 	i.count = spec.Result.Total
 	i.index, i.size = 0, len(spec.Result.List)
-	i.labels = make([]*api.LabelInfo, i.size)
+	i.labels = make([]*types.LabelInfo, i.size)
 	copy(i.labels, spec.Result.List)
 	return
 }
 
 // LabelFind finds label whose name is name, and returns it.
 func (a *Agent) LabelFind(name string, label *Label) (err error) {
-	spec := (&api.LabelSearchSpec{}).Init(name, 0)
-	if err = a.pc.ExecuteApi(spec); err != nil {
+	spec := (&api.LabelSearchSpec{}).Init(name, 0, protocol.LabelListLimit)
+	if err = a.llc.CallApi(spec); err != nil {
 		return
 	}
 
@@ -146,7 +148,7 @@ func (a *Agent) LabelCreate(name string, color LabelColor) (labelId string, err 
 	spec := (&api.LabelCreateSpec{}).Init(
 		name, colorName,
 	)
-	if err = a.pc.ExecuteApi(spec); err != nil {
+	if err = a.llc.CallApi(spec); err != nil {
 		return
 	}
 	if len(spec.Result) > 0 {
@@ -167,7 +169,7 @@ func (a *Agent) LabelUpdate(label *Label) (err error) {
 	spec := (&api.LabelEditSpec{}).Init(
 		label.Id, label.Name, colorName,
 	)
-	return a.pc.ExecuteApi(spec)
+	return a.llc.CallApi(spec)
 }
 
 // LabelDelete deletes a label whose ID is labelId.
@@ -176,19 +178,19 @@ func (a *Agent) LabelDelete(labelId string) (err error) {
 		return
 	}
 	spec := (&api.LabelDeleteSpec{}).Init(labelId)
-	return a.pc.ExecuteApi(spec)
+	return a.llc.CallApi(spec)
 }
 
 func (a *Agent) LabelSetOrder(labelId string, order FileOrder, asc bool) (err error) {
 	spec := (&api.LabelSetOrderSpec{}).Init(
 		labelId, getOrderName(order), asc,
 	)
-	return a.pc.ExecuteApi(spec)
+	return a.llc.CallApi(spec)
 }
 
 // FileSetLabels sets labels for a file, you can also remove all labels from it
 // by not passing any labelId.
 func (a *Agent) FileSetLabels(fileId string, labelIds ...string) (err error) {
 	spec := (&api.FileLabelSpec{}).Init(fileId, labelIds)
-	return a.pc.ExecuteApi(spec)
+	return a.llc.CallApi(spec)
 }

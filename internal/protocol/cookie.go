@@ -1,48 +1,16 @@
 package protocol
 
-import (
-	"net/http"
-	neturl "net/url"
+const (
+	CookieUrl = "https://115.com"
+
+	CookieNameUID  = "UID"
+	CookieNameCID  = "CID"
+	CookieNameSEID = "SEID"
 )
 
-func (c *Client) ImportCookies(cookies map[string]string, domains ...string) {
-	for _, domain := range domains {
-		c.importCookies(cookies, domain, "/")
+var (
+	CookieDomains = []string{
+		".115.com",
+		".anxia.com",
 	}
-}
-
-func (c *Client) importCookies(cookies map[string]string, domain string, path string) {
-	// Make a dummy URL for saving cookie
-	url := &neturl.URL{
-		Scheme: "https",
-		Path:   "/",
-	}
-	if domain[0] == '.' {
-		url.Host = "www" + domain
-	} else {
-		url.Host = domain
-	}
-	// Prepare cookies
-	cks := make([]*http.Cookie, 0, len(cookies))
-	for name, value := range cookies {
-		cookie := &http.Cookie{
-			Name:     name,
-			Value:    value,
-			Domain:   domain,
-			Path:     path,
-			HttpOnly: true,
-		}
-		cks = append(cks, cookie)
-	}
-	// Save cookies
-	c.cj.SetCookies(url, cks)
-}
-
-func (c *Client) ExportCookies(url string) map[string]string {
-	u, _ := neturl.Parse(url)
-	cookies := make(map[string]string)
-	for _, ck := range c.cj.Cookies(u) {
-		cookies[ck.Name] = ck.Value
-	}
-	return cookies
-}
+)
