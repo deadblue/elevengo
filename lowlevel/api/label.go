@@ -3,8 +3,6 @@ package api
 import "github.com/deadblue/elevengo/lowlevel/types"
 
 const (
-	LabelListLimit = 30
-
 	LabelColorBlank  = "#000000"
 	LabelColorRed    = "#FF4B30"
 	LabelColorOrange = "#F78C26"
@@ -19,7 +17,7 @@ type LabelListSpec struct {
 	_StandardApiSpec[types.LabelListResult]
 }
 
-func (s *LabelListSpec) Init(offset int, limit int) *LabelListSpec {
+func (s *LabelListSpec) Init(offset, limit int) *LabelListSpec {
 	s._StandardApiSpec.Init("https://webapi.115.com/label/list")
 	s.query.SetInt("offset", offset)
 	s.query.SetInt("limit", limit)
@@ -32,11 +30,11 @@ type LabelSearchSpec struct {
 	_StandardApiSpec[types.LabelListResult]
 }
 
-func (s *LabelSearchSpec) Init(keyword string, offset int) *LabelSearchSpec {
+func (s *LabelSearchSpec) Init(keyword string, offset, limit int) *LabelSearchSpec {
 	s._StandardApiSpec.Init("https://webapi.115.com/label/list")
 	s.query.Set("keyword", keyword)
 	s.query.SetInt("offset", offset)
-	s.query.SetInt("limit", LabelListLimit)
+	s.query.SetInt("limit", limit)
 	return s
 }
 

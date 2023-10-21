@@ -23,11 +23,11 @@ type ShareListSpec struct {
 	_JsonApiSpec[types.ShareListResult, protocol.ShareListResp]
 }
 
-func (s *ShareListSpec) Init(offset int, userId string) *ShareListSpec {
+func (s *ShareListSpec) Init(userId string, offset, limit int) *ShareListSpec {
 	s._JsonApiSpec.Init("https://webapi.115.com/share/slist")
 	s.query.Set("user_id", userId).
 		SetInt("offset", offset).
-		SetInt("limit", FileListLimit)
+		SetInt("limit", limit)
 	return s
 }
 

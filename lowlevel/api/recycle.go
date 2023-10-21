@@ -9,13 +9,13 @@ type RecycleBinListSpec struct {
 	_JsonApiSpec[types.RecycleBinListResult, protocol.RecycleBinListResp]
 }
 
-func (s *RecycleBinListSpec) Init(offset int) *RecycleBinListSpec {
+func (s *RecycleBinListSpec) Init(offset, limit int) *RecycleBinListSpec {
 	s._JsonApiSpec.Init("https://webapi.115.com/rb")
 	s.query.Set("aid", "7").
 		Set("cid", "0").
 		Set("format", "json").
 		SetInt("offset", offset).
-		SetInt("limit", FileListLimit)
+		SetInt("limit", limit)
 	return s
 }
 

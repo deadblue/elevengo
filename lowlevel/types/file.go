@@ -15,7 +15,7 @@ type FileInfo struct {
 	PickCode string         `json:"pc"`
 
 	IsStar util.Boolean `json:"m"`
-	Labels []LabelInfo  `json:"fl"`
+	Labels []*LabelInfo `json:"fl"`
 
 	CreatedTime  string `json:"tp"`
 	UpdatedTime  string `json:"te"`

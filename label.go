@@ -1,6 +1,7 @@
 package elevengo
 
 import (
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/lowlevel/api"
 	"github.com/deadblue/elevengo/lowlevel/errors"
 	"github.com/deadblue/elevengo/lowlevel/types"
@@ -109,7 +110,7 @@ func (a *Agent) LabelIterate() (it Iterator[Label], err error) {
 }
 
 func (a *Agent) labelIterateInternal(i *labelIterator) (err error) {
-	spec := (&api.LabelListSpec{}).Init(i.offset, api.LabelListLimit)
+	spec := (&api.LabelListSpec{}).Init(i.offset, protocol.LabelListLimit)
 	if err = a.llc.CallApi(spec); err != nil {
 		return
 	}
@@ -122,7 +123,7 @@ func (a *Agent) labelIterateInternal(i *labelIterator) (err error) {
 
 // LabelFind finds label whose name is name, and returns it.
 func (a *Agent) LabelFind(name string, label *Label) (err error) {
-	spec := (&api.LabelSearchSpec{}).Init(name, 0)
+	spec := (&api.LabelSearchSpec{}).Init(name, 0, protocol.LabelListLimit)
 	if err = a.llc.CallApi(spec); err != nil {
 		return
 	}

@@ -16,8 +16,6 @@ const (
 	FileOrderByUpdateTime = "user_utime"
 	FileOrderByOpenTime   = "user_otime"
 	FileOrderDefault      = FileOrderByCreateTime
-
-	FileListLimit = 32
 )
 
 type FileListSpec struct {
@@ -27,7 +25,7 @@ type FileListSpec struct {
 	fo string
 }
 
-func (s *FileListSpec) Init(dirId string, offset int, limit int) *FileListSpec {
+func (s *FileListSpec) Init(dirId string, offset, limit int) *FileListSpec {
 	s._JsonApiSpec.Init("")
 	s.query.Set("format", "json").
 		Set("aid", "1").
@@ -72,12 +70,12 @@ type FileSearchSpec struct {
 	_JsonApiSpec[types.FileListResult, protocol.FileSearchResp]
 }
 
-func (s *FileSearchSpec) Init(offset int) *FileSearchSpec {
+func (s *FileSearchSpec) Init(offset, limit int) *FileSearchSpec {
 	s._JsonApiSpec.Init("https://webapi.115.com/files/search")
 	s.query.Set("aid", "1").
 		Set("show_dir", "1").
 		SetInt("offset", offset).
-		SetInt("limit", FileListLimit).
+		SetInt("limit", limit).
 		Set("format", "json")
 	return s
 }

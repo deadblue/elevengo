@@ -8,6 +8,10 @@ import (
 	"github.com/deadblue/elevengo/lowlevel/types"
 )
 
+const (
+	FileListLimit = 32
+)
+
 //lint:ignore U1000 This type is used in generic.
 type FileListResp struct {
 	StandardResp

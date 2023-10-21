@@ -3,6 +3,7 @@ package elevengo
 import (
 	"time"
 
+	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/api"
 	"github.com/deadblue/elevengo/lowlevel/errors"
@@ -190,7 +191,7 @@ func (a *Agent) FileWithStar(opts ...option.FileListOption) (it Iterator[File], 
 }
 
 func (a *Agent) fileIterateInternal(fi *fileIterator) (err error) {
-	spec := (&api.FileListSpec{}).Init(fi.dirId, fi.offset, api.FileListLimit)
+	spec := (&api.FileListSpec{}).Init(fi.dirId, fi.offset, protocol.FileListLimit)
 	spec.SetFileType(fi.fileType)
 	switch fi.mode {
 	case 1:
@@ -268,7 +269,7 @@ func (a *Agent) FileWithLabel(labelId string, opts ...option.FileListOption) (it
 }
 
 func (a *Agent) fileSearchInternal(fi *fileIterator) (err error) {
-	spec := (&api.FileSearchSpec{}).Init(fi.offset)
+	spec := (&api.FileSearchSpec{}).Init(fi.offset, protocol.FileListLimit)
 	spec.SetFileType(fi.fileType)
 	switch fi.mode {
 	case 3:
