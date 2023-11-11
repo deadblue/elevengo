@@ -80,7 +80,7 @@ func main()  {
     log.Fatalf("Call API error: %s", err)
   }
   // Parse API result
-  for index, file := spec.Result.Files {
+  for index, file := range spec.Result.Files {
     log.Printf("File: %d => %v", index, file)
   }
   
