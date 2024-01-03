@@ -2,10 +2,19 @@ package impl
 
 import (
 	"io"
+	"net"
 	"net/http"
 
 	"github.com/deadblue/elevengo/lowlevel/client"
 )
+
+func isTimeoutError(err error) bool {
+	if err == nil {
+		return false
+	}
+	ne, ok := err.(net.Error)
+	return ok && ne.Timeout()
+}
 
 // |send| sends an HTTP request, returns HTTP response or an error.
 func (c *ClientImpl) send(req *http.Request) (resp *http.Response, err error) {
@@ -22,11 +31,15 @@ func (c *ClientImpl) send(req *http.Request) (resp *http.Response, err error) {
 			req.AddCookie(cookie)
 		}
 	}
-	if resp, err = c.hc.Do(req); err == nil {
-		if c.mc {
-			// Save cookie
-			c.cj.SetCookies(req.URL, resp.Cookies())
+	// Send request with retry
+	for {
+		if resp, err = c.hc.Do(req); !isTimeoutError(err) {
+			break
 		}
+	}
+	if err == nil && c.mc {
+		// Save cookie
+		c.cj.SetCookies(req.URL, resp.Cookies())
 	}
 	return
 }
