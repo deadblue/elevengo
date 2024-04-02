@@ -33,7 +33,7 @@ func Default() *Agent {
 func New(options ...option.AgentOption) *Agent {
 	var hc plugin.HttpClient = nil
 	var cdMin, cdMax uint
-	var name string
+	var name, appVer string
 	// Scan options
 	for _, opt := range options {
 		switch opt := opt.(type) {
@@ -43,10 +43,14 @@ func New(options ...option.AgentOption) *Agent {
 			cdMin, cdMax = opt.Min, opt.Max
 		case *option.AgentHttpOption:
 			hc = opt.Client
+		case option.AgentVersionOption:
+			appVer = string(opt)
 		}
 	}
 	llc := impl.NewClient(hc, cdMin, cdMax)
-	appVer, _ := getLatestAppVersion(llc)
+	if appVer == "" {
+		appVer, _ = getLatestAppVersion(llc)
+	}
 	llc.SetUserAgent(protocol.MakeUserAgent(name, appVer))
 	return &Agent{
 		llc: llc,
