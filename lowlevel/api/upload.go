@@ -1,18 +1,26 @@
 package api
 
 import (
+	"fmt"
 	"io"
+	"time"
 
 	"github.com/deadblue/elevengo/internal/multipart"
 	"github.com/deadblue/elevengo/internal/protocol"
+	"github.com/deadblue/elevengo/internal/upload"
 	"github.com/deadblue/elevengo/lowlevel/client"
 	"github.com/deadblue/elevengo/lowlevel/types"
 )
 
 const (
-	UploadMaxSize       = 5 * 1024 * 1024 * 1024
 	UploadMaxSizeSample = 200 * 1024 * 1024
+	UploadMaxSize       = 5 * 1024 * 1024 * 1024
+	UploadMaxSizeOss    = 115 * 1024 * 1024 * 1024
 )
+
+func getTarget(dirId string) string {
+	return fmt.Sprintf("U_1_%s", dirId)
+}
 
 type UploadInfoSpec struct {
 	_JsonApiSpec[types.UploadInfoResult, protocol.UploadInfoResp]
@@ -27,23 +35,34 @@ type UploadInitSpec struct {
 	_JsonApiSpec[types.UploadInitResult, protocol.UploadInitResp]
 }
 
-func (s *UploadInitSpec) Init(params *types.UploadInitParams, userId string, appVer string) *UploadInitSpec {
+func (s *UploadInitSpec) Init(
+	dirId string, fileId string, fileName string, fileSize int64,
+	signKey string, signValue string,
+	common *types.CommonParams,
+) *UploadInitSpec {
 	s._JsonApiSpec.Init("https://uplb.115.com/4.0/initupload.php")
 	s.crypto = true
 	// Prepare parameters
+	target := getTarget(dirId)
+	timestamp := time.Now().UnixMilli()
+	signature := upload.CalcSignature(common.UserId, common.UserKey, fileId, target)
+	token := upload.CalcToken(
+		common.AppVer, common.UserId, common.UserHash,
+		fileId, fileSize, signKey, signValue, timestamp,
+	)
 	s.form.Set("appid", "0").
-		Set("appversion", appVer).
-		Set("userid", userId).
-		Set("filename", params.FileName).
-		SetInt64("filesize", params.FileSize).
-		Set("fileid", params.FileId).
-		Set("target", params.Target).
-		Set("sig", params.Signature).
-		SetInt64("t", params.Timestamp).
-		Set("token", params.Token)
-	if params.SignKey != "" && params.SignValue != "" {
-		s.form.Set("sign_key", params.SignKey).
-			Set("sign_val", params.SignValue)
+		Set("appversion", common.AppVer).
+		Set("userid", common.UserId).
+		Set("filename", fileName).
+		SetInt64("filesize", fileSize).
+		Set("fileid", fileId).
+		Set("target", target).
+		Set("sig", signature).
+		SetInt64("t", timestamp).
+		Set("token", token)
+	if signKey != "" && signValue != "" {
+		s.form.Set("sign_key", signKey).
+			Set("sign_val", signValue)
 	}
 	return s
 }
@@ -61,12 +80,15 @@ type UploadSampleInitSpec struct {
 	_JsonApiSpec[types.UploadSampleInitResult, protocol.UploadSampleInitResp]
 }
 
-func (s *UploadSampleInitSpec) Init(userId string, fileName string, fileSize int64, target string) *UploadSampleInitSpec {
+func (s *UploadSampleInitSpec) Init(
+	dirId string, fileName string, fileSize int64,
+	common *types.CommonParams,
+) *UploadSampleInitSpec {
 	s._JsonApiSpec.Init("https://uplb.115.com/3.0/sampleinitupload.php")
-	s.form.Set("userid", userId).
+	s.form.Set("userid", common.UserId).
 		Set("filename", fileName).
 		SetInt64("filesize", fileSize).
-		Set("target", target)
+		Set("target", getTarget(dirId))
 	return s
 }
 
@@ -76,21 +98,21 @@ type UploadSampleSpec struct {
 }
 
 func (s *UploadSampleSpec) Init(
-	name string, target string, r io.Reader,
+	dirId, fileName string, r io.Reader,
 	initResult *types.UploadSampleInitResult,
 ) *UploadSampleSpec {
 	s._StandardApiSpec.Init(initResult.Host)
 	//Prepart payload
 	s.payload = multipart.Builder().
 		AddValue("success_action_status", "200").
-		AddValue("name", name).
-		AddValue("target", target).
+		AddValue("name", fileName).
+		AddValue("target", getTarget(dirId)).
 		AddValue("key", initResult.Object).
 		AddValue("policy", initResult.Policy).
 		AddValue("OSSAccessKeyId", initResult.AccessKeyId).
 		AddValue("callback", initResult.Callback).
 		AddValue("signature", initResult.Signature).
-		AddFile("file", name, r).
+		AddFile("file", fileName, r).
 		Build()
 	return s
 }

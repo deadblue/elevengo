@@ -49,11 +49,11 @@ type OfflineAddUrlsSpec struct {
 	_M115ApiSpec[types.OfflineAddUrlsResult]
 }
 
-func (s *OfflineAddUrlsSpec) Init(userId, appVer string, urls []string, saveDirId string) *OfflineAddUrlsSpec {
+func (s *OfflineAddUrlsSpec) Init(urls []string, saveDirId string, common *types.CommonParams) *OfflineAddUrlsSpec {
 	s._M115ApiSpec.Init("https://lixian.115.com/lixianssp/?ac=add_task_urls")
 	s.crypto = true
-	s.params.Set("uid", userId).
-		Set("app_ver", appVer).
+	s.params.Set("app_ver", common.AppVer).
+		Set("uid", common.UserId).
 		Set("ac", "add_task_urls")
 	for i, url := range urls {
 		key := fmt.Sprintf("url[%d]", i)

@@ -189,9 +189,7 @@ func (a *Agent) OfflineAddUrl(urls []string, opts ...option.OfflineAddOption) (h
 		}
 	}
 	// Call API
-	spec := (&api.OfflineAddUrlsSpec{}).Init(
-		a.uh.UserId, a.uh.AppVer, urls, saveDirId,
-	)
+	spec := (&api.OfflineAddUrlsSpec{}).Init(urls, saveDirId, &a.common)
 	if err = a.llc.CallApi(spec); err == nil {
 		for i, task := range spec.Result {
 			if task != nil {

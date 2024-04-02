@@ -5,7 +5,7 @@ import (
 	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/lowlevel/api"
 	"github.com/deadblue/elevengo/lowlevel/client"
-	"github.com/deadblue/elevengo/lowlevel/upload"
+	"github.com/deadblue/elevengo/lowlevel/types"
 	"github.com/deadblue/elevengo/option"
 	"github.com/deadblue/elevengo/plugin"
 )
@@ -13,15 +13,20 @@ import (
 // Agent holds signed-in user's credentials, and provides methods to access upstream
 // server's features, such as file management, offline download, etc.
 type Agent struct {
+	// Low-level API client
+	llc *impl.ClientImpl
+
+	// Common parameters
+	common types.CommonParams
+
 	// isWeb indicates whether the credential is for web.
 	// Some API should use PC version when credential is not for web.
 	isWeb bool
+}
 
-	// |llc| is the low-level client
-	llc client.Client
-
-	// Upload helper
-	uh upload.Helper
+// Default creates an Agent with default settings.
+func Default() *Agent {
+	return New()
 }
 
 // New creates Agent with customized options.
@@ -40,27 +45,22 @@ func New(options ...option.AgentOption) *Agent {
 			hc = opt.Client
 		}
 	}
-	agent := &Agent{
-		llc: impl.NewClient(hc, cdMin, cdMax),
+	llc := impl.NewClient(hc, cdMin, cdMax)
+	appVer, _ := getLatestAppVersion(llc)
+	llc.SetUserAgent(protocol.MakeUserAgent(name, appVer))
+	return &Agent{
+		llc: llc,
+		common: types.CommonParams{
+			AppVer: appVer,
+		},
 	}
-	agent.uh.AppVer, _ = agent.getAppVersion()
-	agent.llc.SetUserAgent(protocol.MakeUserAgent(name, agent.uh.AppVer))
-
-	return agent
 }
 
-// Default creates an Agent with default settings.
-func Default() *Agent {
-	return New()
-}
-
-// getAppVersion gets desktop client version from 115.
-func (a *Agent) getAppVersion() (ver string, err error) {
+func getLatestAppVersion(llc client.Client) (appVer string, err error) {
 	spec := (&api.AppVersionSpec{}).Init()
-	if err = a.llc.CallApi(spec); err != nil {
-		return
+	if err = llc.CallApi(spec); err == nil {
+		appVer = spec.Result.LinuxApp.VersionCode
 	}
-	ver = spec.Result.LinuxApp.VersionCode
 	return
 }
 

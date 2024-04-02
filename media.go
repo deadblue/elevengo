@@ -53,9 +53,7 @@ func (a *Agent) VideoCreateTicket(pickcode string, ticket *VideoTicket) (err err
 		webSpec := (&api.VideoPlayWebSpec{}).Init(pickcode)
 		spec, result = webSpec, &webSpec.Result
 	} else {
-		pcSpec := (&api.VideoPlayPcSpec{}).Init(
-			a.uh.UserId, a.uh.AppVer, pickcode,
-		)
+		pcSpec := (&api.VideoPlayPcSpec{}).Init(pickcode, &a.common)
 		spec, result = pcSpec, &pcSpec.Result
 	}
 	if err = a.llc.CallApi(spec); err != nil {

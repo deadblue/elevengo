@@ -53,7 +53,8 @@ func (a *Agent) afterSignIn(uid string) (err error) {
 	if err = a.llc.CallApi(spec); err != nil {
 		return
 	} else {
-		a.uh.SetUserParams(spec.Result.UserId, spec.Result.UserKey)
+		// Save to common parameters
+		a.common.SetUserInfo(spec.Result.UserId, a.common.UserKey)
 	}
 	// Check UID
 	parts := strings.Split(uid, "_")
