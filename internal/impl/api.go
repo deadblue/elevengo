@@ -2,6 +2,7 @@ package impl
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"time"
 
@@ -9,7 +10,7 @@ import (
 	"github.com/deadblue/elevengo/lowlevel/client"
 )
 
-func (c *ClientImpl) CallApi(spec client.ApiSpec) (err error) {
+func (c *ClientImpl) CallApi(spec client.ApiSpec, context context.Context) (err error) {
 	payload := spec.Payload()
 	if spec.IsCrypto() {
 		spec.SetCryptoKey(c.ecc.EncodeToken(time.Now().UnixMilli()))
@@ -17,7 +18,7 @@ func (c *ClientImpl) CallApi(spec client.ApiSpec) (err error) {
 	}
 	// Perform HTTP request
 	var body io.ReadCloser
-	if body, err = c.internalCall(spec.Url(), payload); err != nil {
+	if body, err = c.internalCall(spec.Url(), payload, context); err != nil {
 		return
 	}
 	defer util.QuietlyClose(body)
@@ -33,14 +34,16 @@ func (c *ClientImpl) CallApi(spec client.ApiSpec) (err error) {
 	}
 }
 
-func (c *ClientImpl) internalCall(url string, payload client.Payload) (body io.ReadCloser, err error) {
+func (c *ClientImpl) internalCall(
+	url string, payload client.Payload, context context.Context,
+) (body io.ReadCloser, err error) {
 	c.v.Wait()
 	defer c.v.ClockIn()
 	// Prepare request
 	if payload != nil {
-		body, err = c.post(url, payload)
+		body, err = c.post(url, payload, context)
 	} else {
-		body, err = c.Get(url, nil)
+		body, err = c.Get(url, nil, context)
 	}
 	return
 }

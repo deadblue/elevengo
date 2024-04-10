@@ -1,6 +1,8 @@
 package elevengo
 
 import (
+	"context"
+
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/api"
 	"github.com/deadblue/elevengo/lowlevel/client"
@@ -56,7 +58,7 @@ func (a *Agent) VideoCreateTicket(pickcode string, ticket *VideoTicket) (err err
 		pcSpec := (&api.VideoPlayPcSpec{}).Init(pickcode, &a.common)
 		spec, result = pcSpec, &pcSpec.Result
 	}
-	if err = a.llc.CallApi(spec); err != nil {
+	if err = a.llc.CallApi(spec, context.Background()); err != nil {
 		return
 	}
 	if !result.IsReady {
@@ -82,7 +84,7 @@ func (a *Agent) VideoCreateTicket(pickcode string, ticket *VideoTicket) (err err
 // ImageGetUrl gets an accessible URL of an image file by its pickcode.
 func (a *Agent) ImageGetUrl(pickcode string) (imageUrl string, err error) {
 	spec := (&api.ImageGetSpec{}).Init(pickcode)
-	if err = a.llc.CallApi(spec); err != nil {
+	if err = a.llc.CallApi(spec, context.Background()); err != nil {
 		return
 	}
 	// The origin URL can be access without cookie.

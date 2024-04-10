@@ -1,6 +1,7 @@
 package elevengo
 
 import (
+	"context"
 	"crypto/sha1"
 	"fmt"
 	"io"
@@ -45,7 +46,7 @@ func (a *Agent) Import(dirId string, ticket *ImportTicket) (err error) {
 		dirId, ticket.FileSha1, ticket.FileName, ticket.FileSize,
 		ticket.SignKey, ticket.SignValue, &a.common,
 	)
-	if err = a.llc.CallApi(spec); err != nil {
+	if err = a.llc.CallApi(spec, context.Background()); err != nil {
 		return
 	}
 	if spec.Result.SignCheck != "" {

@@ -1,6 +1,8 @@
 package elevengo
 
 import (
+	"context"
+
 	"github.com/deadblue/elevengo/lowlevel/api"
 	"github.com/deadblue/elevengo/lowlevel/errors"
 	"github.com/deadblue/elevengo/lowlevel/types"
@@ -115,7 +117,7 @@ func (a *Agent) OfflineIterate() (it Iterator[OfflineTask], err error) {
 
 func (a *Agent) offlineIterateInternal(oi *offlineIterator) (err error) {
 	spec := (&api.OfflineListSpec{}).Init(oi.pi)
-	if err = a.llc.CallApi(spec); err != nil {
+	if err = a.llc.CallApi(spec, context.Background()); err != nil {
 		return
 	}
 	result := spec.Result
@@ -148,7 +150,7 @@ func (a *Agent) OfflineDelete(hashes []string, opts ...option.OfflineDeleteOptio
 	}
 	// Call API
 	spec := (&api.OfflineDeleteSpec{}).Init(hashes, deleteFiles)
-	return a.llc.CallApi(spec)
+	return a.llc.CallApi(spec, context.Background())
 }
 
 // OfflineClear clears tasks which is in specific status.
@@ -157,7 +159,7 @@ func (a *Agent) OfflineClear(flag OfflineClearFlag) (err error) {
 		flag = OfflineClearDone
 	}
 	spec := (&api.OfflineClearSpec{}).Init(int(flag))
-	return a.llc.CallApi(spec)
+	return a.llc.CallApi(spec, context.Background())
 }
 
 // OfflineAddUrl adds offline tasks by download URLs.
@@ -190,7 +192,7 @@ func (a *Agent) OfflineAddUrl(urls []string, opts ...option.OfflineAddOption) (h
 	}
 	// Call API
 	spec := (&api.OfflineAddUrlsSpec{}).Init(urls, saveDirId, &a.common)
-	if err = a.llc.CallApi(spec); err == nil {
+	if err = a.llc.CallApi(spec, context.Background()); err == nil {
 		for i, task := range spec.Result {
 			if task != nil {
 				hashes[i] = task.InfoHash

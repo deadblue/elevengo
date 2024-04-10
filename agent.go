@@ -1,6 +1,8 @@
 package elevengo
 
 import (
+	"context"
+
 	"github.com/deadblue/elevengo/internal/impl"
 	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/lowlevel/api"
@@ -62,7 +64,7 @@ func New(options ...option.AgentOption) *Agent {
 
 func getLatestAppVersion(llc client.Client) (appVer string, err error) {
 	spec := (&api.AppVersionSpec{}).Init()
-	if err = llc.CallApi(spec); err == nil {
+	if err = llc.CallApi(spec, context.Background()); err == nil {
 		appVer = spec.Result.LinuxApp.VersionCode
 	}
 	return

@@ -1,6 +1,7 @@
 package elevengo
 
 import (
+	"context"
 	"strings"
 
 	"github.com/deadblue/elevengo/internal/protocol"
@@ -50,7 +51,7 @@ func (a *Agent) CredentialExport(cr *Credential) {
 func (a *Agent) afterSignIn(uid string) (err error) {
 	// Call UploadInfo API to get userId and userKey
 	spec := (&api.UploadInfoSpec{}).Init()
-	if err = a.llc.CallApi(spec); err != nil {
+	if err = a.llc.CallApi(spec, context.Background()); err != nil {
 		return
 	} else {
 		// Save to common parameters
@@ -68,7 +69,7 @@ func (a *Agent) afterSignIn(uid string) (err error) {
 // UserGet get information of current signed-in user.
 func (a *Agent) UserGet(info *UserInfo) (err error) {
 	spec := (&api.UserInfoSpec{}).Init()
-	if err = a.llc.CallApi(spec); err == nil {
+	if err = a.llc.CallApi(spec, context.Background()); err == nil {
 		info.Id = spec.Result.UserId
 		info.Name = spec.Result.UserName
 		info.IsVip = spec.Result.IsVip != 0

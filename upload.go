@@ -1,6 +1,7 @@
 package elevengo
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -69,7 +70,7 @@ func (a *Agent) uploadInit(
 		spec := (&api.UploadInitSpec{}).Init(
 			dirId, dr.SHA1, name, dr.Size, signKey, signValue, &a.common,
 		)
-		if err = a.llc.CallApi(spec); err != nil {
+		if err = a.llc.CallApi(spec, context.Background()); err != nil {
 			break
 		}
 		if spec.Result.SignKey != "" {
@@ -111,7 +112,7 @@ func (a *Agent) UploadCreateTicket(
 	}
 	// Get OSS token
 	spec := (&api.UploadTokenSpec{}).Init()
-	if err = a.llc.CallApi(spec); err != nil {
+	if err = a.llc.CallApi(spec, context.Background()); err != nil {
 		return
 	}
 	// Fill UploadTicket
@@ -256,7 +257,7 @@ func (a *Agent) UploadCreateOssTicket(
 	}
 	// Get OSS token
 	spec := (&api.UploadTokenSpec{}).Init()
-	if err = a.llc.CallApi(spec); err != nil {
+	if err = a.llc.CallApi(spec, context.Background()); err != nil {
 		return
 	}
 	// Fill ticket
@@ -309,12 +310,12 @@ func (a *Agent) UploadSample(dirId, name string, size int64, r io.Reader) (fileI
 	}
 	// Call API.
 	initSpec := (&api.UploadSampleInitSpec{}).Init(dirId, name, size, &a.common)
-	if err = a.llc.CallApi(initSpec); err != nil {
+	if err = a.llc.CallApi(initSpec, context.Background()); err != nil {
 		return
 	}
 	// Upload file
 	upSpec := (&api.UploadSampleSpec{}).Init(dirId, name, r, &initSpec.Result)
-	if err = a.llc.CallApi(upSpec); err == nil {
+	if err = a.llc.CallApi(upSpec, context.Background()); err == nil {
 		fileId = upSpec.Result.FileId
 	}
 	return
