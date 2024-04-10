@@ -1,6 +1,7 @@
 package elevengo
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -27,7 +28,7 @@ type DownloadTicket struct {
 func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (err error) {
 	// Prepare API spec.
 	spec := (&api.DownloadSpec{}).Init(pickcode)
-	if err = a.llc.CallApi(spec); err != nil {
+	if err = a.llc.CallApi(spec, context.Background()); err != nil {
 		return
 	}
 	// Convert result.
@@ -54,7 +55,7 @@ func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (e
 
 // Fetch gets content from url using agent underlying HTTP client.
 func (a *Agent) Fetch(url string) (body io.ReadCloser, err error) {
-	return a.llc.Get(url, nil)
+	return a.llc.Get(url, nil, context.Background())
 }
 
 // Range is used in Agent.GetRange().
@@ -116,5 +117,5 @@ func (a *Agent) FetchRange(url string, rng Range) (body io.ReadCloser, err error
 	if value := rng.headerValue(); value != "" {
 		headers["Range"] = value
 	}
-	return a.llc.Get(url, headers)
+	return a.llc.Get(url, headers, context.Background())
 }

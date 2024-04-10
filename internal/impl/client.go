@@ -5,7 +5,6 @@ import (
 	"net/http/cookiejar"
 
 	"github.com/deadblue/elevengo/internal/crypto/ec115"
-	"github.com/deadblue/elevengo/lowlevel/client"
 	"github.com/deadblue/elevengo/plugin"
 )
 
@@ -29,7 +28,7 @@ type ClientImpl struct {
 	v Valve
 }
 
-func NewClient(hc plugin.HttpClient, cdMin uint, cdMax uint) client.Client {
+func NewClient(hc plugin.HttpClient, cdMin uint, cdMax uint) *ClientImpl {
 	impl := &ClientImpl{
 		ecc: ec115.New(),
 	}

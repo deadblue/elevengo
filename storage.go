@@ -1,6 +1,8 @@
 package elevengo
 
 import (
+	"context"
+
 	"github.com/deadblue/elevengo/lowlevel/api"
 )
 
@@ -25,7 +27,7 @@ type StorageInfo struct {
 // StorageStat gets storage size information.
 func (a *Agent) StorageStat(info *StorageInfo) (err error) {
 	spec := (&api.IndexInfoSpec{}).Init()
-	if err = a.llc.CallApi(spec); err != nil {
+	if err = a.llc.CallApi(spec, context.Background()); err != nil {
 		return
 	}
 	space := spec.Result.SpaceInfo

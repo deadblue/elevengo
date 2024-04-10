@@ -1,6 +1,7 @@
 package elevengo
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -14,7 +15,6 @@ import (
 	"github.com/deadblue/elevengo/lowlevel/api"
 	"github.com/deadblue/elevengo/lowlevel/errors"
 	"github.com/deadblue/elevengo/lowlevel/types"
-	"github.com/deadblue/elevengo/lowlevel/upload"
 )
 
 // UploadTicket contains all required information to upload a file.
@@ -64,24 +64,19 @@ func (a *Agent) uploadInit(
 		err = errors.ErrUploadTooLarge
 		return
 	}
-	// Prepare init parameters
-	params := a.uh.Sign(&types.UploadInitParams{
-		FileId:   dr.SHA1,
-		FileName: name,
-		FileSize: dr.Size,
-		Target:   upload.GetTarget(dirId),
-	})
+	var signKey, signValue string
 	// Call API
 	for {
-		spec := (&api.UploadInitSpec{}).Init(params, a.uh.UserId, a.uh.AppVer)
-		if err = a.llc.CallApi(spec); err != nil {
+		spec := (&api.UploadInitSpec{}).Init(
+			dirId, dr.SHA1, name, dr.Size, signKey, signValue, &a.common,
+		)
+		if err = a.llc.CallApi(spec, context.Background()); err != nil {
 			break
 		}
 		if spec.Result.SignKey != "" {
-			// Upload params
-			params.SignKey = spec.Result.SignKey
-			params.SignValue, _ = hash.DigestRange(rs, spec.Result.SignCheck)
-			a.uh.Sign(params)
+			// Update parameters
+			signKey = spec.Result.SignKey
+			signValue, _ = hash.DigestRange(rs, spec.Result.SignCheck)
 		} else {
 			if spec.Result.Exists {
 				exists = true
@@ -117,7 +112,7 @@ func (a *Agent) UploadCreateTicket(
 	}
 	// Get OSS token
 	spec := (&api.UploadTokenSpec{}).Init()
-	if err = a.llc.CallApi(spec); err != nil {
+	if err = a.llc.CallApi(spec, context.Background()); err != nil {
 		return
 	}
 	// Fill UploadTicket
@@ -262,7 +257,7 @@ func (a *Agent) UploadCreateOssTicket(
 	}
 	// Get OSS token
 	spec := (&api.UploadTokenSpec{}).Init()
-	if err = a.llc.CallApi(spec); err != nil {
+	if err = a.llc.CallApi(spec, context.Background()); err != nil {
 		return
 	}
 	// Fill ticket
@@ -313,17 +308,14 @@ func (a *Agent) UploadSample(dirId, name string, size int64, r io.Reader) (fileI
 	} else if size > api.UploadMaxSizeSample {
 		return "", errors.ErrUploadTooLarge
 	}
-	target := upload.GetTarget(dirId)
 	// Call API.
-	initSpec := (&api.UploadSampleInitSpec{}).Init(
-		a.uh.UserId, name, size, target,
-	)
-	if err = a.llc.CallApi(initSpec); err != nil {
+	initSpec := (&api.UploadSampleInitSpec{}).Init(dirId, name, size, &a.common)
+	if err = a.llc.CallApi(initSpec, context.Background()); err != nil {
 		return
 	}
 	// Upload file
-	upSpec := (&api.UploadSampleSpec{}).Init(name, target, r, &initSpec.Result)
-	if err = a.llc.CallApi(upSpec); err == nil {
+	upSpec := (&api.UploadSampleSpec{}).Init(dirId, name, r, &initSpec.Result)
+	if err = a.llc.CallApi(upSpec, context.Background()); err == nil {
 		fileId = upSpec.Result.FileId
 	}
 	return

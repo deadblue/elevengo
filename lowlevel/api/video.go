@@ -19,11 +19,11 @@ type VideoPlayPcSpec struct {
 	_M115ApiSpec[types.VideoPlayResult]
 }
 
-func (s *VideoPlayPcSpec) Init(userId, appVer, pickcode string) *VideoPlayPcSpec {
+func (s *VideoPlayPcSpec) Init(pickcode string, common *types.CommonParams) *VideoPlayPcSpec {
 	s._M115ApiSpec.Init("https://proapi.115.com/pc/video/play")
 	s.params.Set("format", "app").
-		Set("user_id", userId).
-		Set("appversion", appVer).
+		Set("appversion", common.AppVer).
+		Set("user_id", common.UserId).
 		Set("definition_filter", "1").
 		Set("pickcode", pickcode)
 	return s

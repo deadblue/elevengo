@@ -1,6 +1,7 @@
 package elevengo
 
 import (
+	"context"
 	"crypto/sha1"
 	"fmt"
 	"io"
@@ -9,8 +10,6 @@ import (
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/api"
 	"github.com/deadblue/elevengo/lowlevel/errors"
-	"github.com/deadblue/elevengo/lowlevel/types"
-	"github.com/deadblue/elevengo/lowlevel/upload"
 )
 
 type ErrImportNeedCheck struct {
@@ -40,20 +39,14 @@ type ImportTicket struct {
 	SignValue string
 }
 
-// Import imports(aka. fast-upload) a file to your 115 cloud storage.
+// Import imports(aka. rapid-upload) a file to your 115 cloud storage.
 // Please check example code for the detailed usage.
 func (a *Agent) Import(dirId string, ticket *ImportTicket) (err error) {
-	target := upload.GetTarget(dirId)
-	params := a.uh.Sign(&types.UploadInitParams{
-		FileId:    ticket.FileSha1,
-		FileName:  ticket.FileName,
-		FileSize:  ticket.FileSize,
-		Target:    target,
-		SignKey:   ticket.SignKey,
-		SignValue: ticket.SignValue,
-	})
-	spec := (&api.UploadInitSpec{}).Init(params, a.uh.UserId, a.uh.AppVer)
-	if err = a.llc.CallApi(spec); err != nil {
+	spec := (&api.UploadInitSpec{}).Init(
+		dirId, ticket.FileSha1, ticket.FileName, ticket.FileSize,
+		ticket.SignKey, ticket.SignValue, &a.common,
+	)
+	if err = a.llc.CallApi(spec, context.Background()); err != nil {
 		return
 	}
 	if spec.Result.SignCheck != "" {

@@ -1,11 +1,13 @@
 package elevengo
 
 import (
+	"context"
+
 	"github.com/deadblue/elevengo/internal/impl"
 	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/lowlevel/api"
 	"github.com/deadblue/elevengo/lowlevel/client"
-	"github.com/deadblue/elevengo/lowlevel/upload"
+	"github.com/deadblue/elevengo/lowlevel/types"
 	"github.com/deadblue/elevengo/option"
 	"github.com/deadblue/elevengo/plugin"
 )
@@ -13,22 +15,27 @@ import (
 // Agent holds signed-in user's credentials, and provides methods to access upstream
 // server's features, such as file management, offline download, etc.
 type Agent struct {
+	// Low-level API client
+	llc *impl.ClientImpl
+
+	// Common parameters
+	common types.CommonParams
+
 	// isWeb indicates whether the credential is for web.
 	// Some API should use PC version when credential is not for web.
 	isWeb bool
+}
 
-	// |llc| is the low-level client
-	llc client.Client
-
-	// Upload helper
-	uh upload.Helper
+// Default creates an Agent with default settings.
+func Default() *Agent {
+	return New()
 }
 
 // New creates Agent with customized options.
 func New(options ...option.AgentOption) *Agent {
 	var hc plugin.HttpClient = nil
 	var cdMin, cdMax uint
-	var name string
+	var name, appVer string
 	// Scan options
 	for _, opt := range options {
 		switch opt := opt.(type) {
@@ -38,33 +45,27 @@ func New(options ...option.AgentOption) *Agent {
 			cdMin, cdMax = opt.Min, opt.Max
 		case *option.AgentHttpOption:
 			hc = opt.Client
+		case option.AgentVersionOption:
+			appVer = string(opt)
 		}
 	}
-	agent := &Agent{
-		llc: impl.NewClient(hc, cdMin, cdMax),
+	llc := impl.NewClient(hc, cdMin, cdMax)
+	if appVer == "" {
+		appVer, _ = getLatestAppVersion(llc)
 	}
-	agent.uh.AppVer, _ = agent.getAppVersion()
-	agent.llc.SetUserAgent(protocol.MakeUserAgent(name, agent.uh.AppVer))
-
-	return agent
+	llc.SetUserAgent(protocol.MakeUserAgent(name, appVer))
+	return &Agent{
+		llc: llc,
+		common: types.CommonParams{
+			AppVer: appVer,
+		},
+	}
 }
 
-// Default creates an Agent with default settings.
-func Default() *Agent {
-	return New()
-}
-
-// getAppVersion gets desktop client version from 115.
-func (a *Agent) getAppVersion() (ver string, err error) {
+func getLatestAppVersion(llc client.Client) (appVer string, err error) {
 	spec := (&api.AppVersionSpec{}).Init()
-	if err = a.llc.CallApi(spec); err != nil {
-		return
+	if err = llc.CallApi(spec, context.Background()); err == nil {
+		appVer = spec.Result.LinuxApp.VersionCode
 	}
-	ver = spec.Result.LinuxApp.VersionCode
 	return
-}
-
-// LowlevelClient returns low-level client that can directly call ApiSpec.
-func (a *Agent) LowlevelClient() client.Client {
-	return a.llc
 }
