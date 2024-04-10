@@ -1,6 +1,6 @@
 # ElevenGo
 
-![Version](https://img.shields.io/badge/release-v0.6.1-brightgreen?style=flat-square)
+![Version](https://img.shields.io/badge/release-v0.6.3-brightgreen?style=flat-square)
 [![Reference](https://img.shields.io/badge/Go-Reference-blue.svg?style=flat-square)](https://pkg.go.dev/github.com/deadblue/elevengo)
 ![License](https://img.shields.io/:License-MIT-green.svg?style=flat-square)
 
@@ -55,9 +55,11 @@ func main()  {
 package main
 
 import (
+    "context"
+    "log"
+
     "github.com/deadblue/elevengo"
     "github.com/deadblue/elevengo/lowlevel/api"
-    "log"
 )
 
 func main()  {
@@ -76,7 +78,7 @@ func main()  {
   // Init FileList API spec
   spec := (&api.FiieListSpec{}).Init("dirId", 0, 32)
   // Call API
-  if err = llc.CallApi(spec); err != nil {
+  if err = llc.CallApi(spec, context.Background()); err != nil {
     log.Fatalf("Call API error: %s", err)
   }
   // Parse API result
