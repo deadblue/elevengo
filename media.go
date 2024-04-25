@@ -64,12 +64,17 @@ func (a *Agent) VideoCreateTicket(pickcode string, ticket *VideoTicket) (err err
 	if !result.IsReady {
 		return errors.ErrVideoNotReady
 	}
-	ticket.Url = result.VideoUrl
-	ticket.Duration = result.VideoDuration
-	ticket.Width = result.VideoWidth
-	ticket.Height = result.VideoHeight
 	ticket.FileName = result.FileName
 	ticket.FileSize = result.FileSize
+	ticket.Duration = result.VideoDuration
+	// Select the video with best definition
+	for _, video := range result.Videos {
+		if video.Width > ticket.Width {
+			ticket.Width = video.Width
+			ticket.Height = video.Height
+			ticket.Url = video.PlayUrl
+		}
+	}
 	// Currently(2023-08-02), the play URL for PC does not check any request
 	// headers, it is highly recommended to use PC credential.
 	if a.isWeb {

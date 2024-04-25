@@ -6,15 +6,19 @@ import (
 	"github.com/deadblue/elevengo/internal/util"
 )
 
+type VideoInfo struct {
+	Width   int
+	Height  int
+	PlayUrl string
+}
+
 type VideoPlayResult struct {
 	IsReady       bool
 	FileId        string
 	FileName      string
 	FileSize      int64
 	VideoDuration float64
-	VideoWidth    int
-	VideoHeight   int
-	VideoUrl      string
+	Videos        []*VideoInfo
 }
 
 type _VideoUrl struct {
@@ -47,12 +51,12 @@ func (r *VideoPlayResult) UnmarshalResult(data []byte) (err error) {
 	r.FileName = proto.FileName
 	r.FileSize = proto.FileSize.Int64()
 	r.VideoDuration = proto.VideoDuration.Float64()
-	for _, vu := range proto.VideoUrls {
-		w, h := vu.Width.Int(), vu.Height.Int()
-		if r.VideoWidth < w {
-			r.VideoWidth = w
-			r.VideoHeight = h
-			r.VideoUrl = vu.Url
+	r.Videos = make([]*VideoInfo, len(proto.VideoUrls))
+	for index, vu := range proto.VideoUrls {
+		r.Videos[index] = &VideoInfo{
+			Width:   vu.Width.Int(),
+			Height:  vu.Height.Int(),
+			PlayUrl: vu.Url,
 		}
 	}
 	return nil
