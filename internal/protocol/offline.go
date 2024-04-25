@@ -27,6 +27,8 @@ func (r *OfflineListResp) Extract(v any) (err error) {
 		ptr.PageIndex = r.PageIndex
 		ptr.PageCount = r.PageCount
 		ptr.PageSize = r.PageSize
+		ptr.QuotaTotal = r.QuotaTotal
+		ptr.QuotaRemain = r.QuotaRemain
 		ptr.TaskCount = r.TaskCount
 		ptr.Tasks = append(ptr.Tasks, r.Tasks...)
 	}
