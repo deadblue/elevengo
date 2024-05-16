@@ -213,3 +213,21 @@ func (s *FileGetDescSpec) Init(fileId string) *FileGetDescSpec {
 		Set("new_html", "1")
 	return s
 }
+
+type FileHideSpec struct {
+	_VoidApiSpec
+}
+
+func (s *FileHideSpec) Init(hide bool, fileIds []string) *FileHideSpec {
+	s._VoidApiSpec.Init("https://webapi.115.com/files/hiddenfiles")
+	for i, fileId := range fileIds {
+		key := fmt.Sprintf("fid[%d]", i)
+		s.form.Set(key, fileId)
+	}
+	if hide {
+		s.form.Set("hidden", "1")
+	} else {
+		s.form.Set("hidden", "0")
+	}
+	return s
+}
