@@ -55,7 +55,7 @@ func (a *Agent) afterSignIn(uid string) (err error) {
 		return
 	} else {
 		// Save to common parameters
-		a.common.SetUserInfo(spec.Result.UserId, a.common.UserKey)
+		a.common.SetUserInfo(spec.Result.UserId, spec.Result.UserKey)
 	}
 	// Check UID
 	parts := strings.Split(uid, "_")

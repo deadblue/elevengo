@@ -65,7 +65,6 @@ func (s *UploadInitSpec) Init(
 		SetInt64("t", timestamp).
 		Set("token", token)
 	if signKey != "" && signValue != "" {
-
 		s.form.Set("sign_key", signKey).
 			Set("sign_val", signValue)
 	}
