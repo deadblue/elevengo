@@ -73,6 +73,7 @@ func (r *UploadInitResp) Extract(v any) (err error) {
 			ptr.Oss.CallbackVar = r.Callback.CallbackVar
 		case 2:
 			ptr.Exists = true
+			ptr.PickCode = r.PickCode
 		case 7:
 			ptr.SignKey = r.SignKey
 			ptr.SignCheck = r.SignCheck

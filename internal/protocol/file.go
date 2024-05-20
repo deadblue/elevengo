@@ -89,3 +89,19 @@ func (r *FileSearchResp) Extract(v any) (err error) {
 	ptr.Order, ptr.Asc = r.Order, r.IsAsc
 	return
 }
+
+//lint:ignore U1000 This type is used in generic.
+type FileGetDescResp struct {
+	BasicResp
+
+	Desc string `json:"desc"`
+}
+
+func (r *FileGetDescResp) Extract(v any) (err error) {
+	if ptr, ok := v.(*string); !ok {
+		err = errors.ErrUnsupportedResult
+	} else {
+		*ptr = r.Desc
+	}
+	return
+}

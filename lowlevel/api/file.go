@@ -189,3 +189,45 @@ func (s *FileLabelSpec) Init(fileId string, labelIds []string) *FileLabelSpec {
 	}
 	return s
 }
+
+type FileSetDescSpec struct {
+	_VoidApiSpec
+}
+
+func (s *FileSetDescSpec) Init(fileId string, desc string) *FileSetDescSpec {
+	s._VoidApiSpec.Init("https://webapi.115.com/files/edit")
+	s.form.Set("fid", fileId).
+		Set("file_desc", desc)
+	return s
+}
+
+type FileGetDescSpec struct {
+	_JsonApiSpec[string, protocol.FileGetDescResp]
+}
+
+func (s *FileGetDescSpec) Init(fileId string) *FileGetDescSpec {
+	s._JsonApiSpec.Init("https://webapi.115.com/files/desc")
+	s.query.Set("file_id", fileId).
+		Set("format", "json").
+		Set("compat", "1").
+		Set("new_html", "1")
+	return s
+}
+
+type FileHideSpec struct {
+	_VoidApiSpec
+}
+
+func (s *FileHideSpec) Init(hide bool, fileIds []string) *FileHideSpec {
+	s._VoidApiSpec.Init("https://webapi.115.com/files/hiddenfiles")
+	for i, fileId := range fileIds {
+		key := fmt.Sprintf("fid[%d]", i)
+		s.form.Set(key, fileId)
+	}
+	if hide {
+		s.form.Set("hidden", "1")
+	} else {
+		s.form.Set("hidden", "0")
+	}
+	return s
+}

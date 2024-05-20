@@ -26,6 +26,9 @@ type OfflineListResult struct {
 	PageCount int
 	PageSize  int
 
+	QuotaTotal  int
+	QuotaRemain int
+
 	TaskCount int
 	Tasks     []*OfflineTask
 }

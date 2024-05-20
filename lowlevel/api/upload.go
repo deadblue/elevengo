@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/deadblue/elevengo/internal/multipart"
@@ -36,26 +37,29 @@ type UploadInitSpec struct {
 }
 
 func (s *UploadInitSpec) Init(
-	dirId string, fileId string, fileName string, fileSize int64,
+	dirId string, fileSha1 string, fileName string, fileSize int64,
 	signKey string, signValue string,
 	common *types.CommonParams,
 ) *UploadInitSpec {
 	s._JsonApiSpec.Init("https://uplb.115.com/4.0/initupload.php")
 	s.crypto = true
+	// Make sure fileSha1 and signValue are in upper-case.
+	fileSha1 = strings.ToUpper(fileSha1)
+	signValue = strings.ToUpper(signValue)
 	// Prepare parameters
 	target := getTarget(dirId)
 	timestamp := time.Now().UnixMilli()
-	signature := upload.CalcSignature(common.UserId, common.UserKey, fileId, target)
+	signature := upload.CalcSignature(common.UserId, common.UserKey, fileSha1, target)
 	token := upload.CalcToken(
 		common.AppVer, common.UserId, common.UserHash,
-		fileId, fileSize, signKey, signValue, timestamp,
+		fileSha1, fileSize, signKey, signValue, timestamp,
 	)
 	s.form.Set("appid", "0").
 		Set("appversion", common.AppVer).
 		Set("userid", common.UserId).
 		Set("filename", fileName).
 		SetInt64("filesize", fileSize).
-		Set("fileid", fileId).
+		Set("fileid", fileSha1).
 		Set("target", target).
 		Set("sig", signature).
 		SetInt64("t", timestamp).

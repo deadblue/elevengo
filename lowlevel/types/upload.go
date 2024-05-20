@@ -20,8 +20,11 @@ type UploadInitResult struct {
 		Callback    string
 		CallbackVar string
 	}
+	// Check parameters
 	SignKey   string
 	SignCheck string
+	// Pickcode is available when rapid-uploaded
+	PickCode string
 }
 
 type UploadTokenResult struct {

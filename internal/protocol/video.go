@@ -32,9 +32,13 @@ func (r *VideoPlayWebResp) Extract(v any) error {
 		ptr.FileName = r.FileName
 		ptr.FileSize = r.FileSize.Int64()
 		ptr.VideoDuration = r.VideoDuration.Float64()
-		ptr.VideoWidth = r.VideoWidth.Int()
-		ptr.VideoHeight = r.VideoHeight.Int()
-		ptr.VideoUrl = r.VideoUrl
+		ptr.Videos = []*types.VideoInfo{
+			{
+				Width:   r.VideoWidth.Int(),
+				Height:  r.VideoHeight.Int(),
+				PlayUrl: r.VideoUrl,
+			},
+		}
 	}
 	return nil
 }
