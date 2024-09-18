@@ -3,20 +3,21 @@ package multipart
 import (
 	"bytes"
 	"fmt"
-	"github.com/deadblue/elevengo/internal/util"
 	"io"
+
+	"github.com/deadblue/elevengo/internal/util"
 )
 
 type FormBuilder interface {
 	AddValue(name, value string) FormBuilder
-	AddFile(name, filename string, r io.Reader) FormBuilder
+	AddFile(name, filename string, filesize int64, r io.Reader) FormBuilder
 	Build() *Form
 }
 
 type implFormBuilder struct {
 	// Boundary
 	b string
-	// Size
+	// Total size
 	s int64
 	// Readers
 	rs []io.Reader
@@ -66,7 +67,7 @@ func (b *implFormBuilder) AddValue(name string, value string) FormBuilder {
 	return b
 }
 
-func (b *implFormBuilder) AddFile(name string, filename string, r io.Reader) FormBuilder {
+func (b *implFormBuilder) AddFile(name string, filename string, filesize int64, r io.Reader) FormBuilder {
 	// Calculate part header size
 	size := len(b.b) + len(name) + len(filename) + 60
 	// Write part header
@@ -79,7 +80,7 @@ func (b *implFormBuilder) AddFile(name string, filename string, r io.Reader) For
 	buf.WriteString("\"; filename=\"")
 	buf.WriteString(filename)
 	buf.WriteString("\"\r\n\r\n")
-	b.s += int64(size)
+	b.incrSize(int64(size))
 
 	// Write part tail
 	buf = &bytes.Buffer{}
@@ -89,8 +90,10 @@ func (b *implFormBuilder) AddFile(name string, filename string, r io.Reader) For
 	b.rn += 2
 
 	// Update form size
-	b.incrSize(util.GuessSize(r))
-	b.incrSize(2)
+	if filesize <= 0 {
+		filesize = util.GuessSize(r)
+	}
+	b.incrSize(filesize + 2)
 
 	return b
 }

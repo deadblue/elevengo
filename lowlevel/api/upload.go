@@ -102,7 +102,7 @@ type UploadSampleSpec struct {
 }
 
 func (s *UploadSampleSpec) Init(
-	dirId, fileName string, r io.Reader,
+	dirId, fileName string, fileSize int64, r io.Reader,
 	initResult *types.UploadSampleInitResult,
 ) *UploadSampleSpec {
 	s._StandardApiSpec.Init(initResult.Host)
@@ -116,7 +116,7 @@ func (s *UploadSampleSpec) Init(
 		AddValue("OSSAccessKeyId", initResult.AccessKeyId).
 		AddValue("callback", initResult.Callback).
 		AddValue("signature", initResult.Signature).
-		AddFile("file", fileName, r).
+		AddFile("file", fileName, fileSize, r).
 		Build()
 	return s
 }

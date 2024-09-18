@@ -314,7 +314,7 @@ func (a *Agent) UploadSample(dirId, name string, size int64, r io.Reader) (fileI
 		return
 	}
 	// Upload file
-	upSpec := (&api.UploadSampleSpec{}).Init(dirId, name, r, &initSpec.Result)
+	upSpec := (&api.UploadSampleSpec{}).Init(dirId, name, size, r, &initSpec.Result)
 	if err = a.llc.CallApi(upSpec, context.Background()); err == nil {
 		fileId = upSpec.Result.FileId
 	}
