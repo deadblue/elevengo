@@ -13,7 +13,8 @@ const (
 	AppBrowserMacOS   = "MAC-115chrome"
 
 	AppNameBrowser = "115Browser"
-	AppNameDesktop = "115Desktop"
+	// Deprecated
+	//AppNameDesktop = "115Desktop"
 )
 
 type AppVersionSpec struct {

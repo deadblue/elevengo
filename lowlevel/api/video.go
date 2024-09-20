@@ -15,19 +15,19 @@ func (s *VideoPlayWebSpec) Init(pickcode string) *VideoPlayWebSpec {
 	return s
 }
 
-type VideoPlayPcSpec struct {
-	_M115ApiSpec[types.VideoPlayResult]
-}
+// type VideoPlayPcSpec struct {
+// 	_M115ApiSpec[types.VideoPlayResult]
+// }
 
-func (s *VideoPlayPcSpec) Init(pickcode string, common *types.CommonParams) *VideoPlayPcSpec {
-	s._M115ApiSpec.Init("https://proapi.115.com/pc/video/play")
-	s.params.Set("format", "app").
-		Set("appversion", common.AppVer).
-		Set("user_id", common.UserId).
-		Set("definition_filter", "1").
-		Set("pickcode", pickcode)
-	return s
-}
+// func (s *VideoPlayPcSpec) Init(pickcode string, common *types.CommonParams) *VideoPlayPcSpec {
+// 	s._M115ApiSpec.Init("https://proapi.115.com/pc/video/play")
+// 	s.params.Set("format", "app").
+// 		Set("appversion", common.AppVer).
+// 		Set("user_id", common.UserId).
+// 		Set("definition_filter", "1").
+// 		Set("pickcode", pickcode)
+// 	return s
+// }
 
 type VideoSubtitleSpec struct {
 	_StandardApiSpec[types.VideoSubtitleResult]

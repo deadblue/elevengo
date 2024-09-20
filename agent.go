@@ -20,10 +20,6 @@ type Agent struct {
 
 	// Common parameters
 	common types.CommonParams
-
-	// isWeb indicates whether the credential is for web.
-	// Some API should use PC version when credential is not for web.
-	isWeb bool
 }
 
 // Default creates an Agent with default settings.

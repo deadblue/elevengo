@@ -72,6 +72,8 @@ func (s *_JsonApiSpec[D, R]) Parse(r io.Reader) (err error) {
 // Type parameters:
 //   - D: Result type.
 //   - R: Response type.
+//
+//lint:ignore U1000 Remain for future-use.
 type _JsonpApiSpec[D, R any] struct {
 	_BasicApiSpec
 

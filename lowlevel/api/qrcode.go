@@ -8,28 +8,15 @@ import (
 )
 
 const (
-	qrcodeTokenBaseUrl = "https://qrcodeapi.115.com/api/1.0/%s/1.0/token"
-	qrcodeLoginBaseUrl = "https://passportapi.115.com/app/1.0/%s/1.0/login/qrcode"
-	qrcodeImageUrl     = "https://qrcodeapi.115.com/api/1.0/%s/1.0/qrcode?qrfrom=1&client=%d&uid=%s"
-)
-
-var (
-	qrcodeAppIds = map[string]int{
-		"web": 0,
-		// Client ID for app is always 7
-		"mac":     7,
-		"linux":   7,
-		"windows": 7,
-	}
+	qrcodeImageUrl = "https://qrcodeapi.115.com/api/1.0/web/1.0/qrcode?qrfrom=1&client=0&uid=%s"
 )
 
 type QrcodeTokenSpec struct {
 	_JsonApiSpec[types.QrcodeTokenResult, protocol.QrcodeBaseResp]
 }
 
-func (s *QrcodeTokenSpec) Init(appType string) *QrcodeTokenSpec {
-	baseUrl := fmt.Sprintf(qrcodeTokenBaseUrl, appType)
-	s._JsonApiSpec.Init(baseUrl)
+func (s *QrcodeTokenSpec) Init() *QrcodeTokenSpec {
+	s._JsonApiSpec.Init("https://qrcodeapi.115.com/api/1.0/web/1.0/token")
 	return s
 }
 
@@ -50,15 +37,13 @@ type QrcodeLoginSpec struct {
 	_JsonApiSpec[types.QrcodeLoginResult, protocol.QrcodeBaseResp]
 }
 
-func (s *QrcodeLoginSpec) Init(appType string, uid string) *QrcodeLoginSpec {
-	baseUrl := fmt.Sprintf(qrcodeLoginBaseUrl, appType)
-	s._JsonApiSpec.Init(baseUrl)
+func (s *QrcodeLoginSpec) Init(uid string) *QrcodeLoginSpec {
+	s._JsonApiSpec.Init("https://passportapi.115.com/app/1.0/web/1.0/login/qrcode")
 	s.form.Set("account", uid).
-		Set("app", appType)
+		Set("app", "web")
 	return s
 }
 
-func QrcodeImageUrl(appType, userId string) string {
-	appId := qrcodeAppIds[appType]
-	return fmt.Sprintf(qrcodeImageUrl, appType, appId, userId)
+func QrcodeImageUrl(userId string) string {
+	return fmt.Sprintf(qrcodeImageUrl, userId)
 }
