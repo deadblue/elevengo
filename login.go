@@ -2,11 +2,9 @@ package elevengo
 
 import (
 	"context"
-	"strings"
 
 	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/lowlevel/api"
-	"github.com/deadblue/elevengo/lowlevel/errors"
 )
 
 // Credential contains required information which 115 server uses to
@@ -37,7 +35,7 @@ func (a *Agent) CredentialImport(cr *Credential) (err error) {
 		protocol.CookieNameSEID: cr.SEID,
 	}
 	a.llc.ImportCookies(cookies, protocol.CookieDomains...)
-	return a.afterSignIn(cr.UID)
+	return a.afterSignIn()
 }
 
 // CredentialExport exports current credentials for future-use.
@@ -48,21 +46,12 @@ func (a *Agent) CredentialExport(cr *Credential) {
 	cr.SEID = cookies[protocol.CookieNameSEID]
 }
 
-func (a *Agent) afterSignIn(uid string) (err error) {
+func (a *Agent) afterSignIn() (err error) {
 	// Call UploadInfo API to get userId and userKey
 	spec := (&api.UploadInfoSpec{}).Init()
-	if err = a.llc.CallApi(spec, context.Background()); err != nil {
-		return
-	} else {
-		// Save to common parameters
+	if err = a.llc.CallApi(spec, context.Background()); err == nil {
 		a.common.SetUserInfo(spec.Result.UserId, spec.Result.UserKey)
 	}
-	// Check UID
-	parts := strings.Split(uid, "_")
-	if len(parts) != 3 {
-		return errors.ErrCredentialInvalid
-	}
-	a.isWeb = strings.HasPrefix(parts[1], "A")
 	return
 }
 

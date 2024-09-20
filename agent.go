@@ -20,10 +20,6 @@ type Agent struct {
 
 	// Common parameters
 	common types.CommonParams
-
-	// isWeb indicates whether the credential is for web.
-	// Some API should use PC version when credential is not for web.
-	isWeb bool
 }
 
 // Default creates an Agent with default settings.
@@ -51,9 +47,9 @@ func New(options ...option.AgentOption) *Agent {
 	}
 	llc := impl.NewClient(hc, cdMin, cdMax)
 	if appVer == "" {
-		appVer, _ = getLatestAppVersion(llc)
+		appVer, _ = getLatestAppVersion(llc, api.AppBrowserWindows)
 	}
-	llc.SetUserAgent(protocol.MakeUserAgent(name, appVer))
+	llc.SetUserAgent(protocol.MakeUserAgent(name, api.AppNameBrowser, appVer))
 	return &Agent{
 		llc: llc,
 		common: types.CommonParams{
@@ -62,10 +58,11 @@ func New(options ...option.AgentOption) *Agent {
 	}
 }
 
-func getLatestAppVersion(llc client.Client) (appVer string, err error) {
+func getLatestAppVersion(llc client.Client, appType string) (appVer string, err error) {
 	spec := (&api.AppVersionSpec{}).Init()
 	if err = llc.CallApi(spec, context.Background()); err == nil {
-		appVer = spec.Result.LinuxApp.VersionCode
+		versionInfo := spec.Result[appType]
+		appVer = versionInfo.VersionCode
 	}
 	return
 }

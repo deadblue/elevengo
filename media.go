@@ -3,11 +3,8 @@ package elevengo
 import (
 	"context"
 
-	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/api"
-	"github.com/deadblue/elevengo/lowlevel/client"
 	"github.com/deadblue/elevengo/lowlevel/errors"
-	"github.com/deadblue/elevengo/lowlevel/types"
 )
 
 // VideoDefinition values from 115.
@@ -48,39 +45,22 @@ type VideoTicket struct {
 
 // VideoCreateTicket creates a PlayTicket to play the cloud video.
 func (a *Agent) VideoCreateTicket(pickcode string, ticket *VideoTicket) (err error) {
-	// VideoPlay API for web and PC are different !
-	var spec client.ApiSpec
-	var result *types.VideoPlayResult
-	if a.isWeb {
-		webSpec := (&api.VideoPlayWebSpec{}).Init(pickcode)
-		spec, result = webSpec, &webSpec.Result
-	} else {
-		pcSpec := (&api.VideoPlayPcSpec{}).Init(pickcode, &a.common)
-		spec, result = pcSpec, &pcSpec.Result
-	}
+	spec := (&api.VideoPlayWebSpec{}).Init(pickcode)
 	if err = a.llc.CallApi(spec, context.Background()); err != nil {
 		return
 	}
-	if !result.IsReady {
+	if !spec.Result.IsReady {
 		return errors.ErrVideoNotReady
 	}
-	ticket.FileName = result.FileName
-	ticket.FileSize = result.FileSize
-	ticket.Duration = result.VideoDuration
+	ticket.FileName = spec.Result.FileName
+	ticket.FileSize = spec.Result.FileSize
+	ticket.Duration = spec.Result.VideoDuration
 	// Select the video with best definition
-	for _, video := range result.Videos {
+	for _, video := range spec.Result.Videos {
 		if video.Width > ticket.Width {
 			ticket.Width = video.Width
 			ticket.Height = video.Height
 			ticket.Url = video.PlayUrl
-		}
-	}
-	// Currently(2023-08-02), the play URL for PC does not check any request
-	// headers, it is highly recommended to use PC credential.
-	if a.isWeb {
-		ticket.Headers = map[string]string{
-			"User-Agent": a.llc.GetUserAgent(),
-			"Cookie":     util.MarshalCookies(a.llc.ExportCookies(ticket.Url)),
 		}
 	}
 	return
