@@ -2,11 +2,13 @@ package elevengo
 
 import (
 	"context"
+	"iter"
 	"time"
 
 	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/api"
+	"github.com/deadblue/elevengo/lowlevel/client"
 	"github.com/deadblue/elevengo/lowlevel/errors"
 	"github.com/deadblue/elevengo/lowlevel/types"
 	"github.com/deadblue/elevengo/option"
@@ -86,206 +88,193 @@ func (f *File) from(info *types.FileInfo) *File {
 }
 
 type fileIterator struct {
+	llc client.Client
+
+	// Offset & limit
+	offset, limit int
+	// Root directory ID
+	dirId string
+	// Sort order
+	order string
+	// Is ascending?
+	asc int
+	// File type
+	type_ int
+
 	// Iterate mode:
 	//  - 1: list
 	//  - 2: star
 	//  - 3: search
 	//  - 4: label
 	mode int
-	// Data offset
-	offset int
-
-	// Root dir ID
-	dirId string
-	// Order field
-	order string
-	// Order orientation
-	asc int
-	// Keyword
+	// Parameters for mode=3
 	keyword string
-	// Label Id
+	// Parameters for mode=4
 	labelId string
-	// File type
-	fileType int
 
-	// Total count
-	count int
-	// Cached files
-	files []*types.FileInfo
-	// Cache index
-	index int
-	// Cache size
-	size int
-
-	// Update function
-	update func(*fileIterator) error
+	result *types.FileListResult
 }
 
-func (i *fileIterator) Next() (err error) {
-	if i.index += 1; i.index < i.size {
-		return
+func (i *fileIterator) updateList() (err error) {
+	if i.result != nil && i.offset >= i.result.Count {
+		return errNoMoreItems
 	}
-	i.offset += i.size
-	if i.offset >= i.count {
-		return errors.ErrReachEnd
+	spec := (&api.FileListSpec{}).Init(i.dirId, i.offset, i.limit)
+	if i.mode == 2 {
+		spec.SetStared()
+	} else {
+		if i.order == "" {
+			i.order = api.FileOrderDefault
+		}
+		spec.SetOrder(i.order, i.asc)
 	}
-	return i.update(i)
+	spec.SetFileType(i.type_)
+	for {
+		if err = i.llc.CallApi(spec, context.Background()); err == nil {
+			break
+		}
+		if ferr, ok := err.(*errors.FileOrderInvalidError); ok {
+			spec.SetOrder(ferr.Order, ferr.Asc)
+		} else {
+			return
+		}
+	}
+	i.result = &spec.Result
+	i.order, i.asc = spec.Result.Order, spec.Result.Asc
+	return
 }
 
-func (i *fileIterator) Index() int {
-	return i.offset + i.index
+func (i *fileIterator) updateSearch() (err error) {
+	if i.result != nil && i.offset >= i.result.Count {
+		return errNoMoreItems
+	}
+	spec := (&api.FileSearchSpec{}).Init(i.offset, i.limit)
+	spec.SetFileType(i.type_)
+	switch i.mode {
+	case 3:
+		spec.ByKeyword(i.dirId, i.keyword)
+	case 4:
+		spec.ByLabelId(i.labelId)
+	}
+	if err = i.llc.CallApi(spec, context.Background()); err == nil {
+		i.result = &spec.Result
+	}
+	return
+}
+
+func (i *fileIterator) update() (err error) {
+	if i.dirId == "" {
+		i.dirId = ""
+	}
+	if i.limit == 0 {
+		i.limit = protocol.FileListLimit
+	}
+	switch i.mode {
+	case 1, 2:
+		err = i.updateList()
+	case 3, 4:
+		err = i.updateSearch()
+	}
+	return
 }
 
 func (i *fileIterator) Count() int {
-	return i.count
+	if i.result == nil {
+		return 0
+	}
+	return i.result.Count
 }
 
-func (i *fileIterator) Get(file *File) error {
-	if i.index >= i.size {
-		return errors.ErrReachEnd
+func (i *fileIterator) Items() iter.Seq2[int, *File] {
+	return func(yield func(int, *File) bool) {
+		for {
+			for index, fi := range i.result.Files {
+				if cont := yield(i.offset+index, (&File{}).from(fi)); !cont {
+					return
+				}
+			}
+			i.offset += i.limit
+			if err := i.update(); err != nil {
+				break
+			}
+		}
 	}
-	if file != nil {
-		file.from(i.files[i.index])
-	}
-	return nil
 }
 
 // FileIterate list files under directory, whose id is |dirId|.
-func (a *Agent) FileIterate(dirId string) (it Iterator[File], err error) {
+func (a *Agent) FileIterate(dirId string) (it Iterator[*File], err error) {
 	fi := &fileIterator{
-		mode:   1,
-		offset: 0,
-
+		llc:   a.llc,
 		dirId: dirId,
-		order: api.FileOrderDefault,
-		asc:   0,
-
-		update: a.fileIterateInternal,
+		mode:  1,
 	}
-	if err = a.fileIterateInternal(fi); err == nil {
+	if err = fi.update(); err == nil {
 		it = fi
 	}
 	return
 }
 
 // FileWithStar lists files with star.
-func (a *Agent) FileWithStar(opts ...option.FileListOption) (it Iterator[File], err error) {
+func (a *Agent) FileWithStar(opts ...option.FileListOption) (it Iterator[*File], err error) {
 	fi := &fileIterator{
-		mode:   2,
-		offset: 0,
-
-		dirId: "0",
-
-		update: a.fileIterateInternal,
+		llc:  a.llc,
+		mode: 2,
 	}
 	// Apply options
 	for _, opt := range opts {
 		switch opt := opt.(type) {
 		case option.FileListTypeOption:
-			fi.fileType = int(opt)
+			fi.type_ = int(opt)
 		}
 	}
-	if err = a.fileIterateInternal(fi); err == nil {
+	if err = fi.update(); err == nil {
 		it = fi
-	}
-	return
-}
-
-func (a *Agent) fileIterateInternal(fi *fileIterator) (err error) {
-	spec := (&api.FileListSpec{}).Init(fi.dirId, fi.offset, protocol.FileListLimit)
-	spec.SetFileType(fi.fileType)
-	switch fi.mode {
-	case 1:
-		spec.SetOrder(fi.order, fi.asc)
-	case 2:
-		spec.SetStared()
-	}
-	for retry := true; retry; {
-		if err = a.llc.CallApi(spec, context.Background()); err != nil {
-			if ferr, ok := err.(*errors.ErrFileOrderNotSupported); ok {
-				spec.SetOrder(ferr.Order, ferr.Asc)
-			} else {
-				return err
-			}
-		} else {
-			retry = false
-		}
-	}
-	fi.order, fi.asc = spec.Result.Order, spec.Result.Asc
-	if fi.count = spec.Result.Count; fi.count > 0 {
-		fi.index, fi.size = 0, len(spec.Result.Files)
-		fi.files = make([]*types.FileInfo, fi.size)
-		copy(fi.files, spec.Result.Files)
 	}
 	return
 }
 
 // FileSearch recursively searches files under a directory, whose name contains
 // the given keyword.
-func (a *Agent) FileSearch(dirId, keyword string, opts ...option.FileListOption) (it Iterator[File], err error) {
+func (a *Agent) FileSearch(
+	dirId, keyword string, opts ...option.FileListOption,
+) (it Iterator[*File], err error) {
 	fi := &fileIterator{
-		mode:   3,
-		offset: 0,
-
+		llc:     a.llc,
 		dirId:   dirId,
+		mode:    3,
 		keyword: keyword,
-
-		update: a.fileSearchInternal,
 	}
 	// Apply options
 	for _, opt := range opts {
 		switch opt := opt.(type) {
 		case option.FileListTypeOption:
-			fi.fileType = int(opt)
+			fi.type_ = int(opt)
 		}
 	}
-	if err = a.fileSearchInternal(fi); err == nil {
+	if err = fi.update(); err == nil {
 		it = fi
 	}
 	return
 }
 
 // FileLabeled lists files which has specific label.
-func (a *Agent) FileWithLabel(labelId string, opts ...option.FileListOption) (it Iterator[File], err error) {
+func (a *Agent) FileWithLabel(
+	labelId string, opts ...option.FileListOption,
+) (it Iterator[*File], err error) {
 	fi := &fileIterator{
-		mode:   4,
-		offset: 0,
-
-		dirId:   "0",
+		llc:     a.llc,
+		mode:    4,
 		labelId: labelId,
-
-		update: a.fileSearchInternal,
 	}
 	// Apply options
 	for _, opt := range opts {
 		switch opt := opt.(type) {
 		case option.FileListTypeOption:
-			fi.fileType = int(opt)
+			fi.type_ = int(opt)
 		}
 	}
-	if err = a.fileSearchInternal(fi); err == nil {
+	if err = fi.update(); err == nil {
 		it = fi
-	}
-	return
-}
-
-func (a *Agent) fileSearchInternal(fi *fileIterator) (err error) {
-	spec := (&api.FileSearchSpec{}).Init(fi.offset, protocol.FileListLimit)
-	spec.SetFileType(fi.fileType)
-	switch fi.mode {
-	case 3:
-		spec.ByKeyword(fi.dirId, fi.keyword)
-	case 4:
-		spec.ByLabelId(fi.labelId)
-	}
-	if err = a.llc.CallApi(spec, context.Background()); err != nil {
-		return
-	}
-	fi.order, fi.asc = spec.Result.Order, spec.Result.Asc
-	if fi.count = spec.Result.Count; fi.count > 0 {
-		fi.index, fi.size = 0, len(spec.Result.Files)
-		fi.files = make([]*types.FileInfo, fi.size)
-		copy(fi.files, spec.Result.Files)
 	}
 	return
 }

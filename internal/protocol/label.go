@@ -1,5 +1,5 @@
 package protocol
 
 const (
-	LabelListLimit = 30
+	LabelListLimit = 11500
 )

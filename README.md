@@ -1,6 +1,6 @@
 # ElevenGo
 
-![Version](https://img.shields.io/badge/release-v0.6.3-brightgreen?style=flat-square)
+![Version](https://img.shields.io/badge/release-v0.7.1-brightgreen?style=flat-square)
 [![Reference](https://img.shields.io/badge/Go-Reference-blue.svg?style=flat-square)](https://pkg.go.dev/github.com/deadblue/elevengo)
 ![License](https://img.shields.io/:License-MIT-green.svg?style=flat-square)
 
@@ -31,17 +31,16 @@ func main()  {
     log.Fatalf("Import credentail error: %s", err)
   }
 
-  // Get file list
-  it, err := agent.FileIterate("dirId")
-  for ; err == nil; err = it.Next() {
-    file := &elevengo.File{}
-    if err = it.Get(file); err == nil {
-      log.Printf("File: %d => %#v", it.Index(), file)
+  // Iterate files under specific directory
+  if it, err := agent.FileIterate("dirId"); err != nil {
+    log.Fatalf("Iterate files error: %s", err)
+  } else {
+    log.Printf("Total files: %d", it.Count())
+    for index, file := range it.Items() {
+      log.Printf("%d => %#v", index, file)
     }
   }
-  if !elevengo.IsIteratorEnd(err) {
-    log.Fatalf("Iterate files error: %s", err)
-  }
+  
 }
 ```
 

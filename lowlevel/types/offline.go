@@ -6,7 +6,7 @@ import (
 	"github.com/deadblue/elevengo/lowlevel/errors"
 )
 
-type OfflineTask struct {
+type TaskInfo struct {
 	InfoHash string `json:"info_hash"`
 	Name     string `json:"name"`
 	Size     int64  `json:"size"`
@@ -30,7 +30,7 @@ type OfflineListResult struct {
 	QuotaRemain int
 
 	TaskCount int
-	Tasks     []*OfflineTask
+	Tasks     []*TaskInfo
 }
 
 type _OfflineAddResult struct {
@@ -52,17 +52,17 @@ type _OfflineAddUrlsProto struct {
 	Result []*_OfflineAddResult `json:"result"`
 }
 
-type OfflineAddUrlsResult []*OfflineTask
+type OfflineAddUrlsResult []*TaskInfo
 
 func (r *OfflineAddUrlsResult) UnmarshalResult(data []byte) (err error) {
 	proto := &_OfflineAddUrlsProto{}
 	if err = json.Unmarshal(data, proto); err != nil {
 		return
 	}
-	tasks := make([]*OfflineTask, len(proto.Result))
+	tasks := make([]*TaskInfo, len(proto.Result))
 	for i, r := range proto.Result {
 		if r.State || r.ErrCode == errors.CodeOfflineTaskExists {
-			tasks[i] = &OfflineTask{}
+			tasks[i] = &TaskInfo{}
 			tasks[i].InfoHash = r.InfoHash
 			tasks[i].Name = r.Name
 			tasks[i].Url = r.Url

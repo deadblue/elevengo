@@ -28,25 +28,25 @@ func ExampleAgent_FileIterate() {
 	agent := Default()
 
 	it, err := agent.FileIterate("0")
-	for ; err == nil; err = it.Next() {
-		file := &File{}
-		_ = it.Get(file)
-		log.Printf("File: %d => %#v", it.Index(), file)
-	}
-	if !IsIteratorEnd(err) {
+	if err != nil {
 		log.Fatalf("Iterate file failed: %s", err.Error())
+	}
+	log.Printf("File count: %d", it.Count())
+	for index, file := range it.Items() {
+		log.Printf("File: %d => %#v", index, file)
 	}
 }
 
 func ExampleAgent_OfflineIterate() {
 	agent := Default()
-
-	for it, err := agent.OfflineIterate(); err == nil; err = it.Next() {
-		task := &OfflineTask{}
-		err = it.Get(task)
-		if err != nil {
-			log.Printf("Offline task: %#v", task)
+	it, err := agent.OfflineIterate()
+	if err == nil {
+		log.Printf("Task count: %d", it.Count())
+		for index, task := range it.Items() {
+			log.Printf("Offline task: %d => %#v", index, task)
 		}
+	} else {
+		log.Fatalf("Iterate offline task failed: %s", err)
 	}
 }
 

@@ -21,8 +21,8 @@ func (s *LabelListSpec) Init(offset, limit int) *LabelListSpec {
 	s._StandardApiSpec.Init("https://webapi.115.com/label/list")
 	s.query.SetInt("offset", offset)
 	s.query.SetInt("limit", limit)
-	s.query.Set("sort", "create_time")
-	s.query.Set("order", "asc")
+	// s.query.Set("sort", "create_time")
+	// s.query.Set("order", "asc")
 	return s
 }
 

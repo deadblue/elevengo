@@ -2,9 +2,11 @@ package elevengo
 
 import (
 	"context"
+	"iter"
 
 	"github.com/deadblue/elevengo/internal/protocol"
 	"github.com/deadblue/elevengo/lowlevel/api"
+	"github.com/deadblue/elevengo/lowlevel/client"
 	"github.com/deadblue/elevengo/lowlevel/errors"
 	"github.com/deadblue/elevengo/lowlevel/types"
 )
@@ -52,74 +54,63 @@ type Label struct {
 	Color LabelColor
 }
 
-// labelIterator implements Iterator[Label].
+func (l *Label) from(info *types.LabelInfo) *Label {
+	l.Id = info.Id
+	l.Name = info.Name
+	l.Color = labelColorRevMap[info.Color]
+	return l
+}
+
 type labelIterator struct {
-	// Offset
+	llc    client.Client
 	offset int
-	// Total count
-	count int
-
-	// Cached labels
-	labels []*types.LabelInfo
-	// Cache index
-	index int
-	// Cache size
-	size int
-
-	// Update function
-	uf func(*labelIterator) error
+	limit  int
+	result *types.LabelListResult
 }
 
-func (i *labelIterator) Next() (err error) {
-	i.index += 1
-	if i.index < i.size {
-		return
+func (i *labelIterator) update() (err error) {
+	if i.result != nil && i.offset >= i.result.Total {
+		return errNoMoreItems
 	}
-	i.offset += i.size
-	if i.offset >= i.count {
-		return errors.ErrReachEnd
-	}
-	return i.uf(i)
-}
-
-func (i *labelIterator) Index() int {
-	return i.offset + i.index
-}
-
-func (i *labelIterator) Get(label *Label) error {
-	if i.index >= i.size {
-		return errors.ErrReachEnd
-	}
-	l := i.labels[i.index]
-	label.Id = l.Id
-	label.Name = l.Name
-	label.Color = labelColorRevMap[l.Color]
-	return nil
-}
-
-func (i *labelIterator) Count() int {
-	return i.count
-}
-
-func (a *Agent) LabelIterate() (it Iterator[Label], err error) {
-	li := &labelIterator{
-		uf: a.labelIterateInternal,
-	}
-	if err = a.labelIterateInternal(li); err == nil {
-		it = li
+	spec := (&api.LabelListSpec{}).Init(i.offset, i.limit)
+	if err = i.llc.CallApi(spec, context.Background()); err == nil {
+		i.result = &spec.Result
 	}
 	return
 }
 
-func (a *Agent) labelIterateInternal(i *labelIterator) (err error) {
-	spec := (&api.LabelListSpec{}).Init(i.offset, protocol.LabelListLimit)
-	if err = a.llc.CallApi(spec, context.Background()); err != nil {
-		return
+func (i *labelIterator) Count() int {
+	if i.result == nil {
+		return 0
 	}
-	i.count = spec.Result.Total
-	i.index, i.size = 0, len(spec.Result.List)
-	i.labels = make([]*types.LabelInfo, i.size)
-	copy(i.labels, spec.Result.List)
+	return i.result.Total
+}
+
+func (i *labelIterator) Items() iter.Seq2[int, *Label] {
+	return func(yield func(int, *Label) bool) {
+		for {
+			for index, li := range i.result.List {
+				if stop := !yield(i.offset+index, (&Label{}).from(li)); stop {
+					return
+				}
+			}
+			i.offset += i.limit
+			if err := i.update(); err != nil {
+				return
+			}
+		}
+	}
+}
+
+func (a *Agent) LabelIterate() (it Iterator[*Label], err error) {
+	li := &labelIterator{
+		llc:    a.llc,
+		offset: 0,
+		limit:  protocol.LabelListLimit,
+	}
+	if err = li.update(); err == nil {
+		it = li
+	}
 	return
 }
 

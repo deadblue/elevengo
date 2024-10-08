@@ -31,7 +31,7 @@ type FileListResp struct {
 func (r *FileListResp) Err() (err error) {
 	// Handle special error
 	if r.ErrorCode2 == errors.CodeFileOrderNotSupported {
-		return &errors.ErrFileOrderNotSupported{
+		return &errors.FileOrderInvalidError{
 			Order: r.Order,
 			Asc:   r.IsAsc,
 		}
