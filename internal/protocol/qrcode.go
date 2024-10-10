@@ -3,6 +3,7 @@ package protocol
 import (
 	"encoding/json"
 
+	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/errors"
 )
 
@@ -21,7 +22,9 @@ func (r *QrcodeBaseResp) Err() error {
 	if r.State != 0 {
 		return nil
 	}
-	return errors.Get(r.ErrorCode1)
+	return errors.Get(r.ErrorCode1, util.NonEmptyString(
+		r.ErrorMessage1, r.ErrorMessage2,
+	))
 }
 
 func (r *QrcodeBaseResp) Extract(v any) error {
