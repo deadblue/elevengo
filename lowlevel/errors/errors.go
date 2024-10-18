@@ -30,7 +30,7 @@ var (
 	ErrInvalidParameters = errors.New("invalid parameters")
 
 	// ErrReachEnd means there are no more item.
-	ErrReachEnd = errors.New("reach the end")
+	// ErrReachEnd = errors.New("reach the end")
 
 	ErrUploadDisabled = errors.New("upload function is disabled")
 

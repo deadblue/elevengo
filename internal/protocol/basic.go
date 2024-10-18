@@ -27,23 +27,17 @@ func (r *BasicResp) Err() error {
 	if r.State {
 		return nil
 	}
-	errCode := findNonZero(
+	return errors.Get(util.NonZero(
 		r.ErrorCode.Int(),
 		r.ErrorCode2,
 		r.ErrorCode3,
 		r.ErrorCode4,
 		r.ErrorCode5,
-	)
-	return errors.Get(errCode)
-}
-
-func findNonZero(code ...int) int {
-	for _, c := range code {
-		if c != 0 {
-			return c
-		}
-	}
-	return 0
+	), util.NonEmptyString(
+		r.ErrorMessage,
+		r.ErrorMessage2,
+		r.ErrorMessage3,
+	))
 }
 
 // StandardResp is the response for all JSON/JSONP APIs with "data" field.

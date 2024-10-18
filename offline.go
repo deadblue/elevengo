@@ -2,9 +2,10 @@ package elevengo
 
 import (
 	"context"
+	"iter"
 
 	"github.com/deadblue/elevengo/lowlevel/api"
-	"github.com/deadblue/elevengo/lowlevel/errors"
+	"github.com/deadblue/elevengo/lowlevel/client"
 	"github.com/deadblue/elevengo/lowlevel/types"
 	"github.com/deadblue/elevengo/option"
 )
@@ -46,92 +47,67 @@ func (t *OfflineTask) IsFailed() bool {
 	return t.Status == -1
 }
 
+func (t *OfflineTask) from(ti *types.TaskInfo) *OfflineTask {
+	t.InfoHash = ti.InfoHash
+	t.Name = ti.Name
+	t.Size = ti.Size
+	t.Status = ti.Status
+	t.Percent = ti.Percent
+	t.Url = ti.Url
+	t.FileId = ti.FileId
+	return t
+}
+
 type offlineIterator struct {
-	// Total task count
-	count int
-	// Page index
-	pi int
-	// Page count
-	pc int
-	// Page size
-	ps int
-
-	// Cached tasks
-	tasks []*types.OfflineTask
-	// Task index
-	index int
-	// Task size
-	size int
-
-	// Update function
-	uf func(*offlineIterator) error
+	llc    client.Client
+	page   int
+	result *types.OfflineListResult
 }
 
-func (i *offlineIterator) Next() (err error) {
-	if i.index += 1; i.index < i.size {
-		return nil
+func (i *offlineIterator) update() (err error) {
+	if i.result != nil && i.page > i.result.PageCount {
+		return errNoMoreItems
 	}
-	if i.pi >= i.pc {
-		return errors.ErrReachEnd
-	}
-	// Fetch next page
-	i.pi += 1
-	return i.uf(i)
-}
-
-func (i *offlineIterator) Index() int {
-	return (i.pi-1)*i.ps + i.index
-}
-
-func (i *offlineIterator) Get(task *OfflineTask) (err error) {
-	if i.index >= i.size {
-		return errors.ErrReachEnd
-	}
-	t := i.tasks[i.index]
-	task.InfoHash = t.InfoHash
-	task.Name = t.Name
-	task.Size = t.Size
-	task.Url = t.Url
-	task.Status = t.Status
-	task.Percent = t.Percent
-	task.FileId = t.FileId
-	return nil
-}
-
-func (i *offlineIterator) Count() int {
-	return i.count
-}
-
-// OfflineIterate returns an iterator for travelling offline tasks, it will
-// return an error if there are no tasks.
-func (a *Agent) OfflineIterate() (it Iterator[OfflineTask], err error) {
-	oi := &offlineIterator{
-		pi: 1,
-		uf: a.offlineIterateInternal,
-	}
-	if err = a.offlineIterateInternal(oi); err == nil {
-		it = oi
+	spec := (&api.OfflineListSpec{}).Init(i.page)
+	if err = i.llc.CallApi(spec, context.Background()); err == nil {
+		i.result = &spec.Result
+		i.page += 1
 	}
 	return
 }
 
-func (a *Agent) offlineIterateInternal(oi *offlineIterator) (err error) {
-	spec := (&api.OfflineListSpec{}).Init(oi.pi)
-	if err = a.llc.CallApi(spec, context.Background()); err != nil {
-		return
+func (i *offlineIterator) Count() int {
+	if i.result == nil {
+		return 0
 	}
-	result := spec.Result
-	oi.pi = result.PageIndex
-	oi.pc = result.PageCount
-	oi.ps = result.PageSize
-	oi.index, oi.size = 0, len(result.Tasks)
-	if oi.size == 0 {
-		err = errors.ErrReachEnd
-	} else {
-		oi.tasks = make([]*types.OfflineTask, 0, oi.size)
-		oi.tasks = append(oi.tasks, result.Tasks...)
+	return i.result.TaskCount
+}
+
+func (i *offlineIterator) Items() iter.Seq2[int, *OfflineTask] {
+	return func(yield func(int, *OfflineTask) bool) {
+		for index := 0; ; {
+			for _, ti := range i.result.Tasks {
+				if stop := !yield(index, (&OfflineTask{}).from(ti)); stop {
+					return
+				}
+				index += 1
+			}
+			if err := i.update(); err != nil {
+				break
+			}
+		}
 	}
-	oi.count = result.TaskCount
+}
+
+// OfflineIterate returns an iterator to access all offline tasks.
+func (a *Agent) OfflineIterate() (it Iterator[*OfflineTask], err error) {
+	oi := &offlineIterator{
+		llc:  a.llc,
+		page: 1,
+	}
+	if err = oi.update(); err == nil {
+		it = oi
+	}
 	return
 }
 

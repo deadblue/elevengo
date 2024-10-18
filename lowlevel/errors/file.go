@@ -4,11 +4,11 @@ const (
 	CodeFileOrderNotSupported = 20130827
 )
 
-type ErrFileOrderNotSupported struct {
+type FileOrderInvalidError struct {
 	Order string
 	Asc   int
 }
 
-func (e *ErrFileOrderNotSupported) Error() string {
-	return "order not supported"
+func (e *FileOrderInvalidError) Error() string {
+	return "invalid file order"
 }

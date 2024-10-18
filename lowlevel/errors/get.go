@@ -1,12 +1,14 @@
 package errors
 
+import "fmt"
+
 var errorsMap = map[int]error{
 	// Normal errors
 	99:     ErrNotLogin,
 	911:    ErrCaptchaRequired,
 	990001: ErrNotLogin,
 	// Offline errors
-	10004: ErrOfflineInvalidLink,
+	CodeOfflineIllegalLink: ErrOfflineInvalidLink,
 	// File errors
 	20004: ErrExist,
 	20022: ErrInvalidOperation,
@@ -29,9 +31,21 @@ var errorsMap = map[int]error{
 	CodeOfflineTaskExists: nil,
 }
 
-func Get(code int) error {
+type ApiError struct {
+	Code    int
+	Message string
+}
+
+func (e *ApiError) Error() string {
+	return fmt.Sprintf("(%d)%s", e.Code, e.Message)
+}
+
+func Get(code int, message string) error {
 	if err, found := errorsMap[code]; found {
 		return err
 	}
-	return ErrUnexpected
+	return &ApiError{
+		Code:    code,
+		Message: message,
+	}
 }

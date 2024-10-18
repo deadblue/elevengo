@@ -16,8 +16,8 @@ type OfflineListResp struct {
 	QuotaTotal  int `json:"total"`
 	QuotaRemain int `json:"quota"`
 
-	TaskCount int                  `json:"count"`
-	Tasks     []*types.OfflineTask `json:"tasks"`
+	TaskCount int               `json:"count"`
+	Tasks     []*types.TaskInfo `json:"tasks"`
 }
 
 func (r *OfflineListResp) Extract(v any) (err error) {
