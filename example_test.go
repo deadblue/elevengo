@@ -210,10 +210,7 @@ func ExampleAgent_Import() {
 func ExampleNew() {
 	// Customize agent
 	agent := New(
-		// Custom agent name
-		option.AgentNameOption("Evangelion/1.0"),
-		// Sleep 100~500 ms between two API calling
-		option.AgentCooldownOption{Min: 100, Max: 500},
+		option.Agent().WithName("Evangelion/1.0").WithCooldown(100, 500),
 	)
 
 	var err error

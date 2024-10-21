@@ -100,6 +100,8 @@ type fileIterator struct {
 	asc int
 	// File type
 	type_ int
+	// File extension
+	ext string
 
 	// Iterate mode:
 	//  - 1: list
@@ -128,7 +130,11 @@ func (i *fileIterator) updateList() (err error) {
 		}
 		spec.SetOrder(i.order, i.asc)
 	}
-	spec.SetFileType(i.type_)
+	if i.type_ >= 0 {
+		spec.SetFileType(i.type_)
+	} else {
+		spec.SetFileExtension(i.ext)
+	}
 	for {
 		if err = i.llc.CallApi(spec, context.Background()); err == nil {
 			break
@@ -149,7 +155,11 @@ func (i *fileIterator) updateSearch() (err error) {
 		return errNoMoreItems
 	}
 	spec := (&api.FileSearchSpec{}).Init(i.offset, i.limit)
-	spec.SetFileType(i.type_)
+	if i.type_ >= 0 {
+		spec.SetFileType(i.type_)
+	} else {
+		spec.SetFileExtension(i.ext)
+	}
 	switch i.mode {
 	case 3:
 		spec.ByKeyword(i.dirId, i.keyword)
@@ -215,17 +225,15 @@ func (a *Agent) FileIterate(dirId string) (it Iterator[*File], err error) {
 }
 
 // FileWithStar lists files with star.
-func (a *Agent) FileWithStar(opts ...option.FileListOption) (it Iterator[*File], err error) {
+func (a *Agent) FileWithStar(options ...*option.FileListOptions) (it Iterator[*File], err error) {
 	fi := &fileIterator{
 		llc:  a.llc,
 		mode: 2,
 	}
 	// Apply options
-	for _, opt := range opts {
-		switch opt := opt.(type) {
-		case option.FileListTypeOption:
-			fi.type_ = int(opt)
-		}
+	if opts := util.NotNull(options...); opts != nil {
+		fi.type_ = opts.Type
+		fi.ext = opts.ExtName
 	}
 	if err = fi.update(); err == nil {
 		it = fi
@@ -236,7 +244,7 @@ func (a *Agent) FileWithStar(opts ...option.FileListOption) (it Iterator[*File],
 // FileSearch recursively searches files under a directory, whose name contains
 // the given keyword.
 func (a *Agent) FileSearch(
-	dirId, keyword string, opts ...option.FileListOption,
+	dirId, keyword string, options ...*option.FileListOptions,
 ) (it Iterator[*File], err error) {
 	fi := &fileIterator{
 		llc:     a.llc,
@@ -245,11 +253,9 @@ func (a *Agent) FileSearch(
 		keyword: keyword,
 	}
 	// Apply options
-	for _, opt := range opts {
-		switch opt := opt.(type) {
-		case option.FileListTypeOption:
-			fi.type_ = int(opt)
-		}
+	if opts := util.NotNull(options...); opts != nil {
+		fi.type_ = opts.Type
+		fi.ext = opts.ExtName
 	}
 	if err = fi.update(); err == nil {
 		it = fi
@@ -259,7 +265,7 @@ func (a *Agent) FileSearch(
 
 // FileLabeled lists files which has specific label.
 func (a *Agent) FileWithLabel(
-	labelId string, opts ...option.FileListOption,
+	labelId string, options ...*option.FileListOptions,
 ) (it Iterator[*File], err error) {
 	fi := &fileIterator{
 		llc:     a.llc,
@@ -267,11 +273,9 @@ func (a *Agent) FileWithLabel(
 		labelId: labelId,
 	}
 	// Apply options
-	for _, opt := range opts {
-		switch opt := opt.(type) {
-		case option.FileListTypeOption:
-			fi.type_ = int(opt)
-		}
+	if opts := util.NotNull(options...); opts != nil {
+		fi.type_ = opts.Type
+		fi.ext = opts.ExtName
 	}
 	if err = fi.update(); err == nil {
 		it = fi

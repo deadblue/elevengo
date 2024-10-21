@@ -4,6 +4,7 @@ import (
 	"context"
 	"iter"
 
+	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/api"
 	"github.com/deadblue/elevengo/lowlevel/client"
 	"github.com/deadblue/elevengo/lowlevel/types"
@@ -112,17 +113,14 @@ func (a *Agent) OfflineIterate() (it Iterator[*OfflineTask], err error) {
 }
 
 // OfflineDelete deletes tasks.
-func (a *Agent) OfflineDelete(hashes []string, opts ...option.OfflineDeleteOption) (err error) {
+func (a *Agent) OfflineDelete(hashes []string, options ...*option.OfflineDeleteOptions) (err error) {
 	if len(hashes) == 0 {
 		return
 	}
 	// Apply options
 	deleteFiles := false
-	for _, opt := range opts {
-		switch opt := opt.(type) {
-		case option.OfflineDeleteFilesOfTasks:
-			deleteFiles = bool(opt)
-		}
+	if opts := util.NotNull(options...); opts != nil {
+		deleteFiles = opts.DeleteFiles
 	}
 	// Call API
 	spec := (&api.OfflineDeleteSpec{}).Init(hashes, deleteFiles)
@@ -151,7 +149,7 @@ func (a *Agent) OfflineClear(flag OfflineClearFlag) (err error) {
 //		"magent:?xt=urn:btih:111222",
 //		"ed2k://|file|name|size|md4|",
 //	}, option.OfflineSaveDownloadedFileTo("dirId"))
-func (a *Agent) OfflineAddUrl(urls []string, opts ...option.OfflineAddOption) (hashes []string, err error) {
+func (a *Agent) OfflineAddUrl(urls []string, options ...*option.OfflineAddOptions) (hashes []string, err error) {
 	// Prepare results buffer
 	if urlCount := len(urls); urlCount == 0 {
 		return
@@ -160,11 +158,8 @@ func (a *Agent) OfflineAddUrl(urls []string, opts ...option.OfflineAddOption) (h
 	}
 	// Apply options
 	saveDirId := ""
-	for _, opt := range opts {
-		switch opt := opt.(type) {
-		case option.OfflineSaveDownloadedFileTo:
-			saveDirId = string(opt)
-		}
+	if opts := util.NotNull(options...); opts != nil {
+		saveDirId = opts.SaveDirId
 	}
 	// Call API
 	spec := (&api.OfflineAddUrlsSpec{}).Init(urls, saveDirId, &a.common)

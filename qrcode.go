@@ -54,15 +54,12 @@ var ErrQrcodeCancelled = errors.New("QRcode cancelled")
 //
 //	agent := elevengo.Default()
 //	session := elevengo.QrcodeSession()
-//	agent.QrcodeStart(session, option.QrcodeAppTv)
-func (a *Agent) QrcodeStart(session *QrcodeSession, opts ...option.QrcodeOption) (err error) {
+//	agent.QrcodeStart(session, option.Qrcode().LoginTv())
+func (a *Agent) QrcodeStart(session *QrcodeSession, options ...*option.QrcodeOptions) (err error) {
 	// Apply options
 	app := "web"
-	for _, opt := range opts {
-		switch opt := opt.(type) {
-		case option.QrcodeAppOption:
-			app = string(opt)
-		}
+	if opts := util.NotNull(options...); opts != nil {
+		app = opts.App
 	}
 	// Get token
 	spec := (&api.QrcodeTokenSpec{}).Init(app)

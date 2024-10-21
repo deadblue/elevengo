@@ -66,6 +66,12 @@ func (s *FileListSpec) SetFileType(fileType int) {
 	}
 }
 
+func (s *FileListSpec) SetFileExtension(extName string) {
+	if extName != "" {
+		s.query.Set("suffix", extName)
+	}
+}
+
 type FileSearchSpec struct {
 	_JsonApiSpec[types.FileListResult, protocol.FileSearchResp]
 }
@@ -89,8 +95,14 @@ func (s *FileSearchSpec) ByLabelId(labelId string) {
 }
 
 func (s *FileSearchSpec) SetFileType(fileType int) {
-	if fileType != 0 {
+	if fileType > 0 {
 		s.query.SetInt("type", fileType)
+	}
+}
+
+func (s *FileSearchSpec) SetFileExtension(extName string) {
+	if extName != "" {
+		s.query.Set("suffix", extName)
 	}
 }
 

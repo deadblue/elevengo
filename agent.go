@@ -5,11 +5,11 @@ import (
 
 	"github.com/deadblue/elevengo/internal/impl"
 	"github.com/deadblue/elevengo/internal/protocol"
+	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/api"
 	"github.com/deadblue/elevengo/lowlevel/client"
 	"github.com/deadblue/elevengo/lowlevel/types"
 	"github.com/deadblue/elevengo/option"
-	"github.com/deadblue/elevengo/plugin"
 )
 
 // Agent holds signed-in user's credentials, and provides methods to access upstream
@@ -28,28 +28,17 @@ func Default() *Agent {
 }
 
 // New creates Agent with customized options.
-func New(options ...option.AgentOption) *Agent {
-	var hc plugin.HttpClient = nil
-	var cdMin, cdMax uint
-	var name, appVer string
-	// Scan options
-	for _, opt := range options {
-		switch opt := opt.(type) {
-		case option.AgentNameOption:
-			name = string(opt)
-		case option.AgentCooldownOption:
-			cdMin, cdMax = opt.Min, opt.Max
-		case *option.AgentHttpOption:
-			hc = opt.Client
-		case option.AgentVersionOption:
-			appVer = string(opt)
-		}
+func New(options ...*option.AgentOptions) *Agent {
+	opts := util.NotNull(options...)
+	if opts == nil {
+		opts = option.Agent()
 	}
-	llc := impl.NewClient(hc, cdMin, cdMax)
+	llc := impl.NewClient(opts.HttpClient, opts.CooldownMinMs, opts.CooldownMaxMs)
+	appVer := opts.Version
 	if appVer == "" {
 		appVer, _ = getLatestAppVersion(llc, api.AppBrowserWindows)
 	}
-	llc.SetUserAgent(protocol.MakeUserAgent(name, api.AppNameBrowser, appVer))
+	llc.SetUserAgent(protocol.MakeUserAgent(opts.Name, api.AppNameBrowser, appVer))
 	return &Agent{
 		llc: llc,
 		common: types.CommonParams{

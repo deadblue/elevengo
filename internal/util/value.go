@@ -17,3 +17,12 @@ func NonEmptyString(str ...string) string {
 	}
 	return ""
 }
+
+func NotNull[V any](values ...*V) *V {
+	for _, value := range values {
+		if value != nil {
+			return value
+		}
+	}
+	return nil
+}
