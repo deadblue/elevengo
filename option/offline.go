@@ -1,17 +1,27 @@
 package option
 
-type OfflineDeleteOption interface {
-	isOfflineDeleteOption()
+type OfflineAddOptions struct {
+	SaveDirId string
 }
 
-type OfflineDeleteFilesOfTasks bool
-
-func (o OfflineDeleteFilesOfTasks) isOfflineDeleteOption() {}
-
-type OfflineAddOption interface {
-	isOfflineAddOption()
+func (o *OfflineAddOptions) WithSaveDirId(dirId string) *OfflineAddOptions {
+	o.SaveDirId = dirId
+	return o
 }
 
-type OfflineSaveDownloadedFileTo string
+func OfflineAdd() *OfflineAddOptions {
+	return &OfflineAddOptions{}
+}
 
-func (o OfflineSaveDownloadedFileTo) isOfflineAddOption() {}
+type OfflineDeleteOptions struct {
+	DeleteFiles bool
+}
+
+func (o *OfflineDeleteOptions) DeleteDownloadedFiles() *OfflineDeleteOptions {
+	o.DeleteFiles = true
+	return o
+}
+
+func OfflineDelete() *OfflineDeleteOptions {
+	return &OfflineDeleteOptions{}
+}

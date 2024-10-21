@@ -2,31 +2,43 @@ package option
 
 import "github.com/deadblue/elevengo/plugin"
 
-type AgentOption interface {
-	isAgentOption()
+type AgentOptions struct {
+	// Underlying HTTP client which is used to perform HTTP request.
+	HttpClient plugin.HttpClient
+
+	// Minimum delay in milliseconds after last API calling.
+	CooldownMinMs uint
+
+	// Maximum delay in milliseconds after last API calling.
+	CooldownMaxMs uint
+
+	// Custom user-agent.
+	Name string
+
+	// Custom app version.
+	Version string
 }
 
-type AgentCooldownOption struct {
-	// Minimum cooldown duration in millisecond
-	Min uint
-	// Maximum cooldown duration in millisecond
-	Max uint
+func (o *AgentOptions) WithHttpClient(hc plugin.HttpClient) *AgentOptions {
+	o.HttpClient = hc
+	return o
 }
 
-func (o AgentCooldownOption) isAgentOption() {}
-
-// AgentHttpOption allows developer customize underlying HTTP client.
-type AgentHttpOption struct {
-	Client plugin.HttpClient
+func (o *AgentOptions) WithCooldown(minMs, maxMs uint) *AgentOptions {
+	o.CooldownMinMs = minMs
+	o.CooldownMaxMs = maxMs
+	return o
 }
 
-func (o *AgentHttpOption) isAgentOption() {}
+func (o *AgentOptions) WithName(name string) *AgentOptions {
+	o.Name = name
+	return o
+}
+func (o *AgentOptions) WithVersion(version string) *AgentOptions {
+	o.Version = version
+	return o
+}
 
-type AgentNameOption string
-
-func (o AgentNameOption) isAgentOption() {}
-
-// AgentVersionOption allows developer lock app version for agent.
-type AgentVersionOption string
-
-func (o AgentVersionOption) isAgentOption() {}
+func Agent() *AgentOptions {
+	return &AgentOptions{}
+}
