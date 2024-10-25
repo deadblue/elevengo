@@ -9,8 +9,9 @@ import (
 
 const (
 	qrcodeTokenUrl = "https://qrcodeapi.115.com/api/1.0/%s/1.0/token"
-	qrcodeImageUrl = "https://qrcodeapi.115.com/api/1.0/%s/1.0/qrcode?qrfrom=1&client=0&uid=%s"
 	qrcodeLoginUrl = "https://passportapi.115.com/app/1.0/%s/1.0/login/qrcode"
+
+	qrcodeImageUrl = "https://qrcodeapi.115.com/api/1.0/web/1.0/qrcode?qrfrom=1&client=0&uid=%s"
 )
 
 type QrcodeTokenSpec struct {
@@ -46,6 +47,6 @@ func (s *QrcodeLoginSpec) Init(app, uid string) *QrcodeLoginSpec {
 	return s
 }
 
-func QrcodeImageUrl(app, uid string) string {
-	return fmt.Sprintf(qrcodeImageUrl, app, uid)
+func QrcodeImageUrl(uid string) string {
+	return fmt.Sprintf(qrcodeImageUrl, uid)
 }
