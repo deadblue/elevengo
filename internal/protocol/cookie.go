@@ -1,5 +1,7 @@
 package protocol
 
+import "strings"
+
 const (
 	CookieUrl = "https://115.com"
 
@@ -14,3 +16,8 @@ var (
 		".anxia.com",
 	}
 )
+
+func IsWebCredential(uid string) bool {
+	parts := strings.Split(uid, "_")
+	return len(parts) == 3 && parts[1][0] == 'A'
+}

@@ -45,6 +45,9 @@ type VideoTicket struct {
 
 // VideoCreateTicket creates a PlayTicket to play the cloud video.
 func (a *Agent) VideoCreateTicket(pickcode string, ticket *VideoTicket) (err error) {
+	if !a.isWeb {
+		return errors.ErrUnsupportedPlatform
+	}
 	spec := (&api.VideoPlayWebSpec{}).Init(pickcode)
 	if err = a.llc.CallApi(spec, context.Background()); err != nil {
 		return
@@ -62,6 +65,9 @@ func (a *Agent) VideoCreateTicket(pickcode string, ticket *VideoTicket) (err err
 			ticket.Height = video.Height
 			ticket.Url = video.PlayUrl
 		}
+	}
+	ticket.Headers = map[string]string{
+		"User-Agent": a.llc.GetUserAgent(),
 	}
 	return
 }
