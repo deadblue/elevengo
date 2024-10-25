@@ -101,7 +101,7 @@ func (i *offlineIterator) Items() iter.Seq2[int, *OfflineTask] {
 }
 
 // OfflineIterate returns an iterator to access all offline tasks.
-func (a *Agent) OfflineIterate() (it Iterator[*OfflineTask], err error) {
+func (a *Agent) OfflineIterate() (it Iterator[OfflineTask], err error) {
 	oi := &offlineIterator{
 		llc:  a.llc,
 		page: 1,

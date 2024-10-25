@@ -16,5 +16,5 @@ type Iterator[T any] interface {
 	Count() int
 
 	// Items return an index-item sequence.
-	Items() iter.Seq2[int, T]
+	Items() iter.Seq2[int, *T]
 }

@@ -20,6 +20,9 @@ type Agent struct {
 
 	// Common parameters
 	common types.CommonParams
+
+	// Is agent use web credential?
+	isWeb bool
 }
 
 // Default creates an Agent with default settings.

@@ -102,7 +102,7 @@ func (i *labelIterator) Items() iter.Seq2[int, *Label] {
 	}
 }
 
-func (a *Agent) LabelIterate() (it Iterator[*Label], err error) {
+func (a *Agent) LabelIterate() (it Iterator[Label], err error) {
 	li := &labelIterator{
 		llc:    a.llc,
 		offset: 0,

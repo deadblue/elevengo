@@ -212,7 +212,7 @@ func (i *fileIterator) Items() iter.Seq2[int, *File] {
 }
 
 // FileIterate list files under directory, whose id is |dirId|.
-func (a *Agent) FileIterate(dirId string) (it Iterator[*File], err error) {
+func (a *Agent) FileIterate(dirId string) (it Iterator[File], err error) {
 	fi := &fileIterator{
 		llc:   a.llc,
 		dirId: dirId,
@@ -225,7 +225,7 @@ func (a *Agent) FileIterate(dirId string) (it Iterator[*File], err error) {
 }
 
 // FileWithStar lists files with star.
-func (a *Agent) FileWithStar(options ...*option.FileListOptions) (it Iterator[*File], err error) {
+func (a *Agent) FileWithStar(options ...*option.FileListOptions) (it Iterator[File], err error) {
 	fi := &fileIterator{
 		llc:  a.llc,
 		mode: 2,
@@ -245,7 +245,7 @@ func (a *Agent) FileWithStar(options ...*option.FileListOptions) (it Iterator[*F
 // the given keyword.
 func (a *Agent) FileSearch(
 	dirId, keyword string, options ...*option.FileListOptions,
-) (it Iterator[*File], err error) {
+) (it Iterator[File], err error) {
 	fi := &fileIterator{
 		llc:     a.llc,
 		dirId:   dirId,
@@ -266,7 +266,7 @@ func (a *Agent) FileSearch(
 // FileLabeled lists files which has specific label.
 func (a *Agent) FileWithLabel(
 	labelId string, options ...*option.FileListOptions,
-) (it Iterator[*File], err error) {
+) (it Iterator[File], err error) {
 	fi := &fileIterator{
 		llc:     a.llc,
 		mode:    4,

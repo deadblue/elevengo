@@ -35,7 +35,7 @@ func (a *Agent) CredentialImport(cr *Credential) (err error) {
 		protocol.CookieNameSEID: cr.SEID,
 	}
 	a.llc.ImportCookies(cookies, protocol.CookieDomains...)
-	return a.afterSignIn()
+	return a.afterSignIn(cr.UID)
 }
 
 // CredentialExport exports current credentials for future-use.
@@ -46,11 +46,12 @@ func (a *Agent) CredentialExport(cr *Credential) {
 	cr.SEID = cookies[protocol.CookieNameSEID]
 }
 
-func (a *Agent) afterSignIn() (err error) {
+func (a *Agent) afterSignIn(uid string) (err error) {
 	// Call UploadInfo API to get userId and userKey
 	spec := (&api.UploadInfoSpec{}).Init()
 	if err = a.llc.CallApi(spec, context.Background()); err == nil {
 		a.common.SetUserInfo(spec.Result.UserId, spec.Result.UserKey)
+		a.isWeb = protocol.IsWebCredential(uid)
 	}
 	return
 }
