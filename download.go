@@ -3,10 +3,10 @@ package elevengo
 import (
 	"context"
 	"fmt"
-	"io"
 
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/api"
+	"github.com/deadblue/elevengo/lowlevel/client"
 	"github.com/deadblue/elevengo/lowlevel/errors"
 )
 
@@ -54,7 +54,7 @@ func (a *Agent) DownloadCreateTicket(pickcode string, ticket *DownloadTicket) (e
 }
 
 // Fetch gets content from url using agent underlying HTTP client.
-func (a *Agent) Fetch(url string) (body io.ReadCloser, err error) {
+func (a *Agent) Fetch(url string) (body client.Body, err error) {
 	return a.llc.Get(url, nil, context.Background())
 }
 
@@ -112,7 +112,7 @@ func RangeMiddle(offset, length int64) Range {
 }
 
 // FetchRange gets partial content from |url|, which is located by |rng|.
-func (a *Agent) FetchRange(url string, rng Range) (body io.ReadCloser, err error) {
+func (a *Agent) FetchRange(url string, rng Range) (body client.Body, err error) {
 	headers := make(map[string]string)
 	if value := rng.headerValue(); value != "" {
 		headers["Range"] = value

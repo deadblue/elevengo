@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"io"
 )
 
 // Client is the low-level client which executes ApiSpec.
@@ -15,7 +14,7 @@ type Client interface {
 	ExportCookies(url string) map[string]string
 
 	// Get performs an HTTP GET request.
-	Get(url string, headers map[string]string, context context.Context) (body io.ReadCloser, err error)
+	Get(url string, headers map[string]string, context context.Context) (body Body, err error)
 
 	// CallApi calls an API.
 	CallApi(spec ApiSpec, context context.Context) error
