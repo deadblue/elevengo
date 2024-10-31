@@ -1,5 +1,7 @@
 package util
 
+import "strconv"
+
 func NonZero(number ...int) int {
 	for _, n := range number {
 		if n != 0 {
@@ -25,4 +27,12 @@ func NotNull[V any](values ...*V) *V {
 		}
 	}
 	return nil
+}
+
+func ParseInt64(s string, defVal int64) int64 {
+	if n, err := strconv.ParseInt(s, 10, 64); err == nil {
+		return n
+	} else {
+		return defVal
+	}
 }

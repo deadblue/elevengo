@@ -5,7 +5,9 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strings"
 
+	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/client"
 )
 
@@ -64,7 +66,7 @@ func (c *ClientImpl) post(url string, payload client.Payload, context context.Co
 
 func (c *ClientImpl) Get(
 	url string, headers map[string]string, context context.Context,
-) (body io.ReadCloser, err error) {
+) (body client.Body, err error) {
 	req, err := http.NewRequestWithContext(context, http.MethodGet, url, nil)
 	if err != nil {
 		return
@@ -74,9 +76,22 @@ func (c *ClientImpl) Get(
 			req.Header.Add(name, value)
 		}
 	}
-	var resp *http.Response = nil
-	if resp, err = c.send(req); err == nil {
-		body = resp.Body
+	resp, err := c.send(req)
+	if err == nil {
+		bi := &_BodyImpl{
+			rc:    resp.Body,
+			size:  -1,
+			total: -1,
+		}
+		if hv := resp.Header.Get("Content-Length"); hv != "" {
+			bi.size = util.ParseInt64(hv, -1)
+		}
+		if hv := resp.Header.Get("Content-Range"); hv != "" {
+			if index := strings.LastIndex(hv, "/"); index >= 0 {
+				bi.total = util.ParseInt64(hv[index+1:], -1)
+			}
+		}
+		body = bi
 	}
 	return
 }
