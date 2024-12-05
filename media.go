@@ -3,6 +3,7 @@ package elevengo
 import (
 	"context"
 
+	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/api"
 	"github.com/deadblue/elevengo/lowlevel/errors"
 )
@@ -68,6 +69,7 @@ func (a *Agent) VideoCreateTicket(pickcode string, ticket *VideoTicket) (err err
 	}
 	ticket.Headers = map[string]string{
 		"User-Agent": a.llc.GetUserAgent(),
+		"Cookie":     util.MarshalCookies(a.llc.ExportCookies(ticket.Url)),
 	}
 	return
 }
