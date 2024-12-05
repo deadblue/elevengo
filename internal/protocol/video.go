@@ -2,7 +2,6 @@ package protocol
 
 import (
 	"github.com/deadblue/elevengo/internal/util"
-	"github.com/deadblue/elevengo/lowlevel/errors"
 	"github.com/deadblue/elevengo/lowlevel/types"
 )
 
@@ -23,22 +22,18 @@ type VideoPlayWebResp struct {
 	VideoUrl      string           `json:"video_url"`
 }
 
-func (r *VideoPlayWebResp) Extract(v any) error {
-	if ptr, ok := v.(*types.VideoPlayResult); !ok {
-		return errors.ErrUnsupportedResult
-	} else {
-		ptr.IsReady = r.FileStatus == 1
-		ptr.FileId = r.FileId
-		ptr.FileName = r.FileName
-		ptr.FileSize = r.FileSize.Int64()
-		ptr.VideoDuration = r.VideoDuration.Float64()
-		ptr.Videos = []*types.VideoInfo{
-			{
-				Width:   r.VideoWidth.Int(),
-				Height:  r.VideoHeight.Int(),
-				PlayUrl: r.VideoUrl,
-			},
-		}
+func (r *VideoPlayWebResp) Extract(v *types.VideoPlayResult) error {
+	v.IsReady = r.FileStatus == 1
+	v.FileId = r.FileId
+	v.FileName = r.FileName
+	v.FileSize = r.FileSize.Int64()
+	v.VideoDuration = r.VideoDuration.Float64()
+	v.Videos = []*types.VideoInfo{
+		{
+			Width:   r.VideoWidth.Int(),
+			Height:  r.VideoHeight.Int(),
+			PlayUrl: r.VideoUrl,
+		},
 	}
 	return nil
 }

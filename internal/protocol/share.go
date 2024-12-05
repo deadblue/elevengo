@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/deadblue/elevengo/internal/util"
-	"github.com/deadblue/elevengo/lowlevel/errors"
 	"github.com/deadblue/elevengo/lowlevel/types"
 )
 
@@ -16,15 +15,11 @@ type ShareListResp struct {
 	List  json.RawMessage `json:"list"`
 }
 
-func (r *ShareListResp) Extract(v any) (err error) {
-	ptr, ok := v.(*types.ShareListResult)
-	if !ok {
-		return errors.ErrUnsupportedResult
-	}
-	if err = json.Unmarshal(r.List, &ptr.Items); err != nil {
+func (r *ShareListResp) Extract(v *types.ShareListResult) (err error) {
+	if err = json.Unmarshal(r.List, &v.Items); err != nil {
 		return
 	}
-	ptr.Count = r.Count
+	v.Count = r.Count
 	return
 }
 

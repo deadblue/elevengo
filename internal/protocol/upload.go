@@ -15,13 +15,9 @@ type UploadInfoResp struct {
 	UserKey string `json:"userkey"`
 }
 
-func (r *UploadInfoResp) Extract(v any) error {
-	if ptr, ok := v.(*types.UploadInfoResult); !ok {
-		return errors.ErrUnsupportedResult
-	} else {
-		ptr.UserId = r.UserId
-		ptr.UserKey = r.UserKey
-	}
+func (r *UploadInfoResp) Extract(v *types.UploadInfoResult) error {
+	v.UserId = r.UserId
+	v.UserKey = r.UserKey
 	return nil
 }
 
@@ -61,23 +57,19 @@ func (r *UploadInitResp) Err() error {
 	return errors.ErrUnexpected
 }
 
-func (r *UploadInitResp) Extract(v any) (err error) {
-	if ptr, ok := v.(*types.UploadInitResult); !ok {
-		err = errors.ErrUnsupportedResult
-	} else {
-		switch r.Status {
-		case 1:
-			ptr.Oss.Bucket = r.Bucket
-			ptr.Oss.Object = r.Object
-			ptr.Oss.Callback = r.Callback.Callback
-			ptr.Oss.CallbackVar = r.Callback.CallbackVar
-		case 2:
-			ptr.Exists = true
-			ptr.PickCode = r.PickCode
-		case 7:
-			ptr.SignKey = r.SignKey
-			ptr.SignCheck = r.SignCheck
-		}
+func (r *UploadInitResp) Extract(v *types.UploadInitResult) (err error) {
+	switch r.Status {
+	case 1:
+		v.Oss.Bucket = r.Bucket
+		v.Oss.Object = r.Object
+		v.Oss.Callback = r.Callback.Callback
+		v.Oss.CallbackVar = r.Callback.CallbackVar
+	case 2:
+		v.Exists = true
+		v.PickCode = r.PickCode
+	case 7:
+		v.SignKey = r.SignKey
+		v.SignCheck = r.SignCheck
 	}
 	return
 }
@@ -98,15 +90,11 @@ func (r *UploadTokenResp) Err() error {
 	return errors.ErrUnexpected
 }
 
-func (r *UploadTokenResp) Extract(v any) error {
-	if ptr, ok := v.(*types.UploadTokenResult); !ok {
-		return errors.ErrUnsupportedResult
-	} else {
-		ptr.AccessKeyId = r.AccessKeyId
-		ptr.AccessKeySecret = r.AccessKeySecret
-		ptr.SecurityToken = r.SecurityToken
-		ptr.Expiration, _ = time.Parse(time.RFC3339, r.Expiration)
-	}
+func (r *UploadTokenResp) Extract(v *types.UploadTokenResult) error {
+	v.AccessKeyId = r.AccessKeyId
+	v.AccessKeySecret = r.AccessKeySecret
+	v.SecurityToken = r.SecurityToken
+	v.Expiration, _ = time.Parse(time.RFC3339, r.Expiration)
 	return nil
 }
 
@@ -125,16 +113,12 @@ func (r *UploadSampleInitResp) Err() error {
 	return nil
 }
 
-func (r *UploadSampleInitResp) Extract(v any) error {
-	if ptr, ok := v.(*types.UploadSampleInitResult); !ok {
-		return errors.ErrUnsupportedResult
-	} else {
-		ptr.Host = r.Host
-		ptr.Object = r.Object
-		ptr.Callback = r.Callback
-		ptr.AccessKeyId = r.AccessKeyId
-		ptr.Policy = r.Policy
-		ptr.Signature = r.Signature
-	}
+func (r *UploadSampleInitResp) Extract(v *types.UploadSampleInitResult) error {
+	v.Host = r.Host
+	v.Object = r.Object
+	v.Callback = r.Callback
+	v.AccessKeyId = r.AccessKeyId
+	v.Policy = r.Policy
+	v.Signature = r.Signature
 	return nil
 }

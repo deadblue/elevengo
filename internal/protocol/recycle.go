@@ -2,7 +2,6 @@ package protocol
 
 import (
 	"github.com/deadblue/elevengo/internal/util"
-	"github.com/deadblue/elevengo/lowlevel/errors"
 	"github.com/deadblue/elevengo/lowlevel/types"
 )
 
@@ -16,14 +15,10 @@ type RecycleBinListResp struct {
 	Limit  int `json:"page_size"`
 }
 
-func (r *RecycleBinListResp) Extract(v any) (err error) {
-	ptr, ok := v.(*types.RecycleBinListResult)
-	if !ok {
-		return errors.ErrUnsupportedResult
-	}
-	if err = r.StandardResp.Extract(&ptr.Item); err != nil {
+func (r *RecycleBinListResp) Extract(v *types.RecycleBinListResult) (err error) {
+	if err = r.StandardResp.Extract(&v.Item); err != nil {
 		return
 	}
-	ptr.Count = r.Count.Int()
+	v.Count = r.Count.Int()
 	return
 }

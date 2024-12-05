@@ -1,7 +1,6 @@
 package protocol
 
 import (
-	"github.com/deadblue/elevengo/lowlevel/errors"
 	"github.com/deadblue/elevengo/lowlevel/types"
 )
 
@@ -20,17 +19,13 @@ type OfflineListResp struct {
 	Tasks     []*types.TaskInfo `json:"tasks"`
 }
 
-func (r *OfflineListResp) Extract(v any) (err error) {
-	if ptr, ok := v.(*types.OfflineListResult); !ok {
-		return errors.ErrUnsupportedResult
-	} else {
-		ptr.PageIndex = r.PageIndex
-		ptr.PageCount = r.PageCount
-		ptr.PageSize = r.PageSize
-		ptr.QuotaTotal = r.QuotaTotal
-		ptr.QuotaRemain = r.QuotaRemain
-		ptr.TaskCount = r.TaskCount
-		ptr.Tasks = append(ptr.Tasks, r.Tasks...)
-	}
+func (r *OfflineListResp) Extract(v *types.OfflineListResult) (err error) {
+	v.PageIndex = r.PageIndex
+	v.PageCount = r.PageCount
+	v.PageSize = r.PageSize
+	v.QuotaTotal = r.QuotaTotal
+	v.QuotaRemain = r.QuotaRemain
+	v.TaskCount = r.TaskCount
+	v.Tasks = append(v.Tasks, r.Tasks...)
 	return nil
 }
