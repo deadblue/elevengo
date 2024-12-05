@@ -39,18 +39,14 @@ func (r *FileListResp) Err() (err error) {
 	return r.StandardResp.Err()
 }
 
-func (r *FileListResp) Extract(v any) (err error) {
-	ptr, ok := v.(*types.FileListResult)
-	if !ok {
-		return errors.ErrUnsupportedResult
-	}
-	ptr.Files = make([]*types.FileInfo, 0)
-	if err = json.Unmarshal(r.Data, &ptr.Files); err != nil {
+func (r *FileListResp) Extract(v *types.FileListResult) (err error) {
+	v.Files = make([]*types.FileInfo, 0)
+	if err = json.Unmarshal(r.Data, &v.Files); err != nil {
 		return
 	}
-	ptr.DirId = r.CategoryId.String()
-	ptr.Count = r.Count
-	ptr.Order, ptr.Asc = r.Order, r.IsAsc
+	v.DirId = r.CategoryId.String()
+	v.Count = r.Count
+	v.Order, v.Asc = r.Order, r.IsAsc
 	return
 }
 
@@ -75,18 +71,14 @@ type FileSearchResp struct {
 	Limit  int `json:"page_size"`
 }
 
-func (r *FileSearchResp) Extract(v any) (err error) {
-	ptr, ok := v.(*types.FileListResult)
-	if !ok {
-		return errors.ErrUnsupportedResult
-	}
-	ptr.Files = make([]*types.FileInfo, 0)
-	if err = json.Unmarshal(r.Data, &ptr.Files); err != nil {
+func (r *FileSearchResp) Extract(v *types.FileListResult) (err error) {
+	v.Files = make([]*types.FileInfo, 0)
+	if err = json.Unmarshal(r.Data, &v.Files); err != nil {
 		return
 	}
-	ptr.DirId = r.Folder.CategoryId
-	ptr.Count = r.Count
-	ptr.Order, ptr.Asc = r.Order, r.IsAsc
+	v.DirId = r.Folder.CategoryId
+	v.Count = r.Count
+	v.Order, v.Asc = r.Order, r.IsAsc
 	return
 }
 
@@ -97,11 +89,7 @@ type FileGetDescResp struct {
 	Desc string `json:"desc"`
 }
 
-func (r *FileGetDescResp) Extract(v any) (err error) {
-	if ptr, ok := v.(*string); !ok {
-		err = errors.ErrUnsupportedResult
-	} else {
-		*ptr = r.Desc
-	}
+func (r *FileGetDescResp) Extract(v *string) (err error) {
+	*v = r.Desc
 	return
 }

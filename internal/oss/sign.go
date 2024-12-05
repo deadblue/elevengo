@@ -5,8 +5,9 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
-	"github.com/deadblue/elevengo/internal/util"
 	"strings"
+
+	"github.com/deadblue/elevengo/internal/util"
 )
 
 type RequestMetadata struct {
@@ -53,7 +54,7 @@ func CalculateAuthorization(metadata *RequestMetadata, keyId string, keySecret s
 	// Canonicalized Resource
 	wx.MustWriteString("/", metadata.Bucket, "/", metadata.Object)
 	// Sub resources
-	if metadata.Params != nil && len(metadata.Params) > 0 {
+	if len(metadata.Params) > 0 {
 		params := make([]*Pair, 0, len(metadata.Params))
 		for name, value := range metadata.Params {
 			if _, ok := signingKeyMap[name]; ok {

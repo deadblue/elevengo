@@ -5,13 +5,15 @@ import (
 )
 
 const (
-	endpoint = "oss-cn-shenzhen.aliyuncs.com"
+	Region = "cn-shenzhen"
+
+	endpointHost = "oss-cn-shenzhen.aliyuncs.com"
 )
 
 func GetPutObjectUrl(bucket, key string) string {
-	return fmt.Sprintf("https://%s.%s/%s", bucket, endpoint, key)
+	return fmt.Sprintf("https://%s.%s/%s", bucket, endpointHost, key)
 }
 
 func GetEndpointUrl() string {
-	return fmt.Sprintf("https://%s", endpoint)
+	return fmt.Sprintf("https://%s", endpointHost)
 }

@@ -39,8 +39,10 @@ func (t *UploadTicket) header(name, value string) *UploadTicket {
 type _UploadOssParams struct {
 	// File size
 	Size int64
-	// Base64-encoded MD5 hash value
+	// File MD5 hash in base64-encoding
 	MD5 string
+	// File SHA-1 hash in hex-encoding
+	SHA1 string
 	// Bucket name on OSS
 	Bucket string
 	// Object name on OSS
@@ -81,7 +83,9 @@ func (a *Agent) uploadInit(
 			if spec.Result.Exists {
 				exists = true
 			} else if op != nil {
-				op.Size, op.MD5 = dr.Size, dr.MD5
+				op.Size = dr.Size
+				op.MD5 = dr.MD5
+				op.SHA1 = dr.SHA1
 				op.Bucket = spec.Result.Oss.Bucket
 				op.Object = spec.Result.Oss.Object
 				op.Callback = spec.Result.Oss.Callback
@@ -149,6 +153,7 @@ type UploadOssTicket struct {
 	Exist bool
 	// Client parameters
 	Client struct {
+		Region          string
 		Endpoint        string
 		AccessKeyId     string
 		AccessKeySecret string
@@ -262,13 +267,16 @@ func (a *Agent) UploadCreateOssTicket(
 	}
 	// Fill ticket
 	ticket.Expiration = spec.Result.Expiration
+	ticket.Client.Region = oss.Region
 	ticket.Client.Endpoint = oss.GetEndpointUrl()
 	ticket.Client.AccessKeyId = spec.Result.AccessKeyId
 	ticket.Client.AccessKeySecret = spec.Result.AccessKeySecret
 	ticket.Client.SecurityToken = spec.Result.SecurityToken
 	ticket.Bucket = op.Bucket
 	ticket.Object = op.Object
-	ticket.Callback = util.Base64Encode(op.Callback)
+	ticket.Callback = util.Base64Encode(
+		oss.ReplaceCallbackSha1(op.Callback, op.SHA1),
+	)
 	ticket.CallbackVar = util.Base64Encode(op.CallbackVar)
 	return
 }
