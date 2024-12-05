@@ -13,10 +13,6 @@ const (
 	ShareOneDay  ShareDuration = 1
 	ShareOneWeek ShareDuration = 7
 	ShareForever ShareDuration = -1
-
-	ShareStateAuditing = 0
-	ShareStateAccepted = 1
-	ShareStateRejected = 6
 )
 
 type ShareListSpec struct {
@@ -81,5 +77,40 @@ func (s *ShareCancelSpec) Init(shareCode string) *ShareCancelSpec {
 	s._VoidApiSpec.Init("https://webapi.115.com/share/updateshare")
 	s.form.Set("share_code", shareCode)
 	s.form.Set("action", "cancel")
+	return s
+}
+
+type ShareSnapSpec struct {
+	_JsonApiSpec[types.ShareSnapResult, protocol.ShareSnapResp]
+}
+
+func (s *ShareSnapSpec) Init(
+	shareCode, receiveCode string, offset, limit int, dirId string,
+) *ShareSnapSpec {
+	s._JsonApiSpec.Init("https://webapi.115.com/share/snap")
+	s.query.Set("share_code", shareCode).
+		Set("receive_code", receiveCode).
+		Set("cid", dirId).
+		SetInt("offset", offset).
+		SetInt("limit", limit)
+	return s
+}
+
+type ShareReceiveSpec struct {
+	_VoidApiSpec
+}
+
+func (s *ShareReceiveSpec) Init(
+	userId, shareCode, receiveCode string,
+	fileIds []string, receiveDirId string,
+) *ShareReceiveSpec {
+	s._VoidApiSpec.Init("https://webapi.115.com/share/receive")
+	s.form.Set("user_id", userId).
+		Set("share_code", shareCode).
+		Set("receive_code", receiveCode).
+		Set("file_id", strings.Join(fileIds, ","))
+	if receiveDirId != "" {
+		s.form.Set("cid", receiveDirId)
+	}
 	return s
 }

@@ -17,6 +17,11 @@ type _ApiResp interface {
 	Err() error
 }
 
+type _GenericDataApiResp[D any] interface {
+	// Extract extracts result from response to |v|.
+	Extract(v *D) error
+}
+
 type _DataApiResp interface {
 	// Extract extracts result from response to |v|.
 	Extract(v any) error
@@ -61,7 +66,9 @@ func (s *_JsonApiSpec[D, R]) Parse(r io.Reader) (err error) {
 		return
 	}
 	// Extract data
-	if dr, ok := resp.(_DataApiResp); ok {
+	if gdr, ok := resp.(_GenericDataApiResp[D]); ok {
+		err = gdr.Extract(&s.Result)
+	} else if dr, ok := resp.(_DataApiResp); ok {
 		err = dr.Extract(&s.Result)
 	}
 	return
@@ -112,7 +119,9 @@ func (s *_JsonpApiSpec[D, R]) Parse(r io.Reader) (err error) {
 		return
 	}
 	// Extract data
-	if dr, ok := resp.(_DataApiResp); ok {
+	if gdr, ok := resp.(_GenericDataApiResp[D]); ok {
+		err = gdr.Extract(&s.Result)
+	} else if dr, ok := resp.(_DataApiResp); ok {
 		err = dr.Extract(&s.Result)
 	}
 	return
