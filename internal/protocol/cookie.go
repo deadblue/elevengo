@@ -8,6 +8,7 @@ const (
 	CookieNameUID  = "UID"
 	CookieNameCID  = "CID"
 	CookieNameSEID = "SEID"
+	CookieNameKID  = "KID"
 )
 
 var (

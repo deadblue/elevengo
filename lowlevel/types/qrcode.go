@@ -14,9 +14,10 @@ type QrcodeStatusResult struct {
 
 type QrcodeLoginResult struct {
 	Cookie struct {
-		CID  string `json:"CID"`
-		SEID string `json:"SEID"`
 		UID  string `json:"UID"`
+		CID  string `json:"CID"`
+		KID  string `json:"KID"`
+		SEID string `json:"SEID"`
 	} `json:"cookie"`
 	UserId   int    `json:"user_id"`
 	UserName string `json:"user_name"`

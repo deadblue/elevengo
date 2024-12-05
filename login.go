@@ -9,11 +9,12 @@ import (
 
 // Credential contains required information which 115 server uses to
 // authenticate a signed-in user.
-// In detail, three cookies are required: "UID", "CID", "SEID", caller can
-// find them from browser cookie storage.
+// In detail, these cookies are required: "UID", "CID", "KID", "SEID".
+// Caller can find them from browser cookie storage.
 type Credential struct {
 	UID  string
 	CID  string
+	KID  string
 	SEID string
 }
 
@@ -34,6 +35,9 @@ func (a *Agent) CredentialImport(cr *Credential) (err error) {
 		protocol.CookieNameCID:  cr.CID,
 		protocol.CookieNameSEID: cr.SEID,
 	}
+	if cr.KID != "" {
+		cookies[protocol.CookieNameKID] = cr.KID
+	}
 	a.llc.ImportCookies(cookies, protocol.CookieDomains...)
 	return a.afterSignIn(cr.UID)
 }
@@ -43,6 +47,7 @@ func (a *Agent) CredentialExport(cr *Credential) {
 	cookies := a.llc.ExportCookies(protocol.CookieUrl)
 	cr.UID = cookies[protocol.CookieNameUID]
 	cr.CID = cookies[protocol.CookieNameCID]
+	cr.KID = cookies[protocol.CookieNameKID]
 	cr.SEID = cookies[protocol.CookieNameSEID]
 }
 
