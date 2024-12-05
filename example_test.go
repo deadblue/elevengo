@@ -18,6 +18,7 @@ func ExampleAgent_CredentialImport() {
 	if err := agent.CredentialImport(&Credential{
 		UID:  "UID-From-Cookie",
 		CID:  "CID-From-Cookie",
+		KID:  "KID-From-Cookie",
 		SEID: "SEID-From-Cookie",
 	}); err != nil {
 		log.Fatalf("Import credentail error: %s", err)

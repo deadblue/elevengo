@@ -25,7 +25,7 @@ func main()  {
   agent := elevengo.Default()
   // Import credential
   credential := &elevengo.Credential{
-    UID: "", CID: "", SEID: "",
+    UID: "", CID: "", KID: "", SEID: "",
   }
   if err := agent.CredentialImport(credential); err != nil {
     log.Fatalf("Import credentail error: %s", err)
@@ -66,7 +66,7 @@ func main()  {
   agent := elevengo.Default()
   // Import credential
   credential := &elevengo.Credential{
-    UID: "", CID: "", SEID: "",
+    UID: "", CID: "", KID: "", SEID: "",
   }
   if err := agent.CredentialImport(credential); err != nil {
     log.Fatalf("Import credentail error: %s", err)

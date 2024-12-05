@@ -9,8 +9,8 @@ import (
 
 // Credential contains required information which 115 server uses to
 // authenticate a signed-in user.
-// In detail, three cookies are required: "UID", "CID", "SEID", caller can
-// find them from browser cookie storage.
+// In detail, these cookies are required: "UID", "CID", "KID", "SEID".
+// Caller can find them from browser cookie storage.
 type Credential struct {
 	UID  string
 	CID  string
