@@ -19,6 +19,7 @@ var errorsMap = map[int]error{
 	// Common errors
 	990002: ErrInvalidParameters,
 	// Login errors
+	40101004: ErrIPAbnormal,
 	40101009: ErrPasswordIncorrect,
 	40101010: ErrLoginTwoStepVerify,
 	40101030: ErrAccountNotBindMobile,
@@ -26,6 +27,7 @@ var errorsMap = map[int]error{
 	40101037: ErrSessionExited,
 	// QRCode errors
 	40199002: ErrQrcodeExpired,
+	50199004: ErrGetFailed,
 
 	// Whitelist errors
 	CodeOfflineTaskExists: nil,
