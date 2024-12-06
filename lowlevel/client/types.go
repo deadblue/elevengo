@@ -38,8 +38,5 @@ type (
 
 		// Size returns body size or -1 when unknown.
 		Size() int64
-
-		// TotalSize returns total size of remote content or -1 when unknown.
-		TotalSize() int64
 	}
 )

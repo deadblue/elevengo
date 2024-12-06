@@ -13,9 +13,16 @@ type Client interface {
 	// ExportCookies exports cookies for specific URL.
 	ExportCookies(url string) map[string]string
 
-	// Get performs an HTTP GET request.
-	Get(url string, headers map[string]string, context context.Context) (body Body, err error)
-
 	// CallApi calls an API.
 	CallApi(spec ApiSpec, context context.Context) error
+
+	// Get performs an HTTP GET request.
+	Get(
+		url string, headers map[string]string, context context.Context,
+	) (body Body, err error)
+
+	// Post performs an HTTP POST request.
+	Post(
+		url string, payload Payload, headers map[string]string, context context.Context,
+	) (body Body, err error)
 }

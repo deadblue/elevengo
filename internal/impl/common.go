@@ -2,10 +2,8 @@ package impl
 
 import (
 	"context"
-	"io"
 	"net"
 	"net/http"
-	"strings"
 
 	"github.com/deadblue/elevengo/internal/util"
 	"github.com/deadblue/elevengo/lowlevel/client"
@@ -47,11 +45,17 @@ func (c *ClientImpl) send(req *http.Request) (resp *http.Response, err error) {
 	return
 }
 
-// |post| performs an HTTP POST request to specific URL with given payload.
-func (c *ClientImpl) post(url string, payload client.Payload, context context.Context) (body io.ReadCloser, err error) {
+func (c *ClientImpl) Post(
+	url string, payload client.Payload, headers map[string]string, context context.Context,
+) (body client.Body, err error) {
 	req, err := http.NewRequestWithContext(context, http.MethodPost, url, payload)
 	if err != nil {
 		return
+	}
+	if len(headers) > 0 {
+		for name, value := range headers {
+			req.Header.Add(name, value)
+		}
 	}
 	req.Header.Set(headerContentType, payload.ContentType())
 	if size := payload.ContentLength(); size > 0 {
@@ -59,7 +63,7 @@ func (c *ClientImpl) post(url string, payload client.Payload, context context.Co
 	}
 	var resp *http.Response
 	if resp, err = c.send(req); err == nil {
-		body = resp.Body
+		body = makeClientBody(resp)
 	}
 	return
 }
@@ -76,22 +80,19 @@ func (c *ClientImpl) Get(
 			req.Header.Add(name, value)
 		}
 	}
-	resp, err := c.send(req)
-	if err == nil {
-		bi := &_BodyImpl{
-			rc:    resp.Body,
-			size:  -1,
-			total: -1,
-		}
-		if hv := resp.Header.Get("Content-Length"); hv != "" {
-			bi.size = util.ParseInt64(hv, -1)
-		}
-		if hv := resp.Header.Get("Content-Range"); hv != "" {
-			if index := strings.LastIndex(hv, "/"); index >= 0 {
-				bi.total = util.ParseInt64(hv[index+1:], -1)
-			}
-		}
-		body = bi
+	if resp, err := c.send(req); err == nil {
+		body = makeClientBody(resp)
 	}
 	return
+}
+
+func makeClientBody(resp *http.Response) client.Body {
+	body := &_BodyImpl{
+		rc:   resp.Body,
+		size: -1,
+	}
+	if hv := resp.Header.Get("Content-Length"); hv != "" {
+		body.size = util.ParseInt64(hv, -1)
+	}
+	return body
 }

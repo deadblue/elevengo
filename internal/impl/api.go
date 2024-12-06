@@ -41,7 +41,7 @@ func (c *ClientImpl) internalCall(
 	defer c.v.ClockIn()
 	// Prepare request
 	if payload != nil {
-		body, err = c.post(url, payload, context)
+		body, err = c.Post(url, payload, nil, context)
 	} else {
 		body, err = c.Get(url, nil, context)
 	}
