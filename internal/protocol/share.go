@@ -54,7 +54,7 @@ type ShareSnapProto struct {
 	ShareInfo struct {
 		SnapId              string         `json:"snap_id"`
 		ShareTitle          string         `json:"share_title"`
-		ShareState          string         `json:"share_state"`
+		ShareState          util.IntNumber `json:"share_state"`
 		ShareSize           util.IntNumber `json:"file_size"`
 		ReceiveCode         string         `json:"receive_code"`
 		ReceiveCount        util.IntNumber `json:"receive_count"`
@@ -66,7 +66,7 @@ type ShareSnapProto struct {
 		CanNotice           int            `json:"can_notice"`
 		HaveVioFile         int            `json:"have_vio_file"`
 	} `json:"shareinfo"`
-	ShareState string `json:"share_state"`
+	ShareState util.IntNumber `json:"share_state"`
 
 	Count int               `json:"count"`
 	Files []*ShareFileProto `json:"list"`
@@ -83,7 +83,7 @@ func (r *ShareSnapResp) Extract(v *types.ShareSnapResult) (err error) {
 	v.SnapId = data.ShareInfo.SnapId
 	v.UserId = data.UserInfo.UserId.Int()
 	v.ShareTitle = data.ShareInfo.ShareTitle
-	v.ShareState = data.ShareInfo.ShareSize.Int()
+	v.ShareState = data.ShareInfo.ShareState.Int()
 	v.ReceiveCount = data.ShareInfo.ReceiveCount.Int()
 	v.CreateTime = data.ShareInfo.CreateTime.Int64()
 	v.ExpireTime = data.ShareInfo.ExpireTime.Int64()
